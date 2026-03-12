@@ -41,12 +41,14 @@ if [ ! -f "$ALPINE_TAR" ]; then
 fi
 echo "  Alpine tarball: $(ls -lh "$ALPINE_TAR" | awk '{print $5}')"
 
-# ── 2. Create ext4 image and populate ─────────────────────────────────────
-echo "--- Creating ${IMG_SIZE}MB ext4 image ---"
+# ── 2. Create ext2 image and populate ─────────────────────────────────────
+# NOTE: must be ext2 — lk2nd's ext2 driver rejects ext4 RO_COMPAT features
+# (extents, flex_bg, metadata_csum, etc.)
+echo "--- Creating ${IMG_SIZE}MB ext2 image ---"
 rm -rf "$ROOTFS"
 mkdir -p "$ROOTFS"
 dd if=/dev/zero of="$ROOTFS_IMG" bs=1M count=$IMG_SIZE status=none
-mkfs.ext4 -q -L rootfs "$ROOTFS_IMG"
+mkfs.ext2 -q -L rootfs "$ROOTFS_IMG"
 mount -o loop "$ROOTFS_IMG" "$ROOTFS"
 
 # Extract Alpine
@@ -102,14 +104,17 @@ cat > "$ROOTFS/etc/hosts" << 'HOSTS'
 ::1		localhost
 HOSTS
 
-# Serial console on USB gadget serial
+# Serial consoles — getty on any available serial device
 cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 ::sysinit:/sbin/openrc sysinit
 ::sysinit:/sbin/openrc boot
 ::wait:/sbin/openrc default
 
-# USB gadget serial
+# USB gadget serial (hardware)
 ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
+
+# PL011 UART (QEMU virt machine)
+ttyAMA0::respawn:/sbin/getty -L 115200 ttyAMA0 vt100
 
 # Shutdown
 ::shutdown:/sbin/openrc shutdown
@@ -160,7 +165,7 @@ echo "pronto_wlan" > "$ROOTFS/etc/modules-load.d/wifi.conf"
 # fstab
 cat > "$ROOTFS/etc/fstab" << 'FSTAB'
 # <device>  <mount>  <type>  <options>       <dump> <pass>
-/dev/root   /        ext4    rw,noatime      0      1
+/dev/root   /        ext2    rw,noatime      0      1
 proc        /proc    proc    defaults        0      0
 sysfs       /sys     sysfs   defaults        0      0
 devtmpfs    /dev     devtmpfs defaults       0      0
@@ -205,15 +210,15 @@ cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/
 
 # ── 8. extlinux.conf for lk2nd ───────────────────────────────────────────
 echo "--- Creating extlinux.conf ---"
-mkdir -p "$ROOTFS/boot/extlinux"
-cat > "$ROOTFS/boot/extlinux/extlinux.conf" << 'EXTLINUX'
+mkdir -p "$ROOTFS/extlinux"
+cat > "$ROOTFS/extlinux/extlinux.conf" << 'EXTLINUX'
 TIMEOUT 1
 DEFAULT postmarketos
 
 LABEL postmarketos
   KERNEL /boot/zImage
   FDT /boot/msm8909-bq268.dtb
-  APPEND console=ttyGS0,115200 root=PARTUUID=1ad8eb9c-34e9-81eb-f6f4-cf77bae59d12 rootfstype=ext4 rw rootwait
+  APPEND console=ttyGS0,115200 root=PARTUUID=1ad8eb9c-34e9-81eb-f6f4-cf77bae59d12 rootfstype=ext2 rw rootwait
 EXTLINUX
 
 # ── 9. USB gadget setup script ───────────────────────────────────────────
@@ -230,17 +235,24 @@ depend() {
 
 start() {
     ebegin "Configuring USB gadget"
+    ANDROID_USB=/sys/class/android_usb/android0
     CONFIGFS=/sys/kernel/config/usb_gadget
 
-    # Check if configfs is available
-    if [ ! -d "$CONFIGFS" ]; then
-        mount -t configfs none /sys/kernel/config 2>/dev/null || true
-    fi
-
-    if [ -d "$CONFIGFS" ]; then
+    if [ -d "$ANDROID_USB" ]; then
+        # CAF 3.18 kernel: use Android USB gadget driver
+        echo 0 > $ANDROID_USB/enable
+        echo 1d6b > $ANDROID_USB/idVendor     # Linux Foundation
+        echo 0104 > $ANDROID_USB/idProduct     # Multifunction Composite Gadget
+        echo "bq268" > $ANDROID_USB/iProduct
+        echo "udotech" > $ANDROID_USB/iManufacturer
+        echo "bq268-pmos" > $ANDROID_USB/iSerial
+        echo acm,rndis > $ANDROID_USB/functions
+        echo 1 > $ANDROID_USB/enable
+    elif [ -d "$CONFIGFS" ] || mount -t configfs none /sys/kernel/config 2>/dev/null; then
+        # Mainline kernel: use USB configfs
         mkdir -p $CONFIGFS/g1
-        echo 0x1d6b > $CONFIGFS/g1/idVendor   # Linux Foundation
-        echo 0x0104 > $CONFIGFS/g1/idProduct   # Multifunction Composite Gadget
+        echo 0x1d6b > $CONFIGFS/g1/idVendor
+        echo 0x0104 > $CONFIGFS/g1/idProduct
         echo 0x0100 > $CONFIGFS/g1/bcdDevice
         echo 0x0200 > $CONFIGFS/g1/bcdUSB
 
@@ -249,24 +261,20 @@ start() {
         echo "udotech" > $CONFIGFS/g1/strings/0x409/manufacturer
         echo "bq268-pmos" > $CONFIGFS/g1/strings/0x409/serialnumber
 
-        # Serial function
         mkdir -p $CONFIGFS/g1/functions/acm.usb0
-
-        # RNDIS function
         mkdir -p $CONFIGFS/g1/functions/rndis.usb0
 
-        # Configuration
         mkdir -p $CONFIGFS/g1/configs/c.1/strings/0x409
         echo "Serial+RNDIS" > $CONFIGFS/g1/configs/c.1/strings/0x409/configuration
 
         ln -sf $CONFIGFS/g1/functions/acm.usb0 $CONFIGFS/g1/configs/c.1/
         ln -sf $CONFIGFS/g1/functions/rndis.usb0 $CONFIGFS/g1/configs/c.1/
 
-        # Bind to UDC
         UDC=$(ls /sys/class/udc/ 2>/dev/null | head -1)
-        if [ -n "$UDC" ]; then
-            echo "$UDC" > $CONFIGFS/g1/UDC
-        fi
+        [ -n "$UDC" ] && echo "$UDC" > $CONFIGFS/g1/UDC
+    else
+        eend 1 "No USB gadget interface found"
+        return 1
     fi
     eend $?
 }

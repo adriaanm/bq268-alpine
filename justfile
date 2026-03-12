@@ -93,6 +93,33 @@ kernel-build:
 kernel-bootimg:
     just -f {{kernel_repo}}/justfile bootimg
 
+# ── QEMU testing ──────────────────────────────────────────────────────────
+
+# boot rootfs in QEMU (tests Alpine userspace without real hardware)
+qemu-test:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    kernel="{{outdir}}/qemu/vmlinuz-virt"
+    initrd="{{outdir}}/qemu/initramfs.cpio.gz"
+    rootfs="{{outdir}}/rootfs.img"
+    for f in "$kernel" "$initrd" "$rootfs"; do
+        [ -f "$f" ] || { echo "ERROR: $f not found"; exit 1; }
+    done
+    echo "Booting rootfs in QEMU (Ctrl-A X to quit)..."
+    echo "Login: root / bq268"
+    qemu-system-arm \
+        -machine virt \
+        -cpu cortex-a7 \
+        -m 512 \
+        -kernel "$kernel" \
+        -initrd "$initrd" \
+        -drive file="$rootfs",if=none,format=raw,id=hd0,snapshot=on \
+        -device virtio-blk-pci,drive=hd0 \
+        -append "console=ttyAMA0 root=/dev/vda rootfstype=ext2 rw" \
+        -serial stdio \
+        -display none \
+        -no-reboot
+
 # ── Flash ────────────────────────────────────────────────────────────────
 
 # flash lk2nd to boot partition (device must be in fastboot mode)
