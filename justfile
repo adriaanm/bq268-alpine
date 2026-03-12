@@ -131,13 +131,8 @@ flash-all: flash-lk2nd flash-rootfs
 reboot:
     fastboot reboot
 
-# connect to serial console (ttyMSM0 via USB serial adapter)
+# connect to USB gadget serial console (ttyACM0)
 serial:
-    @echo "Connecting to serial console (Ctrl-A Ctrl-X to quit)..."
-    picocom -b 115200 /dev/ttyUSB0
-
-# connect to USB gadget serial (ttyACM0)
-serial-usb:
     @echo "Connecting to USB gadget serial (Ctrl-A Ctrl-X to quit)..."
     picocom -b 115200 /dev/ttyACM0
 

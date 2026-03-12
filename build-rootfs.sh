@@ -102,16 +102,13 @@ cat > "$ROOTFS/etc/hosts" << 'HOSTS'
 ::1		localhost
 HOSTS
 
-# Serial console (ttyMSM0) + USB gadget serial (ttyGS0)
+# Serial console on USB gadget serial
 cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 ::sysinit:/sbin/openrc sysinit
 ::sysinit:/sbin/openrc boot
 ::wait:/sbin/openrc default
 
-# Serial console on Qualcomm UART
-ttyMSM0::respawn:/sbin/getty -L 115200 ttyMSM0 vt100
-
-# USB gadget serial (backup)
+# USB gadget serial
 ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
 
 # Shutdown
@@ -216,7 +213,7 @@ DEFAULT postmarketos
 LABEL postmarketos
   KERNEL /boot/zImage
   FDT /boot/msm8909-bq268.dtb
-  APPEND earlycon console=ttyMSM0,115200 root=PARTUUID=1ad8eb9c-34e9-81eb-f6f4-cf77bae59d12 rootfstype=ext4 rw rootwait
+  APPEND console=ttyGS0,115200 root=PARTUUID=1ad8eb9c-34e9-81eb-f6f4-cf77bae59d12 rootfstype=ext4 rw rootwait
 EXTLINUX
 
 # ── 9. USB gadget setup script ───────────────────────────────────────────
@@ -319,5 +316,5 @@ chown "$SUDO_UID:$SUDO_GID" "$ROOTFS_IMG"
 echo "==="
 echo "Rootfs image: $ROOTFS_IMG ($(ls -lh "$ROOTFS_IMG" | awk '{print $5}'))"
 echo "Root password: bq268"
-echo "Serial console: ttyMSM0 @ 115200"
+echo "Serial console: ttyGS0 @ 115200 (USB gadget)"
 echo "==="
