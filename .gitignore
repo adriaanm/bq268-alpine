@@ -1,0 +1,14 @@
+# Firmware blobs (extracted from EDL dumps, not committed)
+firmware/
+
+# Build output
+out/
+*.img
+
+# Editor / IDE
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
