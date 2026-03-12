@@ -5,6 +5,10 @@
 postmarketOS (Alpine Linux) port for the BQ268 walkie-talkie.
 Single-app device: fast boot, low RAM, mainline kernel, open source.
 
+## Build Environment
+
+This repo runs on a headless buildbox. Flashing and device interaction (fastboot, serial console) happens from a separate machine. The justfile `flash-*` and `serial` recipes are for reference only — they won't be run from this machine.
+
 ## Hardware
 
 - **SoC**: MSM8909 (Snapdragon 210), 4× Cortex-A7 @ 1.267 GHz, 32-bit ARM
