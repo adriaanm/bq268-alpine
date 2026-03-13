@@ -1,4 +1,4 @@
-# BQ268 postmarketOS port recipes
+# BQ268 Alpine Linux port recipes
 # Run `just` to list available recipes, `just <recipe>` to run one.
 
 kernel_repo := env("HOME") / "bq268-kernel"

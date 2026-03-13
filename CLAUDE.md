@@ -1,9 +1,10 @@
-# CLAUDE.md — BQ268 postmarketOS Port
+# CLAUDE.md — BQ268 Alpine Linux Port
 
 ## Project
 
-postmarketOS (Alpine Linux) port for the BQ268 walkie-talkie.
+Alpine Linux port for the BQ268 walkie-talkie.
 Single-app device: fast boot, low RAM, mainline kernel, open source.
+Inspired by the postmarketOS project's approach to running mainline Linux on Qualcomm phones.
 
 ## Build Environment
 
@@ -99,7 +100,6 @@ Same discipline as the kernel and lineage repos:
 
 | File | Contents |
 |------|----------|
-| `docs/postmarketos_plan.md` | Full spec and implementation plan |
 | `docs/device_properties.md` | Hardware analysis, partition layout, build.prop dumps |
 | `docs/vendor_blobs.md` | Line-by-line blob audit from Android vendor partition |
 
@@ -107,6 +107,6 @@ Same discipline as the kernel and lineage repos:
 
 - **msm8916-mainline kernel**: `github.com/msm8916-mainline/linux` (`wip/msm8916/6.19`)
 - **Nokia 6300 DTS** (closest reference): `qcom-msm8909-nokia-leo.dts`
-- **Nokia 8110 4G pmOS wiki**: `wiki.postmarketos.org/wiki/Nokia_8110_4G_(nokia-argon)`
+- **Nokia 8110 4G wiki**: `wiki.postmarketos.org/wiki/Nokia_8110_4G_(nokia-argon)`
 - **BQ268 mainline DTS**: `~/bq268-kernel/arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dts`
 - **CAF BQ268 DTS** (archived): `~/bq268-caf_msm-3.18/arch/arm/boot/dts/qcom/msm8909-bq268.dts`
