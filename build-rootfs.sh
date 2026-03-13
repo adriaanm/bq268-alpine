@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Build Alpine Linux rootfs for BQ268
+# Build Alpine Linux rootfs for BQ268 walkie-talkie
 # Must be run as root (for chroot/mount)
+#
+# Produces: out/rootfs.img (ext4, flash to userdata via fastboot)
+# Login: root / bq268
+# Console: ttyGS0 @ 115200 (USB gadget serial) + tty0 (fbcon)
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -43,6 +47,12 @@ echo "  Alpine tarball: $(ls -lh "$ALPINE_TAR" | awk '{print $5}')"
 
 # ── 2. Create ext4 image and populate ─────────────────────────────────────
 echo "--- Creating ${IMG_SIZE}MB ext4 image ---"
+# Clean up stale mounts from previous runs
+umount "$ROOTFS/dev/pts" 2>/dev/null || true
+umount "$ROOTFS/dev" 2>/dev/null || true
+umount "$ROOTFS/proc" 2>/dev/null || true
+umount "$ROOTFS/sys" 2>/dev/null || true
+umount "$ROOTFS" 2>/dev/null || true
 rm -rf "$ROOTFS"
 mkdir -p "$ROOTFS"
 dd if=/dev/zero of="$ROOTFS_IMG" bs=1M count=$IMG_SIZE status=none
@@ -98,6 +108,12 @@ apk add \
     bluez
 '
 
+# Fix /run — ensure it's a real directory so tmpfs mount works at boot
+if [ -L "$ROOTFS/run" ]; then
+    rm -f "$ROOTFS/run"
+fi
+mkdir -p "$ROOTFS/run"
+
 # ── 5. Configure system ──────────────────────────────────────────────────
 echo "--- Configuring system ---"
 
@@ -109,19 +125,29 @@ cat > "$ROOTFS/etc/hosts" << 'HOSTS'
 ::1		localhost
 HOSTS
 
-# Serial consoles — getty on any available serial device
+# Inittab — busybox init configuration
+# Mounts essential filesystems before OpenRC, since the kernel may mount
+# root read-only and CONFIG_TMPFS may not be available.
 cat > "$ROOTFS/etc/inittab" << 'INITTAB'
-# Turn on green LED immediately to signal userspace reached
+# Signal userspace reached
 ::sysinit:/bin/sh -c 'echo 1 > /sys/class/leds/green/brightness 2>/dev/null'
 
+# Essential mounts before OpenRC (root may be mounted ro, tmpfs may be unavailable)
+::sysinit:/bin/mount -o remount,rw /
+::sysinit:/bin/mkdir -p /run /run/openrc
+::sysinit:/bin/mount -t tmpfs tmpfs /run 2>/dev/null
+::sysinit:/bin/mkdir -p /run/openrc
+::sysinit:/bin/mount -t proc proc /proc
+::sysinit:/bin/mount -t sysfs sysfs /sys
+::sysinit:/bin/mount -t configfs none /sys/kernel/config 2>/dev/null
+
+# OpenRC init sequence
 ::sysinit:/sbin/openrc sysinit
 ::sysinit:/sbin/openrc boot
 ::wait:/sbin/openrc default
 
-# Framebuffer console
+# Consoles
 tty0::respawn:/sbin/getty 38400 tty0
-
-# USB gadget serial (available after usb-gadget service starts)
 ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
 
 # Shutdown
@@ -151,7 +177,7 @@ rc-update add mount-ro shutdown
 rc-update add savecache shutdown
 '
 
-# Network: USB RNDIS gadget
+# Network interfaces
 mkdir -p "$ROOTFS/etc/network"
 cat > "$ROOTFS/etc/network/interfaces" << 'NET'
 auto lo
@@ -161,7 +187,7 @@ iface lo inet loopback
 auto usb0
 iface usb0 inet dhcp
 
-# WiFi (manual — configure with wpa_supplicant)
+# WiFi (configure with wpa_supplicant)
 auto wlan0
 iface wlan0 inet dhcp
 NET
@@ -197,7 +223,6 @@ if [ -d "$KERNEL_REPO/out/lib/modules/$KVER" ]; then
     chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
     echo "  Modules installed for $KVER"
 else
-    # Try individual .ko files
     mkdir -p "$ROOTFS/lib/modules/$KVER"
     find "$KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$KVER/" \; 2>/dev/null || true
     chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
@@ -227,13 +252,13 @@ mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_wlan_nv.bin" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 
-# ── 8. USB gadget setup script ────────────────────────────────────────────
+# ── 8. USB gadget serial ─────────────────────────────────────────────────
 echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
-description="USB gadget serial (ACM)"
+description="USB gadget serial (ACM) + RNDIS network"
 
 depend() {
     after devfs
@@ -248,9 +273,18 @@ start() {
     mkdir -p $G
     echo 0x1d6b > $G/idVendor
     echo 0x0104 > $G/idProduct
-    mkdir -p $G/configs/c.1
+
+    mkdir -p $G/strings/0x409
+    echo "UdoTech"  > $G/strings/0x409/manufacturer
+    echo "BQ268"    > $G/strings/0x409/product
+    echo "00000000" > $G/strings/0x409/serialnumber
+
+    mkdir -p $G/configs/c.1/strings/0x409
+    echo "ACM Serial" > $G/configs/c.1/strings/0x409/configuration
+
     mkdir -p $G/functions/acm.usb0
-    ln -sf $G/functions/acm.usb0 $G/configs/c.1/
+    ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
+
     echo ci_hdrc.0 > $G/UDC
 
     eend $?
@@ -281,32 +315,24 @@ cat > "$ROOTFS/sbin/init.debug" << 'INITDBG'
 G=/sys/class/leds/green/brightness
 R=/sys/class/leds/red/brightness
 
-# Step 1: we're alive
 echo "=== init.debug: ALIVE ===" > /dev/console 2>&1
 echo 1 > $G 2>/dev/null
 
-# Step 2: mount essential filesystems
 mount -t proc proc /proc
 mount -t sysfs sys /sys
 mount -t devtmpfs dev /dev
 echo "=== init.debug: filesystems mounted ===" > /dev/console 2>&1
-echo 1 > $R 2>/dev/null  # both LEDs = step 2 done
+echo 1 > $R 2>/dev/null
 
-# Step 3: print diagnostics to console
 echo "--- /proc/version ---" > /dev/console 2>&1
 cat /proc/version > /dev/console 2>&1
 echo "--- /proc/cmdline ---" > /dev/console 2>&1
 cat /proc/cmdline > /dev/console 2>&1
-echo "--- mount ---" > /dev/console 2>&1
-mount > /dev/console 2>&1
-echo "--- /dev contents ---" > /dev/console 2>&1
-ls /dev/ > /dev/console 2>&1
 echo "--- block devices ---" > /dev/console 2>&1
 cat /proc/partitions > /dev/console 2>&1
 
-# Step 4: drop to shell on console
 echo "=== init.debug: dropping to shell ===" > /dev/console 2>&1
-echo 0 > $R 2>/dev/null  # green only = shell
+echo 0 > $R 2>/dev/null
 exec /bin/sh < /dev/console > /dev/console 2>&1
 INITDBG
 chmod 755 "$ROOTFS/sbin/init.debug"
@@ -329,5 +355,5 @@ chown "$SUDO_UID:$SUDO_GID" "$ROOTFS_IMG"
 echo "==="
 echo "Rootfs image: $ROOTFS_IMG ($(ls -lh "$ROOTFS_IMG" | awk '{print $5}'))"
 echo "Root password: bq268"
-echo "Serial console: ttyGS0 @ 115200 (USB gadget)"
+echo "Console: ttyGS0 @ 115200 (USB gadget serial) + tty0 (fbcon)"
 echo "==="
