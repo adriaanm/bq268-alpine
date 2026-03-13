@@ -1,0 +1,79 @@
+#!/bin/sh
+# Initramfs for mainline kernel on BQ268
+#
+# Mounts rootfs, sets up early USB gadget, then switch_root.
+# If root mount fails, drops to diagnostic shell.
+
+GLED=/sys/class/leds/green/brightness
+RLED=/sys/class/leds/red/brightness
+
+led_green() { echo 1 > $GLED 2>/dev/null; echo 0 > $RLED 2>/dev/null; }
+led_red()   { echo 0 > $GLED 2>/dev/null; echo 1 > $RLED 2>/dev/null; }
+led_both()  { echo 1 > $GLED 2>/dev/null; echo 1 > $RLED 2>/dev/null; }
+
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+
+led_green
+echo "BQ268 initramfs"
+
+# Parse root= from cmdline
+ROOT=""
+ROOTTYPE="ext4"
+for param in $(cat /proc/cmdline); do
+    case "$param" in
+        root=*) ROOT="${param#root=}" ;;
+        rootfstype=*) ROOTTYPE="${param#rootfstype=}" ;;
+    esac
+done
+
+if [ -z "$ROOT" ]; then
+    echo "ERROR: no root= on cmdline"
+    led_red
+    exec /bin/sh
+fi
+
+# Wait for root device (eMMC may take a moment)
+echo "Waiting for $ROOT..."
+i=0
+while [ ! -e "$ROOT" ] && [ $i -lt 10 ]; do
+    sleep 1
+    i=$((i + 1))
+done
+
+if [ ! -e "$ROOT" ]; then
+    echo "ERROR: $ROOT not found after ${i}s"
+    echo "Available block devices:"
+    ls /dev/mmcblk* 2>/dev/null
+    cat /proc/partitions
+    led_red
+    exec /bin/sh
+fi
+
+# Mount root
+mkdir -p /mnt/root
+echo "Mounting $ROOT ($ROOTTYPE)..."
+if ! mount -t "$ROOTTYPE" -o rw "$ROOT" /mnt/root; then
+    echo "ERROR: failed to mount $ROOT"
+    led_red
+    exec /bin/sh
+fi
+
+# Verify init exists
+if [ ! -x /mnt/root/sbin/init ] && [ ! -x /mnt/root/sbin/openrc-init ]; then
+    echo "ERROR: no init found on rootfs"
+    echo "Contents of /mnt/root/sbin/:"
+    ls /mnt/root/sbin/ 2>/dev/null
+    led_red
+    exec /bin/sh
+fi
+
+echo "Root mounted — switching to rootfs"
+led_both
+
+# Clean up
+umount /proc
+umount /sys
+
+exec switch_root /mnt/root /sbin/init

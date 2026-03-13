@@ -28,19 +28,42 @@ This repo runs on a headless buildbox. Flashing and device interaction (fastboot
 
 | Repo | Path | Contents |
 |------|------|----------|
-| Kernel | `~/bq268-caf_msm-3.18` | CAF 3.18.140 kernel, DTS, defconfig, Prima WLAN |
+| Kernel (mainline) | `~/bq268-kernel` | Mainline 6.19 kernel, BQ268 DTS, msm8916_defconfig |
+| Kernel (CAF, archived) | `~/bq268-caf_msm-3.18` | CAF 3.18.140 kernel (abandoned — MDSS/USB drivers need Android HAL) |
 | LineageOS device tree | `~/bq268-lineage` | Android device/vendor tree (completed, archived) |
 | EDL dumps | `~/bq268-edl/dump` | Full partition dumps from device |
 
 ## Key Decisions
 
-- **lk2nd bootloader** — stock aboot → lk2nd → kernel. Only `boot` partition changes.
-- **Phase 1: CAF 3.18 kernel** — existing kernel + DTS unchanged, just swap rootfs to Alpine.
-- **Phase 2: mainline 6.x kernel** — port DTS to mainline bindings (optional, later).
+- **Mainline 6.x kernel** — standard DRM, USB configfs, no Android HAL dependencies.
+- **Custom aboot** — built from our own lk/aboot repo, flashed to `aboot` partition.
+- **panel-mipi-dbi-spi** for display — DRM tiny driver, fbcon works directly.
+- **USB configfs** for gadget serial + RNDIS — no CAF android_usb driver.
 - **Firmware from EDL dumps** — extract offline, bake into rootfs. No runtime partition reading.
 - **Data-only modem** — no voice calls, no VoLTE/IMS.
 - **No camera, GPS, sensors, touchscreen** — none fitted.
-- **SELinux**: not applicable (Linux, not Android).
+- **No audio yet** — LPASS has no mainline driver for MSM8909.
+
+## Boot Chain
+
+`aboot (custom lk)` → reads `boot` partition → `boot.img` (zImage-dtb + initramfs)
+
+### boot.img constraints (aboot requirements)
+
+- **32-bit ARM zImage** — aboot checks magic at kernel+0x38. Cortex-A7, no ARM64.
+- **Appended DTB** — aboot ignores `dt_size` in boot.img header. It scans the kernel
+  image for FDT magic (0xd00dfeed) and matches by `qcom,msm-id` + `qcom,board-id`.
+  Build: `cat zImage dtb > zImage-dtb`, then `mkbootimg --kernel zImage-dtb`.
+- **DTB board-id matching** — mainline DTB **must** contain:
+  ```
+  qcom,msm-id = <245 0>;   /* 245 = MSM8909 */
+  qcom,board-id = <0x08 0x100>;   /* 8 = MTP, 0x100 = subtype */
+  ```
+  Without these, `dev_tree_appended()` fails silently and no DTB is passed to the kernel.
+- **Hardcoded addresses** — aboot forces kernel=0x80008000, ramdisk=0x82300000,
+  tags=0x82100000 regardless of boot.img header values.
+- **Cmdline** — aboot appends its own params (`androidboot.*`, `verifiedbootstate`, etc.)
+  to whatever is set in the boot.img header. Mainline ignores the android-specific ones.
 
 ## Firmware Files Needed
 
@@ -48,10 +71,11 @@ Extracted from EDL dumps into `/lib/firmware/`:
 
 | File | Source partition | Driver |
 |------|----------------|--------|
-| `modem.mdt` + `modem.b00-b25` | modem | PIL (3.18) / q6v5-mss (mainline) |
-| `wcnss.mdt` + `wcnss.b00-b12` | modem | PIL (3.18) / pronto (mainline) |
-| `a300_pfp.fw`, `a300_pm4.fw` | vendor (or linux-firmware) | Adreno / Freedreno |
-| `WCNSS_qcom_wlan_nv.bin` | persist | Prima (3.18) / wcn36xx (mainline) |
+| `udotech,bq268-st7735s-panel.bin` | generated (gen-panel-fw.py) | panel-mipi-dbi-spi |
+| `modem.mdt` + `modem.b00-b25` | modem | q6v5-mss |
+| `wcnss.mdt` + `wcnss.b00-b12` | modem | wcnss-pil (pronto) |
+| `a300_pfp.fw`, `a300_pm4.fw` | vendor (or linux-firmware) | Freedreno |
+| `WCNSS_qcom_wlan_nv.bin` | persist | wcn36xx |
 
 ## Workflows
 
@@ -82,7 +106,7 @@ Same discipline as the kernel and lineage repos:
 ## Reference
 
 - **msm8916-mainline kernel**: `github.com/msm8916-mainline/linux` (`wip/msm8916/6.19`)
-- **lk2nd**: `github.com/msm8916-mainline/lk2nd` (supports MSM8909)
 - **Nokia 6300 DTS** (closest reference): `qcom-msm8909-nokia-leo.dts`
 - **Nokia 8110 4G pmOS wiki**: `wiki.postmarketos.org/wiki/Nokia_8110_4G_(nokia-argon)`
-- **CAF BQ268 DTS**: `~/bq268-caf_msm-3.18/arch/arm/boot/dts/qcom/msm8909-bq268.dts`
+- **BQ268 mainline DTS**: `~/bq268-kernel/arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dts`
+- **CAF BQ268 DTS** (archived): `~/bq268-caf_msm-3.18/arch/arm/boot/dts/qcom/msm8909-bq268.dts`

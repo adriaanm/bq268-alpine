@@ -7,8 +7,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OUTDIR="$SCRIPT_DIR/out"
 ROOTFS="$OUTDIR/rootfs"
 ROOTFS_IMG="$OUTDIR/rootfs.img"
-KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-caf_msm-3.18"
-KERNEL_REPO="${KERNEL_REPO:-$HOME/bq268-caf_msm-3.18}"
+KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-kernel"
+KERNEL_REPO="${KERNEL_REPO:-$HOME/bq268-kernel}"
 FIRMWARE_DIR="$SCRIPT_DIR/firmware"
 
 # Alpine minirootfs URL (armv7, latest stable)
@@ -41,19 +41,24 @@ if [ ! -f "$ALPINE_TAR" ]; then
 fi
 echo "  Alpine tarball: $(ls -lh "$ALPINE_TAR" | awk '{print $5}')"
 
-# ── 2. Create ext2 image and populate ─────────────────────────────────────
-# NOTE: must be ext2 — lk2nd's ext2 driver rejects ext4 RO_COMPAT features
-# (extents, flex_bg, metadata_csum, etc.)
-echo "--- Creating ${IMG_SIZE}MB ext2 image ---"
+# ── 2. Create ext4 image and populate ─────────────────────────────────────
+echo "--- Creating ${IMG_SIZE}MB ext4 image ---"
 rm -rf "$ROOTFS"
 mkdir -p "$ROOTFS"
 dd if=/dev/zero of="$ROOTFS_IMG" bs=1M count=$IMG_SIZE status=none
-mkfs.ext2 -q -L rootfs "$ROOTFS_IMG"
+mkfs.ext4 -q -b 4096 -L rootfs "$ROOTFS_IMG"
 mount -o loop "$ROOTFS_IMG" "$ROOTFS"
 
 # Extract Alpine
 echo "--- Extracting Alpine rootfs ---"
 tar xzf "$ALPINE_TAR" -C "$ROOTFS"
+
+# Create essential device nodes (needed before devtmpfs is mounted)
+mknod -m 622 "$ROOTFS/dev/console" c 5 1
+mknod -m 666 "$ROOTFS/dev/null" c 1 3
+mknod -m 666 "$ROOTFS/dev/zero" c 1 5
+mknod -m 444 "$ROOTFS/dev/urandom" c 1 9
+mknod -m 666 "$ROOTFS/dev/tty" c 5 0
 
 # ── 3. Set up chroot ─────────────────────────────────────────────────────
 echo "--- Setting up chroot ---"
@@ -106,15 +111,18 @@ HOSTS
 
 # Serial consoles — getty on any available serial device
 cat > "$ROOTFS/etc/inittab" << 'INITTAB'
+# Turn on green LED immediately to signal userspace reached
+::sysinit:/bin/sh -c 'echo 1 > /sys/class/leds/green/brightness 2>/dev/null'
+
 ::sysinit:/sbin/openrc sysinit
 ::sysinit:/sbin/openrc boot
 ::wait:/sbin/openrc default
 
-# USB gadget serial (hardware)
-ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
+# Framebuffer console
+tty0::respawn:/sbin/getty 38400 tty0
 
-# PL011 UART (QEMU virt machine)
-ttyAMA0::respawn:/sbin/getty -L 115200 ttyAMA0 vt100
+# USB gadget serial (available after usb-gadget service starts)
+ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
 
 # Shutdown
 ::shutdown:/sbin/openrc shutdown
@@ -165,7 +173,7 @@ echo "pronto_wlan" > "$ROOTFS/etc/modules-load.d/wifi.conf"
 # fstab
 cat > "$ROOTFS/etc/fstab" << 'FSTAB'
 # <device>  <mount>  <type>  <options>       <dump> <pass>
-/dev/root   /        ext2    rw,noatime      0      1
+/dev/root   /        ext4    rw,noatime      0      1
 proc        /proc    proc    defaults        0      0
 sysfs       /sys     sysfs   defaults        0      0
 devtmpfs    /dev     devtmpfs defaults       0      0
@@ -174,23 +182,34 @@ FSTAB
 # ── 6. Install kernel + modules ──────────────────────────────────────────
 echo "--- Installing kernel ---"
 mkdir -p "$ROOTFS/boot"
-cp "$KERNEL_REPO/output/zImage" "$ROOTFS/boot/zImage"
-cp "$KERNEL_REPO/output/msm8909-bq268.dtb" "$ROOTFS/boot/msm8909-bq268.dtb"
+if [ -f "$KERNEL_REPO/out/zImage" ]; then
+    cp "$KERNEL_REPO/out/zImage" "$ROOTFS/boot/zImage"
+    cp "$KERNEL_REPO/out/qcom-msm8909-udotech-bq268.dtb" "$ROOTFS/boot/msm8909-bq268.dtb" 2>/dev/null || true
+    echo "  Kernel copied to /boot"
+else
+    echo "  WARN: kernel not built yet — skipping /boot copy"
+fi
 
 # Kernel modules
-KVER="$(cat "$KERNEL_REPO/output/include/config/kernel.release" 2>/dev/null || echo "3.18.140-perf")"
-mkdir -p "$ROOTFS/lib/modules/$KVER"
-if [ -f "$KERNEL_REPO/output/wlan.ko" ]; then
-    cp "$KERNEL_REPO/output/wlan.ko" "$ROOTFS/lib/modules/$KVER/pronto_wlan.ko"
+KVER="$(cat "$KERNEL_REPO/out/include/config/kernel.release" 2>/dev/null || echo "6.19.0-msm8916")"
+if [ -d "$KERNEL_REPO/out/lib/modules/$KVER" ]; then
+    cp -a "$KERNEL_REPO/out/lib/modules/$KVER" "$ROOTFS/lib/modules/"
+    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
+    echo "  Modules installed for $KVER"
+else
+    # Try individual .ko files
+    mkdir -p "$ROOTFS/lib/modules/$KVER"
+    find "$KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$KVER/" \; 2>/dev/null || true
+    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
+    echo "  Modules dir: $KVER"
 fi
-# Copy any other modules from the kernel build
-find "$KERNEL_REPO/output" -name "*.ko" ! -name "wlan.ko" -exec cp {} "$ROOTFS/lib/modules/$KVER/" \; 2>/dev/null || true
-# Generate modules.dep
-chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
 
 # ── 7. Install firmware ──────────────────────────────────────────────────
 echo "--- Installing firmware ---"
 mkdir -p "$ROOTFS/lib/firmware/qcom"
+
+# Panel firmware (panel-mipi-dbi-spi driver)
+cp "$KERNEL_REPO/out/udotech,bq268-st7735s-panel.bin" "$ROOTFS/lib/firmware/" 2>/dev/null || true
 
 # GPU firmware
 cp "$FIRMWARE_DIR/gpu/a300_pfp.fw" "$ROOTFS/lib/firmware/" 2>/dev/null || true
@@ -208,103 +227,89 @@ mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_wlan_nv.bin" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 
-# ── 8. extlinux.conf for lk2nd ───────────────────────────────────────────
-echo "--- Creating extlinux.conf ---"
-mkdir -p "$ROOTFS/extlinux"
-cat > "$ROOTFS/extlinux/extlinux.conf" << 'EXTLINUX'
-TIMEOUT 1
-DEFAULT postmarketos
-
-LABEL postmarketos
-  KERNEL /boot/zImage
-  FDT /boot/msm8909-bq268.dtb
-  APPEND console=ttyGS0,115200 root=PARTUUID=1ad8eb9c-34e9-81eb-f6f4-cf77bae59d12 rootfstype=ext2 rw rootwait
-EXTLINUX
-
-# ── 9. USB gadget setup script ───────────────────────────────────────────
+# ── 8. USB gadget setup script ────────────────────────────────────────────
 echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
-description="USB gadget serial + RNDIS"
+description="USB gadget serial (ACM)"
 
 depend() {
-    after devfs mdev
+    after devfs
 }
 
 start() {
     ebegin "Configuring USB gadget"
-    ANDROID_USB=/sys/class/android_usb/android0
-    CONFIGFS=/sys/kernel/config/usb_gadget
+    G=/sys/kernel/config/usb_gadget/g1
 
-    if [ -d "$ANDROID_USB" ]; then
-        # CAF 3.18 kernel: use Android USB gadget driver
-        echo 0 > $ANDROID_USB/enable
-        echo 1d6b > $ANDROID_USB/idVendor     # Linux Foundation
-        echo 0104 > $ANDROID_USB/idProduct     # Multifunction Composite Gadget
-        echo "bq268" > $ANDROID_USB/iProduct
-        echo "udotech" > $ANDROID_USB/iManufacturer
-        echo "bq268-pmos" > $ANDROID_USB/iSerial
-        echo acm,rndis > $ANDROID_USB/functions
-        echo 1 > $ANDROID_USB/enable
-    elif [ -d "$CONFIGFS" ] || mount -t configfs none /sys/kernel/config 2>/dev/null; then
-        # Mainline kernel: use USB configfs
-        mkdir -p $CONFIGFS/g1
-        echo 0x1d6b > $CONFIGFS/g1/idVendor
-        echo 0x0104 > $CONFIGFS/g1/idProduct
-        echo 0x0100 > $CONFIGFS/g1/bcdDevice
-        echo 0x0200 > $CONFIGFS/g1/bcdUSB
+    [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
 
-        mkdir -p $CONFIGFS/g1/strings/0x409
-        echo "bq268" > $CONFIGFS/g1/strings/0x409/product
-        echo "udotech" > $CONFIGFS/g1/strings/0x409/manufacturer
-        echo "bq268-pmos" > $CONFIGFS/g1/strings/0x409/serialnumber
+    mkdir -p $G
+    echo 0x1d6b > $G/idVendor
+    echo 0x0104 > $G/idProduct
+    mkdir -p $G/configs/c.1
+    mkdir -p $G/functions/acm.usb0
+    ln -sf $G/functions/acm.usb0 $G/configs/c.1/
+    echo ci_hdrc.0 > $G/UDC
 
-        mkdir -p $CONFIGFS/g1/functions/acm.usb0
-        mkdir -p $CONFIGFS/g1/functions/rndis.usb0
-
-        mkdir -p $CONFIGFS/g1/configs/c.1/strings/0x409
-        echo "Serial+RNDIS" > $CONFIGFS/g1/configs/c.1/strings/0x409/configuration
-
-        ln -sf $CONFIGFS/g1/functions/acm.usb0 $CONFIGFS/g1/configs/c.1/
-        ln -sf $CONFIGFS/g1/functions/rndis.usb0 $CONFIGFS/g1/configs/c.1/
-
-        UDC=$(ls /sys/class/udc/ 2>/dev/null | head -1)
-        [ -n "$UDC" ] && echo "$UDC" > $CONFIGFS/g1/UDC
-    else
-        eend 1 "No USB gadget interface found"
-        return 1
-    fi
     eend $?
 }
 GADGET
 chmod 755 "$ROOTFS/etc/init.d/usb-gadget"
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c 'rc-update add usb-gadget default'
 
-# ── 10. Modem setup ──────────────────────────────────────────────────────
+# ── 9. Modem setup ──────────────────────────────────────────────────────
 echo "--- Setting up modem ---"
 
-# udev rule: symlink smdcntl0 to /dev/modem for QMI access
-mkdir -p "$ROOTFS/etc/udev/rules.d"
-echo 'KERNEL=="smdcntl0", SYMLINK+="modem"' > "$ROOTFS/etc/udev/rules.d/90-modem.rules"
-
-# Note: On the CAF 3.18 kernel, the modem stack uses:
-#   - PIL: loads modem firmware automatically on boot
-#   - /dev/smdcntl0: QMI control channel (symlinked to /dev/modem)
-#   - rmnet_bam0: data interface created by BAM-DMUX
-#   - ModemManager talks to /dev/modem via libqmi
+# Mainline modem stack:
+#   - q6v5-mss remoteproc loads modem firmware from /lib/firmware/
+#   - BAM-DMUX creates rmnet data interfaces
+#   - QMI via QRTR (not SMD like CAF)
+#   - ModemManager talks QMI over QRTR
 #
 # To bring up cellular data after boot:
 #   mmcli -L                                    # list modems
 #   mmcli -m 0 --simple-connect="apn=your.apn"  # connect
-#   ip addr show rmnet_bam0                      # check IP
-#
-# Known issue: CAF smd_pkt driver may need libsmdpkt_wrapper.so
-# preloaded for QMI reads to work. If ModemManager hangs, this
-# is likely the cause. Build rmtfs and libsmdpkt_wrapper from:
-#   https://github.com/linux-msm/rmtfs
-#   (search postmarketOS pmaports for libsmdpkt-wrapper)
+
+# ── 10. Diagnostic init (boot with init=/sbin/init.debug) ────────────────
+cat > "$ROOTFS/sbin/init.debug" << 'INITDBG'
+#!/bin/sh
+# Diagnostic init — signals progress via LEDs, prints to console.
+# Boot with: init=/sbin/init.debug
+
+G=/sys/class/leds/green/brightness
+R=/sys/class/leds/red/brightness
+
+# Step 1: we're alive
+echo "=== init.debug: ALIVE ===" > /dev/console 2>&1
+echo 1 > $G 2>/dev/null
+
+# Step 2: mount essential filesystems
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+echo "=== init.debug: filesystems mounted ===" > /dev/console 2>&1
+echo 1 > $R 2>/dev/null  # both LEDs = step 2 done
+
+# Step 3: print diagnostics to console
+echo "--- /proc/version ---" > /dev/console 2>&1
+cat /proc/version > /dev/console 2>&1
+echo "--- /proc/cmdline ---" > /dev/console 2>&1
+cat /proc/cmdline > /dev/console 2>&1
+echo "--- mount ---" > /dev/console 2>&1
+mount > /dev/console 2>&1
+echo "--- /dev contents ---" > /dev/console 2>&1
+ls /dev/ > /dev/console 2>&1
+echo "--- block devices ---" > /dev/console 2>&1
+cat /proc/partitions > /dev/console 2>&1
+
+# Step 4: drop to shell on console
+echo "=== init.debug: dropping to shell ===" > /dev/console 2>&1
+echo 0 > $R 2>/dev/null  # green only = shell
+exec /bin/sh < /dev/console > /dev/console 2>&1
+INITDBG
+chmod 755 "$ROOTFS/sbin/init.debug"
 
 # ── 11. Cleanup and finalize ─────────────────────────────────────────────
 echo "--- Finalizing ---"
