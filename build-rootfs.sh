@@ -171,8 +171,8 @@ rc-update add sysctl boot
 rc-update add hostname boot
 rc-update add bootmisc boot
 rc-update add syslog boot
-# networking, dropbear disabled — bring up manually:
-#   rc-service networking start && rc-service dropbear start
+rc-update add networking boot
+rc-update add dropbear default
 rc-update add killprocs shutdown
 rc-update add mount-ro shutdown
 rc-update add savecache shutdown
@@ -369,7 +369,7 @@ chmod 755 "$ROOTFS/etc/init.d/usb-gadget-ecm"
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add usb-gadget boot
-# usb-gadget-ecm not enabled — start manually: rc-service usb-gadget-ecm start
+rc-update add usb-gadget-ecm default
 '
 
 # ── 9. Modem setup ──────────────────────────────────────────────────────
