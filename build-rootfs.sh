@@ -171,8 +171,8 @@ rc-update add sysctl boot
 rc-update add hostname boot
 rc-update add bootmisc boot
 rc-update add syslog boot
-rc-update add networking boot
-rc-update add dropbear default
+# networking, dropbear disabled — bring up manually:
+#   rc-service networking start && rc-service dropbear start
 rc-update add killprocs shutdown
 rc-update add mount-ro shutdown
 rc-update add savecache shutdown
@@ -195,7 +195,8 @@ NET
 
 # Module loading
 mkdir -p "$ROOTFS/etc/modules-load.d"
-echo "pronto_wlan" > "$ROOTFS/etc/modules-load.d/wifi.conf"
+# WiFi module not auto-loaded — load manually: modprobe pronto_wlan
+# echo "pronto_wlan" > "$ROOTFS/etc/modules-load.d/wifi.conf"
 
 # fstab
 cat > "$ROOTFS/etc/fstab" << 'FSTAB'
@@ -368,7 +369,7 @@ chmod 755 "$ROOTFS/etc/init.d/usb-gadget-ecm"
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add usb-gadget boot
-rc-update add usb-gadget-ecm default
+# usb-gadget-ecm not enabled — start manually: rc-service usb-gadget-ecm start
 '
 
 # ── 9. Modem setup ──────────────────────────────────────────────────────
