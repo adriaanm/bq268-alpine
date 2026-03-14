@@ -84,6 +84,10 @@ Extracted from EDL dumps into `/lib/firmware/`:
 
 All repeated commands go in the `justfile`. Single entry point for build, flash, firmware extraction.
 
+### Build After Every Change
+
+After any change to rootfs or build scripts, always run `just build-rootfs` so the user can flash immediately.
+
 ### Commit Before Build/Flash
 
 Same discipline as the kernel and lineage repos:
@@ -100,6 +104,8 @@ Same discipline as the kernel and lineage repos:
 
 | File | Contents |
 |------|----------|
+| `docs/roadmap.md` | Project roadmap, DTS status, remaining work (audio, modem, app) |
+| `docs/modem_bringup.md` | Modem/WiFi/BT bringup guide (mainline stack) |
 | `docs/device_properties.md` | Hardware analysis, partition layout, build.prop dumps |
 | `docs/vendor_blobs.md` | Line-by-line blob audit from Android vendor partition |
 
