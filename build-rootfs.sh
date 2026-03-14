@@ -93,7 +93,7 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 apk update
 apk add \
     openrc busybox-openrc \
-    dropbear \
+    dropbear openssh-sftp-server \
     wpa_supplicant \
     evtest \
     iproute2 \
@@ -103,6 +103,7 @@ apk add \
     htop \
     strace \
     linux-firmware-none \
+    wireless-regdb \
     kmod \
     modemmanager libqmi \
     bluez
@@ -146,9 +147,9 @@ cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 ::sysinit:/sbin/openrc boot
 ::wait:/sbin/openrc default
 
-# Consoles
-tty0::respawn:/sbin/getty 38400 tty0
-ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
+# Consoles (autologin root, no password prompt)
+tty0::respawn:/sbin/getty -n -l /bin/sh 38400 tty0
+ttyGS0::respawn:/sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100
 
 # Shutdown
 ::shutdown:/sbin/openrc shutdown
@@ -183,9 +184,11 @@ cat > "$ROOTFS/etc/network/interfaces" << 'NET'
 auto lo
 iface lo inet loopback
 
-# USB RNDIS gadget — host side assigns address
+# USB ECM gadget ethernet
 auto usb0
-iface usb0 inet dhcp
+iface usb0 inet static
+    address 192.168.7.2
+    netmask 255.255.255.0
 
 # WiFi (configure with wpa_supplicant)
 auto wlan0
@@ -252,20 +255,33 @@ mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_wlan_nv.bin" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 
-# ── 8. USB gadget serial ─────────────────────────────────────────────────
+# Staged WiFi firmware (from /tmp/bq268-wifi-fw if available)
+WIFI_FW_STAGED="/tmp/bq268-wifi-fw/lib/firmware"
+if [ -d "$WIFI_FW_STAGED" ]; then
+    echo "  Installing staged WiFi firmware from $WIFI_FW_STAGED"
+    cp "$WIFI_FW_STAGED"/wcnss.* "$ROOTFS/lib/firmware/" 2>/dev/null || true
+    mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
+    cp "$WIFI_FW_STAGED"/wlan/prima/WCNSS_qcom_wlan_nv.bin "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
+fi
+
+# ── 8. USB gadget (ACM serial + ECM ethernet) ─────────────────────────────
 echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
+
+# Single init script: create both ACM + ECM functions before binding UDC.
+# Never unbind/rebind UDC — that races with ci_hdrc and can crash the kernel.
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
-description="USB gadget serial (ACM) + RNDIS network"
+description="USB gadget (ACM serial + ECM ethernet)"
 
 depend() {
     after devfs
+    before networking
 }
 
 start() {
-    ebegin "Configuring USB gadget"
+    ebegin "Configuring USB gadget (ACM + ECM)"
     G=/sys/kernel/config/usb_gadget/g1
 
     [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
@@ -280,18 +296,25 @@ start() {
     echo "00000000" > $G/strings/0x409/serialnumber
 
     mkdir -p $G/configs/c.1/strings/0x409
-    echo "ACM Serial" > $G/configs/c.1/strings/0x409/configuration
+    echo "ACM Serial + ECM Ethernet" > $G/configs/c.1/strings/0x409/configuration
 
+    # Create both functions before binding UDC
     mkdir -p $G/functions/acm.usb0
+    mkdir -p $G/functions/ecm.usb0
     ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
+    ln -sf $G/functions/ecm.usb0 $G/configs/c.1/ 2>/dev/null
 
+    # Bind UDC once with all functions
     echo ci_hdrc.0 > $G/UDC
 
     eend $?
 }
 GADGET
 chmod 755 "$ROOTFS/etc/init.d/usb-gadget"
-chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c 'rc-update add usb-gadget default'
+
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
+rc-update add usb-gadget boot
+'
 
 # ── 9. Modem setup ──────────────────────────────────────────────────────
 echo "--- Setting up modem ---"
