@@ -149,7 +149,7 @@ cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 
 # Consoles (autologin root, no password prompt)
 tty0::respawn:/sbin/getty -n -l /bin/sh 38400 tty0
-ttyGS0::respawn:/sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100
+ttyGS0::respawn:/bin/sh -c 'while [ ! -e /dev/ttyGS0 ]; do sleep 1; done; exec /sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100'
 
 # Shutdown
 ::shutdown:/sbin/openrc shutdown
@@ -184,14 +184,12 @@ cat > "$ROOTFS/etc/network/interfaces" << 'NET'
 auto lo
 iface lo inet loopback
 
-# USB ECM gadget ethernet
-auto usb0
+# USB ECM gadget ethernet (brought up by usb-gadget-ecm service, not auto)
 iface usb0 inet static
     address 192.168.7.2
     netmask 255.255.255.0
 
-# WiFi (configure with wpa_supplicant)
-auto wlan0
+# WiFi (bring up manually: ifup wlan0)
 iface wlan0 inet dhcp
 NET
 
@@ -268,12 +266,12 @@ fi
 echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
 
-# Single init script: create both ACM + ECM functions before binding UDC.
-# Never unbind/rebind UDC — that races with ci_hdrc and can crash the kernel.
+# Stage 1 (boot): ACM serial only — the debug lifeline.
+# Waits for UDC to appear instead of hardcoding the name.
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
-description="USB gadget (ACM serial + ECM ethernet)"
+description="USB gadget serial (ACM)"
 
 depend() {
     after devfs
@@ -281,10 +279,23 @@ depend() {
 }
 
 start() {
-    ebegin "Configuring USB gadget (ACM + ECM)"
+    ebegin "Configuring USB gadget (ACM serial)"
     G=/sys/kernel/config/usb_gadget/g1
 
     [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
+
+    # Wait for a UDC controller to appear (up to 5s)
+    local udc="" i=0
+    while [ $i -lt 50 ] && [ -z "$udc" ]; do
+        udc=$(ls /sys/class/udc/ 2>/dev/null | head -1)
+        [ -z "$udc" ] && sleep 0.1
+        i=$((i + 1))
+    done
+    if [ -z "$udc" ]; then
+        eerror "No UDC found"
+        eend 1
+        return 1
+    fi
 
     mkdir -p $G
     echo 0x1d6b > $G/idVendor
@@ -296,24 +307,68 @@ start() {
     echo "00000000" > $G/strings/0x409/serialnumber
 
     mkdir -p $G/configs/c.1/strings/0x409
-    echo "ACM Serial + ECM Ethernet" > $G/configs/c.1/strings/0x409/configuration
+    echo "Serial" > $G/configs/c.1/strings/0x409/configuration
 
-    # Create both functions before binding UDC
+    # ACM serial only — ECM added later in default runlevel
     mkdir -p $G/functions/acm.usb0
-    mkdir -p $G/functions/ecm.usb0
     ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
-    ln -sf $G/functions/ecm.usb0 $G/configs/c.1/ 2>/dev/null
 
-    # Bind UDC once with all functions
-    echo ci_hdrc.0 > $G/UDC
+    echo "$udc" > $G/UDC
 
     eend $?
 }
 GADGET
 chmod 755 "$ROOTFS/etc/init.d/usb-gadget"
 
+# Stage 2 (default): Add ECM ethernet after boot is stable.
+# Unbinds UDC briefly to add the function — safe because boot is complete
+# and nothing critical depends on USB at this point.
+cat > "$ROOTFS/etc/init.d/usb-gadget-ecm" << 'GADGETECM'
+#!/sbin/openrc-run
+
+description="USB gadget ECM ethernet"
+
+depend() {
+    need usb-gadget
+    after networking
+}
+
+start() {
+    ebegin "Adding ECM ethernet to USB gadget"
+    G=/sys/kernel/config/usb_gadget/g1
+
+    # Read current UDC
+    local udc
+    udc=$(cat $G/UDC 2>/dev/null)
+    [ -z "$udc" ] && { eerror "Gadget not bound"; eend 1; return 1; }
+
+    # Unbind, add ECM, rebind (safe — we're in default runlevel, boot is done)
+    echo "" > $G/UDC
+
+    mkdir -p $G/functions/ecm.usb0
+    ln -sf $G/functions/ecm.usb0 $G/configs/c.1/ 2>/dev/null
+
+    echo "$udc" > $G/UDC
+
+    # Wait for usb0 network interface, then bring it up via ifupdown
+    local i=0
+    while [ $i -lt 30 ] && [ ! -d /sys/class/net/usb0 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    if [ -d /sys/class/net/usb0 ]; then
+        ifup usb0 2>/dev/null
+    fi
+
+    eend $?
+}
+GADGETECM
+chmod 755 "$ROOTFS/etc/init.d/usb-gadget-ecm"
+
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add usb-gadget boot
+rc-update add usb-gadget-ecm default
 '
 
 # ── 9. Modem setup ──────────────────────────────────────────────────────
