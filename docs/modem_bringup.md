@@ -1,35 +1,28 @@
 # Modem & Connectivity Bringup — BQ268
 
-## Architecture
+## Architecture (mainline kernel)
 
 ```
 [Modem firmware on Hexagon DSP]
         |
-  [BAM-DMUX] ---- data plane (IP packets) --> rmnet_bam0 network interface
+  [BAM-DMUX] ---- data plane (IP packets) --> wwan0 network interface
         |
-  [SMD channels] - control plane (QMI)    --> /dev/smdcntl0 (/dev/modem)
+  [rpmsg] -------- control plane (QMI)    --> ModemManager via QRTR
         |
-  [PIL] ---------- firmware loading        --> modem.mdt + modem.b00-b25, mba.mbn
+  [q6v5-mss] ----- firmware loading       --> modem.mdt + modem.b00-b25, mba.mbn
 ```
 
-## CAF 3.18 Kernel (Phase 1)
+## DTS (already in mainline DTS)
 
-### Kernel configs (all enabled in bq268_defconfig)
+```dts
+&mpss { status = "okay"; };          /* currently disabled — enable when ready */
+&wcnss { status = "okay"; };
+&wcnss_iris { compatible = "qcom,wcn3620"; };
+```
 
-- `CONFIG_MSM_PIL=y` — Peripheral Image Loader
-- `CONFIG_MSM_PIL_MSS_QDSP6V5=y` — modem subsystem PIL
-- `CONFIG_MSM_SUBSYSTEM_RESTART=y` — subsystem restart
-- `CONFIG_MSM_BAM_DMUX=y` — BAM-DMUX data plane
-- `CONFIG_MSM_RMNET_BAM=y` — rmnet network interfaces
-- `CONFIG_RMNET_DATA=y` — rmnet data transport
-- `CONFIG_MSM_QMI_INTERFACE=y` — QMI messaging
-- `CONFIG_QMI_ENCDEC=y` — QMI encode/decode
-- `CONFIG_MSM_SMD=y` — Shared Memory Device
-- `CONFIG_MSM_SMD_PKT=y` — SMD packet interface
-- `CONFIG_WCNSS_CORE=y` — WCNSS remoteproc
-- `CONFIG_WCNSS_CORE_PRONTO=y` — Pronto WiFi
+Modem is disabled (`status = "disabled"`) until firmware and userspace are validated.
 
-### Firmware files needed
+## Firmware files
 
 | File | Location in rootfs | Source |
 |------|-------------------|--------|
@@ -39,127 +32,61 @@
 | `WCNSS_qcom_wlan_nv.bin` | `/lib/firmware/wlan/prima/` | persist partition |
 | `WCNSS_cfg.dat` | `/lib/firmware/wlan/prima/` | system partition |
 
-### Boot sequence
+All extracted by `just extract-firmware` from EDL dumps.
 
-1. **PIL auto-loads modem firmware** on kernel boot — no userspace action needed
-2. **WCNSS (Pronto) loads** — PIL loads `wcnss.mdt` + segments
-3. Device nodes appear: `/dev/smdcntl0`, `rmnet_bam0`
+## Mainline stack (vs stock Android)
 
-### Userspace stack for cellular data
+| Component | Stock Android | Mainline Linux |
+|-----------|--------------|----------------|
+| Modem PIL | `qcom,pil-q6v55-mss` | `qcom,msm8909-mss-pil` (q6v5-mss) |
+| Data interface | `rmnet_bam0` | `wwan0` (BAM-DMUX) |
+| QMI transport | SMD (`/dev/smdcntl0`) | rpmsg / QRTR |
+| rmtfs | needs LD_PRELOAD hacks | native QRTR, no workarounds |
+| WiFi driver | Prima (out-of-tree) | wcn36xx (in-tree) |
+| BT driver | missing hci_smd | btqcomsmd (in-tree) |
+| ModemManager | needs workarounds | works natively |
 
-#### Required packages (Alpine)
-- `modemmanager` — modem management daemon
-- `libqmi` — QMI protocol library (used by ModemManager)
-
-#### Optional but important
-- `rmtfs` — Remote Filesystem Service (modem EFS access via modemst1/modemst2 partitions)
-  - Source: https://github.com/linux-msm/rmtfs
-  - On CAF kernels: needs `LD_PRELOAD=/usr/lib/libqipcrtr4msmipc.so`
-  - The modem may not fully initialize without rmtfs
-- `libsmdpkt-wrapper` — workaround for CAF smd_pkt driver bug
-  - Without it, QMI reads/writes to `/dev/smdcntl0` may hang
-  - Usage: `LD_PRELOAD=/usr/lib/preload/libsmdpkt_wrapper.so ModemManager`
-
-#### udev rule
-```
-# /etc/udev/rules.d/90-modem.rules
-KERNEL=="smdcntl0", SYMLINK+="modem"
-```
-
-### Bringing up cellular data
+## Bringing up cellular data
 
 ```sh
-# 1. Check modem loaded (should happen automatically)
-dmesg | grep -i "pil\|modem\|mss"
+# 1. Check modem loaded
+dmesg | grep -i "q6v5\|mss\|modem"
 
-# 2. Check QMI device exists
-ls -la /dev/smdcntl0   # should exist
-ls -la /dev/modem      # symlink from udev rule
+# 2. Start ModemManager
+rc-service modemmanager start
 
-# 3. Start ModemManager
-ModemManager --debug &
-
-# 4. List modems
+# 3. List modems
 mmcli -L
 
-# 5. Connect to cellular data
+# 4. Connect
 mmcli -m 0 --simple-connect="apn=your.apn"
 
-# 6. Check data interface
-ip addr show rmnet_bam0
+# 5. Check data interface
+ip addr show wwan0
 
-# 7. Set up routing
-ip route add default dev rmnet_bam0
+# 6. Route + test
+ip route add default dev wwan0
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
-
-# 8. Test
-ping -I rmnet_bam0 8.8.8.8
+ping 8.8.8.8
 ```
 
-### Troubleshooting
+## WiFi
 
-- **ModemManager hangs**: likely the smd_pkt bug. Use `LD_PRELOAD=/usr/lib/preload/libsmdpkt_wrapper.so`
-- **Modem not initializing**: check `dmesg | grep pil` — may need rmtfs running
-- **No rmnet_bam0**: BAM-DMUX not initialized. Check `dmesg | grep bam`
-- **qmicli test**: `qmicli -d /dev/modem --get-service-version-info`
-- **Alternative to ModemManager**: ofono with QMI plugin also works
-
----
-
-## WiFi (CAF 3.18)
-
-### Boot sequence
-1. PIL loads WCNSS firmware (`wcnss.mdt` + segments)
-2. WCNSS core initializes, downloads NV binary to Pronto processor
-3. Load Prima module: `modprobe pronto_wlan`
-4. `wlan0` interface appears
-
-### Commands
 ```sh
-modprobe pronto_wlan
+# wcn36xx loads automatically via wcnss remoteproc
 iw dev wlan0 scan
 wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
 udhcpc -i wlan0
 ```
 
-### Required firmware files
-- `/lib/firmware/wcnss.mdt` + segments (WCNSS processor firmware)
-- `/lib/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin` (calibration data)
-- `/lib/firmware/wlan/prima/WCNSS_cfg.dat` (WiFi config)
+## Bluetooth
 
----
+btqcomsmd driver (in-tree) provides HCI over SMD transport to the WCN3620.
+BlueZ should work out of the box once WCNSS firmware is loaded.
 
-## Bluetooth (CAF 3.18)
+## Troubleshooting
 
-### Status: Likely non-functional without extra work
-
-The CAF 3.18 kernel uses SMD TTY channels (`APPS_RIVA_BT_ACL`, `APPS_RIVA_BT_CMD`) for BT, but lacks an in-tree `hci_smd` driver. Stock Android used a proprietary `libbt-vendor.so`. BlueZ cannot directly use the SMD TTY devices without a transport driver.
-
-**Options:**
-1. Backport `btqcomsmd` from mainline (best approach)
-2. Use a custom `hci_smd` driver from Qualcomm (out-of-tree)
-3. Skip BT on Phase 1, get it on Phase 2 (mainline) where btqcomsmd works natively
-
----
-
-## Mainline Kernel (Phase 2) — Cleaner Stack
-
-On mainline, the modem/WiFi/BT stack is significantly simpler:
-
-| Component | CAF 3.18 | Mainline |
-|-----------|----------|----------|
-| Modem PIL | `qcom,pil-q6v55-mss` | `qcom,msm8909-mss-pil` |
-| Data interface | `rmnet_bam0` | `wwan0` (BAM-DMUX upstream driver) |
-| QMI transport | SMD (`/dev/smdcntl0`) | rpmsg |
-| rmtfs | needs LD_PRELOAD | native QRTR, no workarounds |
-| libsmdpkt_wrapper | needed | not needed |
-| WiFi driver | Prima (out-of-tree) | wcn36xx (in-tree) |
-| BT driver | missing hci_smd | btqcomsmd (in-tree) |
-| ModemManager | works with workarounds | works natively |
-
-### Mainline DTS (just enable the nodes)
-```dts
-&mpss { status = "okay"; };
-&wcnss { status = "okay"; };
-&wcnss_iris { compatible = "qcom,wcn3620"; };
-```
+- **No wwan0**: Check `dmesg | grep bam` — BAM-DMUX may not have initialized
+- **ModemManager can't find modem**: Check `dmesg | grep q6v5` — firmware load may have failed
+- **WiFi scan fails**: Check `dmesg | grep wcn` and verify NV data at `/lib/firmware/wlan/prima/`
+- **rmtfs**: May be needed for modem EFS access — install `rmtfs` package if modem won't fully initialize

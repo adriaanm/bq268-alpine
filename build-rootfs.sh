@@ -13,6 +13,8 @@ ROOTFS="$OUTDIR/rootfs"
 ROOTFS_IMG="$OUTDIR/rootfs.img"
 KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-kernel"
 KERNEL_REPO="${KERNEL_REPO:-$HOME/bq268-kernel}"
+CAF_KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-caf_msm-3.18"
+CAF_KERNEL_REPO="${CAF_KERNEL_REPO:-$HOME/bq268-caf_msm-3.18}"
 FIRMWARE_DIR="$SCRIPT_DIR/firmware"
 
 # Alpine minirootfs URL (armv7, latest stable)
@@ -161,6 +163,11 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 echo "root:bq268" | chpasswd
 '
 
+# OpenRC logging — captures all init output to /var/log/rc.log
+cat > "$ROOTFS/etc/rc.conf" << 'RCCONF'
+rc_logger="YES"
+RCCONF
+
 # Enable services
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add devfs sysinit
@@ -231,6 +238,17 @@ else
     echo "  Modules dir: $KVER"
 fi
 
+# CAF 3.18 kernel modules (wlan.ko from prima build)
+CAF_KVER="$(cat "$CAF_KERNEL_REPO/output/include/config/kernel.release" 2>/dev/null || true)"
+if [ -n "$CAF_KVER" ]; then
+    echo "--- Installing CAF kernel modules ($CAF_KVER) ---"
+    mkdir -p "$ROOTFS/lib/modules/$CAF_KVER"
+    find "$CAF_KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$CAF_KVER/" \; 2>/dev/null || true
+    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$CAF_KVER" 2>/dev/null || true
+    echo "  Modules:"
+    ls "$ROOTFS/lib/modules/$CAF_KVER/"*.ko 2>/dev/null | xargs -I{} basename {} || true
+fi
+
 # ── 7. Install firmware ──────────────────────────────────────────────────
 echo "--- Installing firmware ---"
 mkdir -p "$ROOTFS/lib/firmware/qcom"
@@ -253,6 +271,7 @@ cp "$FIRMWARE_DIR/wcnss"/wcnss.* "$ROOTFS/lib/firmware/" 2>/dev/null || true
 mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_wlan_nv.bin" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
+cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_cfg.ini" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 
 # Staged WiFi firmware (from /tmp/bq268-wifi-fw if available)
 WIFI_FW_STAGED="/tmp/bq268-wifi-fw/lib/firmware"
@@ -268,7 +287,7 @@ echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
 
 # Stage 1 (boot): ACM serial only — the debug lifeline.
-# Waits for UDC to appear instead of hardcoding the name.
+# Detects CAF android_usb vs mainline configfs automatically.
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
@@ -280,50 +299,64 @@ depend() {
 }
 
 start() {
-    ebegin "Configuring USB gadget (ACM serial)"
-    G=/sys/kernel/config/usb_gadget/g1
+    if [ -d /sys/class/android_usb/android0 ]; then
+        # CAF 3.18 android_usb driver
+        ebegin "Configuring USB gadget (ACM serial) via android_usb"
+        A=/sys/class/android_usb/android0
+        echo 0 > $A/enable
+        echo 1d6b > $A/idVendor
+        echo 0104 > $A/idProduct
+        echo UdoTech > $A/iManufacturer
+        echo BQ268 > $A/iProduct
+        echo acm > $A/functions
+        echo 1 > $A/enable
+        eend $?
+    else
+        # Mainline configfs
+        ebegin "Configuring USB gadget (ACM serial) via configfs"
+        G=/sys/kernel/config/usb_gadget/g1
 
-    [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
+        [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
 
-    # Wait for a UDC controller to appear (up to 5s)
-    local udc="" i=0
-    while [ $i -lt 50 ] && [ -z "$udc" ]; do
-        udc=$(ls /sys/class/udc/ 2>/dev/null | head -1)
-        [ -z "$udc" ] && sleep 0.1
-        i=$((i + 1))
-    done
-    if [ -z "$udc" ]; then
-        eerror "No UDC found"
-        eend 1
-        return 1
+        # Wait for a UDC controller to appear (up to 5s)
+        local udc="" i=0
+        while [ $i -lt 50 ] && [ -z "$udc" ]; do
+            udc=$(ls /sys/class/udc/ 2>/dev/null | head -1)
+            [ -z "$udc" ] && sleep 0.1
+            i=$((i + 1))
+        done
+        if [ -z "$udc" ]; then
+            eerror "No UDC found"
+            eend 1
+            return 1
+        fi
+
+        mkdir -p $G
+        echo 0x1d6b > $G/idVendor
+        echo 0x0104 > $G/idProduct
+
+        mkdir -p $G/strings/0x409
+        echo "UdoTech"  > $G/strings/0x409/manufacturer
+        echo "BQ268"    > $G/strings/0x409/product
+        echo "00000000" > $G/strings/0x409/serialnumber
+
+        mkdir -p $G/configs/c.1/strings/0x409
+        echo "Serial" > $G/configs/c.1/strings/0x409/configuration
+
+        # ACM serial only — ECM added later in default runlevel
+        mkdir -p $G/functions/acm.usb0
+        ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
+
+        echo "$udc" > $G/UDC
+        eend $?
     fi
-
-    mkdir -p $G
-    echo 0x1d6b > $G/idVendor
-    echo 0x0104 > $G/idProduct
-
-    mkdir -p $G/strings/0x409
-    echo "UdoTech"  > $G/strings/0x409/manufacturer
-    echo "BQ268"    > $G/strings/0x409/product
-    echo "00000000" > $G/strings/0x409/serialnumber
-
-    mkdir -p $G/configs/c.1/strings/0x409
-    echo "Serial" > $G/configs/c.1/strings/0x409/configuration
-
-    # ACM serial only — ECM added later in default runlevel
-    mkdir -p $G/functions/acm.usb0
-    ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
-
-    echo "$udc" > $G/UDC
-
-    eend $?
 }
 GADGET
 chmod 755 "$ROOTFS/etc/init.d/usb-gadget"
 
 # Stage 2 (default): Add ECM ethernet after boot is stable.
-# Unbinds UDC briefly to add the function — safe because boot is complete
-# and nothing critical depends on USB at this point.
+# Skipped on CAF (android_usb handles functions in a single step).
+# On mainline, unbinds UDC briefly to add the function.
 cat > "$ROOTFS/etc/init.d/usb-gadget-ecm" << 'GADGETECM'
 #!/sbin/openrc-run
 
@@ -335,6 +368,13 @@ depend() {
 }
 
 start() {
+    # CAF android_usb: skip ECM (could add rndis later if needed)
+    if [ -d /sys/class/android_usb/android0 ]; then
+        ebegin "ECM skipped (android_usb)"
+        eend 0
+        return 0
+    fi
+
     ebegin "Adding ECM ethernet to USB gadget"
     G=/sys/kernel/config/usb_gadget/g1
 
@@ -372,7 +412,42 @@ rc-update add usb-gadget boot
 rc-update add usb-gadget-ecm default
 '
 
-# ── 9. Modem setup ──────────────────────────────────────────────────────
+# ── 9. WiFi bringup ──────────────────────────────────────────────────────
+echo "--- Creating WiFi init script ---"
+cat > "$ROOTFS/etc/init.d/wifi" << 'WIFI'
+#!/sbin/openrc-run
+
+description="WiFi (WCNSS + wlan driver)"
+
+depend() {
+    after modules
+    before wpa_supplicant
+}
+
+start() {
+    if [ -e /dev/wcnss_wlan ]; then
+        # CAF 3.18: trigger WCNSS PIL firmware load, then insmod wlan.ko
+        ebegin "Starting WiFi (CAF WCNSS)"
+        cat /dev/wcnss_wlan &
+        sleep 5  # wait for SMD channel + NV download
+        local kver
+        kver=$(uname -r)
+        insmod /lib/modules/$kver/wlan.ko
+        eend $?
+    else
+        # Mainline: wcn36xx/pronto_wlan loaded by hwdrivers or modprobe
+        ebegin "Starting WiFi (mainline)"
+        modprobe pronto_wlan 2>/dev/null || true
+        eend 0
+    fi
+}
+WIFI
+chmod 755 "$ROOTFS/etc/init.d/wifi"
+
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
+rc-update add wifi default
+'
+
 echo "--- Setting up modem ---"
 
 # Mainline modem stack:
@@ -385,7 +460,7 @@ echo "--- Setting up modem ---"
 #   mmcli -L                                    # list modems
 #   mmcli -m 0 --simple-connect="apn=your.apn"  # connect
 
-# ── 10. Diagnostic init (boot with init=/sbin/init.debug) ────────────────
+# ── 10. Diagnostic init (boot with init=/sbin/init.debug) ─────────────────
 cat > "$ROOTFS/sbin/init.debug" << 'INITDBG'
 #!/bin/sh
 # Diagnostic init — signals progress via LEDs, prints to console.

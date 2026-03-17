@@ -88,6 +88,15 @@ All repeated commands go in the `justfile`. Single entry point for build, flash,
 
 After any change to rootfs or build scripts, always run `just build-rootfs` so the user can flash immediately.
 
+### Commit Granularly
+
+Each logical change gets its own commit — don't batch unrelated work. A "logical change" is one thing you could describe in a single sentence, e.g.:
+- Add WiFi init script for CAF WCNSS bringup
+- Fix fbcon rotation (rotate:1 → rotate:3)
+- Remove obsolete lk2nd-era docs
+
+If you've touched build-rootfs.sh, the justfile, and docs in the same session, that's probably 2–3 commits, not one. Commit after each change, not at the end of a session.
+
 ### Commit Before Build/Flash
 
 Same discipline as the kernel and lineage repos:

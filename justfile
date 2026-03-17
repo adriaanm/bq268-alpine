@@ -118,7 +118,7 @@ build-bootimg:
     echo "--- Building boot.img ---"
     mkbootimg \
         --kernel {{outdir}}/zImage-dtb \
-        --cmdline "root=LABEL=rootfs rootfstype=ext4 rootwait rw console=tty0 console=ttyGS0,115200 fbcon=rotate:1 consoleblank=0 panic=5" \
+        --cmdline "root=LABEL=rootfs rootfstype=ext4 rootwait rw console=tty0 console=ttyGS0,115200 fbcon=rotate:3 consoleblank=0 panic=5" \
         --base 0x80000000 \
         --pagesize 2048 \
         -o {{outdir}}/boot.img
