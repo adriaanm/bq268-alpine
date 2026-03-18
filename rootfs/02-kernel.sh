@@ -23,12 +23,10 @@ else
 fi
 
 # CAF 3.18 kernel modules (wlan.ko from prima build)
-CAF_KVER="$(cat "$CAF_KERNEL_REPO/output/include/config/kernel.release" 2>/dev/null || true)"
-if [ -n "$CAF_KVER" ]; then
-    echo "--- Installing CAF kernel modules ($CAF_KVER) ---"
-    mkdir -p "$ROOTFS/lib/modules/$CAF_KVER"
-    find "$CAF_KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$CAF_KVER/" \; 2>/dev/null || true
-    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$CAF_KVER" 2>/dev/null || true
-    echo "  Modules:"
-    ls "$ROOTFS/lib/modules/$CAF_KVER/"*.ko 2>/dev/null | xargs -I{} basename {} || true
-fi
+CAF_KVER="3.18.140-bq268"
+echo "--- Installing CAF kernel modules ($CAF_KVER) ---"
+mkdir -p "$ROOTFS/lib/modules/$CAF_KVER"
+find "$CAF_KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$CAF_KVER/" \; 2>/dev/null || true
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$CAF_KVER" 2>/dev/null || true
+echo "  Modules:"
+ls "$ROOTFS/lib/modules/$CAF_KVER/"*.ko 2>/dev/null | xargs -I{} basename {} || true
