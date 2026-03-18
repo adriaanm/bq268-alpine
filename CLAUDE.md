@@ -1,4 +1,4 @@
-# CLAUDE.md — BQ268 Alpine Linux Port
+# CLAUDE.md — bq268-alpine
 
 ## Project
 
