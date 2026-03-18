@@ -70,6 +70,13 @@ country=US
 #   > save_config
 WPACFG
 
+# Append local WiFi networks from wifi.conf (gitignored, contains passwords)
+if [ -f "$SCRIPT_DIR/wifi.conf" ]; then
+    echo "" >> "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf"
+    cat "$SCRIPT_DIR/wifi.conf" >> "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf"
+    echo "  WiFi networks added from wifi.conf"
+fi
+
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add wifi default
 '

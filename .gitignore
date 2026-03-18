@@ -5,6 +5,9 @@ firmware/
 out/
 *.img
 
+# Local WiFi config (contains passwords)
+wifi.conf
+
 # Editor / IDE
 .vscode/
 *.swp
