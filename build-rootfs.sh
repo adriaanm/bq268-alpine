@@ -587,7 +587,168 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add battmon default
 '
 
-# ── 11. Diagnostic init (boot with init=/sbin/init.debug) ─────────────────
+# ── 11. Power button + screen management ─────────────────────────────────
+echo "--- Setting up power button and screen management ---"
+
+cat > "$ROOTFS/usr/local/bin/screen-toggle.sh" << 'SCREENTOGGLE'
+#!/bin/sh
+# Toggle screen on/off. Reads brightness from /etc/bq268.conf.
+. /etc/bq268.conf 2>/dev/null
+BL="/sys/class/leds/lcd-bl/brightness"
+STATE="/run/screen.state"
+BRIGHTNESS="${BACKLIGHT_BRIGHTNESS:-20}"
+
+if [ "$(cat "$STATE" 2>/dev/null)" = "off" ]; then
+    echo "$BRIGHTNESS" > "$BL" 2>/dev/null
+    echo "on" > "$STATE"
+else
+    echo 0 > "$BL" 2>/dev/null
+    echo "off" > "$STATE"
+fi
+# Reset idle timer on toggle-on
+touch /run/screen.activity
+SCREENTOGGLE
+chmod 755 "$ROOTFS/usr/local/bin/screen-toggle.sh"
+
+cat > "$ROOTFS/usr/local/bin/screen-wake.sh" << 'SCREENWAKE'
+#!/bin/sh
+# Wake screen on any keypress. Called by triggerhappy for all key events.
+. /etc/bq268.conf 2>/dev/null
+BL="/sys/class/leds/lcd-bl/brightness"
+STATE="/run/screen.state"
+BRIGHTNESS="${BACKLIGHT_BRIGHTNESS:-20}"
+
+touch /run/screen.activity
+if [ "$(cat "$STATE" 2>/dev/null)" = "off" ]; then
+    echo "$BRIGHTNESS" > "$BL" 2>/dev/null
+    echo "on" > "$STATE"
+fi
+SCREENWAKE
+chmod 755 "$ROOTFS/usr/local/bin/screen-wake.sh"
+
+cat > "$ROOTFS/usr/local/bin/screen-idle.sh" << 'SCREENIDLE'
+#!/bin/sh
+# Screen idle daemon — blanks screen after SCREEN_TIMEOUT seconds of inactivity
+. /etc/bq268.conf 2>/dev/null
+TIMEOUT="${SCREEN_TIMEOUT:-30}"
+BL="/sys/class/leds/lcd-bl/brightness"
+STATE="/run/screen.state"
+
+[ "$TIMEOUT" -eq 0 ] 2>/dev/null && exit 0
+
+# Initialize
+echo "on" > "$STATE"
+touch /run/screen.activity
+
+while true; do
+    sleep 5
+    [ "$(cat "$STATE" 2>/dev/null)" = "off" ] && continue
+    # Check how long since last activity
+    now=$(date +%s)
+    last=$(stat -c %Y /run/screen.activity 2>/dev/null || echo "$now")
+    idle=$((now - last))
+    if [ "$idle" -ge "$TIMEOUT" ]; then
+        echo 0 > "$BL" 2>/dev/null
+        echo "off" > "$STATE"
+    fi
+done
+SCREENIDLE
+chmod 755 "$ROOTFS/usr/local/bin/screen-idle.sh"
+
+# Key daemon — monitors all input devices, dispatches power toggle + screen wake
+cat > "$ROOTFS/usr/local/bin/keyd.sh" << 'KEYD'
+#!/bin/sh
+# Key event daemon — uses evtest to monitor input devices.
+# Power button (KEY_POWER) toggles screen; all other keys wake screen.
+# Runs one evtest per input device, parses key press events.
+
+handle_key() {
+    case "$1" in
+        KEY_POWER) /usr/local/bin/screen-toggle.sh ;;
+        KEY_*)     /usr/local/bin/screen-wake.sh ;;
+    esac
+}
+
+# Monitor all event devices
+for dev in /dev/input/event*; do
+    [ -e "$dev" ] || continue
+    evtest "$dev" 2>/dev/null | while read -r line; do
+        # Match: "Event: ... type 1 (EV_KEY), code ... (...), value 1"
+        # value 1 = key press, value 0 = release, value 2 = repeat
+        case "$line" in
+            *"(EV_KEY)"*"value 1")
+                # Extract key name: ... code 116 (KEY_POWER), value 1
+                key=$(echo "$line" | sed 's/.*(\(KEY_[^)]*\)).*/\1/')
+                handle_key "$key"
+                ;;
+        esac
+    done &
+done
+
+# Wait for all background evtest processes
+wait
+KEYD
+chmod 755 "$ROOTFS/usr/local/bin/keyd.sh"
+
+# Combined key + screen idle daemon as OpenRC service
+cat > "$ROOTFS/etc/init.d/keyd" << 'KEYDINIT'
+#!/sbin/openrc-run
+
+description="Key event daemon (power button + screen idle)"
+command="/usr/local/bin/keyd.sh"
+command_background=true
+pidfile="/run/keyd.pid"
+
+depend() {
+    after modules
+}
+KEYDINIT
+chmod 755 "$ROOTFS/etc/init.d/keyd"
+
+# Screen idle daemon as OpenRC service
+cat > "$ROOTFS/etc/init.d/screen-idle" << 'SCREENIDINIT'
+#!/sbin/openrc-run
+
+description="Screen idle blanker"
+command="/usr/local/bin/screen-idle.sh"
+command_background=true
+pidfile="/run/screen-idle.pid"
+
+depend() {
+    after keyd
+}
+SCREENIDINIT
+chmod 755 "$ROOTFS/etc/init.d/screen-idle"
+
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
+rc-update add keyd default
+rc-update add screen-idle default
+'
+
+# ── 12. CPU frequency governor ───────────────────────────────────────────
+echo "--- Setting up CPU frequency governor ---"
+
+cat > "$ROOTFS/etc/init.d/cpufreq" << 'CPUFREQ'
+#!/sbin/openrc-run
+
+description="CPU frequency governor"
+
+start() {
+    ebegin "Setting CPU governor to interactive"
+    local gov
+    for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        [ -f "$gov" ] && echo "interactive" > "$gov" 2>/dev/null
+    done
+    eend 0
+}
+CPUFREQ
+chmod 755 "$ROOTFS/etc/init.d/cpufreq"
+
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
+rc-update add cpufreq boot
+'
+
+# ── 13. Diagnostic init (boot with init=/sbin/init.debug) ─────────────────
 cat > "$ROOTFS/sbin/init.debug" << 'INITDBG'
 #!/bin/sh
 # Diagnostic init — signals progress via LEDs, prints to console.
@@ -618,7 +779,7 @@ exec /bin/sh < /dev/console > /dev/console 2>&1
 INITDBG
 chmod 755 "$ROOTFS/sbin/init.debug"
 
-# ── 11. Cleanup and finalize ─────────────────────────────────────────────
+# ── 14. Cleanup and finalize ─────────────────────────────────────────────
 echo "--- Finalizing ---"
 rm -f "$ROOTFS/usr/bin/qemu-arm-static"
 rm -f "$ROOTFS/etc/resolv.conf"
