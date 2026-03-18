@@ -866,7 +866,7 @@ cat > "$ROOTFS/usr/local/bin/settings-menu.sh" << 'SETMENU'
 
 . /etc/bq268.conf 2>/dev/null
 SEL=0
-ITEMS=3
+ITEMS=4
 BRIGHTNESS=${BACKLIGHT_BRIGHTNESS:-20}
 TIMEOUT=${SCREEN_TIMEOUT:-30}
 
@@ -909,7 +909,8 @@ draw() {
     [ $WIFI_ON -eq 1 ] && printf ' WiFi      [ON]\n' || printf ' WiFi     [OFF]\n'
     [ $SEL -eq 2 ] && printf '>' || printf ' '
     printf ' Timeout  [%3ds]\n' "$TIMEOUT"
-    printf '\n'
+    [ $SEL -eq 3 ] && printf '>' || printf ' '
+    printf ' Reboot  [ENTER]\n'
     printf ' U/D sel  L/R adj\n'
     printf ' BACK: close\n'
 }
@@ -918,7 +919,7 @@ adjust() {
     local dir="$1"
     case $SEL in
         0) # Brightness: step 25, range 5-255
-            if [ "$dir" = "R" ]; then
+            if [ "$dir" = "R" ] || [ "$dir" = "ENTER" ]; then
                 BRIGHTNESS=$((BRIGHTNESS + 25))
                 [ $BRIGHTNESS -gt 255 ] && BRIGHTNESS=255
             else
@@ -955,6 +956,14 @@ adjust() {
             fi
             sed -i "s/^SCREEN_TIMEOUT=.*/SCREEN_TIMEOUT=$TIMEOUT/" /etc/bq268.conf
             ;;
+        3) # Reboot to bootloader (fastboot mode)
+            if [ "$dir" = "ENTER" ]; then
+                printf '\033[H\033[2J'
+                printf 'Rebooting to\nbootloader...\n'
+                sleep 1
+                reboot bootloader
+            fi
+            ;;
     esac
 }
 
@@ -965,7 +974,7 @@ while read -r key; do
         KEY_DOWN)  SEL=$(( (SEL + 1) % ITEMS )) ;;
         KEY_LEFT)  adjust L ;;
         KEY_RIGHT) adjust R ;;
-        KEY_ENTER) adjust R ;;
+        KEY_ENTER) adjust ENTER ;;
         KEY_BACK|KEY_F3) break ;;
     esac
     draw
