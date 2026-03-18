@@ -108,7 +108,8 @@ apk add \
     wireless-regdb \
     kmod \
     modemmanager libqmi \
-    bluez
+    bluez \
+    chrony
 '
 
 # Fix /run — ensure it's a real directory so tmpfs mount works at boot
@@ -437,11 +438,11 @@ echo "--- Creating WiFi init script ---"
 cat > "$ROOTFS/etc/init.d/wifi" << 'WIFI'
 #!/sbin/openrc-run
 
-description="WiFi (WCNSS + wlan driver)"
+description="WiFi (WCNSS + wlan driver + wpa_supplicant + DHCP)"
 
 depend() {
     after modules
-    before wpa_supplicant
+    before chronyd
 }
 
 start() {
@@ -460,9 +461,49 @@ start() {
         modprobe pronto_wlan 2>/dev/null || true
         eend 0
     fi
+
+    # Wait for wlan0 to appear (up to 5s)
+    local i=0
+    while [ $i -lt 50 ] && [ ! -d /sys/class/net/wlan0 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    if [ -d /sys/class/net/wlan0 ]; then
+        ebegin "Starting wpa_supplicant"
+        wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
+        eend $?
+        ebegin "Starting DHCP on wlan0"
+        udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid -q 2>/dev/null &
+        eend 0
+    else
+        ewarn "wlan0 not found — skipping wpa_supplicant"
+    fi
+}
+
+stop() {
+    ebegin "Stopping WiFi"
+    kill $(cat /run/udhcpc.wlan0.pid 2>/dev/null) 2>/dev/null
+    killall wpa_supplicant 2>/dev/null
+    eend 0
 }
 WIFI
 chmod 755 "$ROOTFS/etc/init.d/wifi"
+
+# wpa_supplicant base config
+mkdir -p "$ROOTFS/etc/wpa_supplicant"
+cat > "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf" << 'WPACFG'
+ctrl_interface=/var/run/wpa_supplicant
+update_config=1
+country=US
+
+# Add networks via: wpa_cli -i wlan0
+#   > add_network
+#   > set_network 0 ssid "MySSID"
+#   > set_network 0 psk "MyPassword"
+#   > enable_network 0
+#   > save_config
+WPACFG
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add wifi default
@@ -480,7 +521,22 @@ echo "--- Setting up modem ---"
 #   mmcli -L                                    # list modems
 #   mmcli -m 0 --simple-connect="apn=your.apn"  # connect
 
-# ── 10. Battery monitor + graceful shutdown ──────────────────────────────
+# ── 10. Time sync (chrony) ────────────────────────────────────────────────
+echo "--- Setting up time sync ---"
+mkdir -p "$ROOTFS/etc/chrony"
+cat > "$ROOTFS/etc/chrony/chrony.conf" << 'CHRONY'
+pool pool.ntp.org iburst
+driftfile /var/lib/chrony/drift
+makestep 1 3
+rtcsync
+CHRONY
+mkdir -p "$ROOTFS/var/lib/chrony"
+
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
+rc-update add chronyd default
+'
+
+# ── 11. Battery monitor + graceful shutdown ──────────────────────────────
 echo "--- Setting up battery monitor ---"
 
 cat > "$ROOTFS/usr/local/bin/graceful-shutdown.sh" << 'SHUTDOWN'
@@ -587,7 +643,7 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add battmon default
 '
 
-# ── 11. Power button + screen management ─────────────────────────────────
+# ── 12. Power button + screen management ─────────────────────────────────
 echo "--- Setting up power button and screen management ---"
 
 cat > "$ROOTFS/usr/local/bin/screen-toggle.sh" << 'SCREENTOGGLE'
@@ -725,7 +781,7 @@ rc-update add keyd default
 rc-update add screen-idle default
 '
 
-# ── 12. CPU frequency governor ───────────────────────────────────────────
+# ── 13. CPU frequency governor ───────────────────────────────────────────
 echo "--- Setting up CPU frequency governor ---"
 
 cat > "$ROOTFS/etc/init.d/cpufreq" << 'CPUFREQ'
@@ -748,7 +804,7 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add cpufreq boot
 '
 
-# ── 13. Diagnostic init (boot with init=/sbin/init.debug) ─────────────────
+# ── 14. Diagnostic init (boot with init=/sbin/init.debug) ─────────────────
 cat > "$ROOTFS/sbin/init.debug" << 'INITDBG'
 #!/bin/sh
 # Diagnostic init — signals progress via LEDs, prints to console.
@@ -779,7 +835,7 @@ exec /bin/sh < /dev/console > /dev/console 2>&1
 INITDBG
 chmod 755 "$ROOTFS/sbin/init.debug"
 
-# ── 14. Cleanup and finalize ─────────────────────────────────────────────
+# ── 15. Cleanup and finalize ─────────────────────────────────────────────
 echo "--- Finalizing ---"
 rm -f "$ROOTFS/usr/bin/qemu-arm-static"
 rm -f "$ROOTFS/etc/resolv.conf"
