@@ -5,25 +5,35 @@
 Single-app walkie-talkie device running on Alpine Linux with mainline kernel.
 Voice messaging over cellular data (4G) or WiFi.
 
-## Current Status (2026-03-13)
+## Current Status (2026-03-18)
 
-Alpine Linux boots to interactive login on BQ268 with mainline 6.19 kernel.
+Alpine Linux boots on BQ268 with CAF 3.18 kernel (stable) and mainline 6.19
+kernel (development). Userspace infrastructure for a single-app device is
+being built up.
 
 **Working:**
-- Mainline kernel boots (~5s to login)
+- CAF 3.18 kernel boots (~5s to login), SMP (4 cores)
+- Mainline 6.19 kernel also boots (1 core, SMP issue)
 - USB gadget serial console (ttyGS0/ttyACM0)
 - ST7735S 128x160 SPI display with fbcon
 - GPIO matrix keypad (6 keys) + 4 GPIO keys
 - GPIO LEDs (red, green, button backlight)
 - eMMC storage
-- Battery monitoring (charger + BMS)
-- WiFi (WCNSS/wcn36xx) — enabled in DTS, needs testing
+- Battery monitoring (charger + BMS sysfs + battmon daemon)
+- Power button toggles screen on/off (keyd + screen-toggle)
+- Screen auto-blank after 30s idle
+- CPU frequency scaling (interactive governor)
+- WiFi driver (CAF prima wlan.ko) — loads, needs network testing
+- wpa_supplicant + DHCP ready (configure via wpa_cli)
+- chrony NTP time sync
+- Logging to tmpfs (eMMC-safe)
 
 **Not working yet:**
 - Audio (LPASS not in mainline MSM8909 DTSI — biggest gap)
 - Modem (disabled in DTS — firmware + userspace needed)
 - Bluetooth (btqcomsmd should work once WCNSS loads)
-- SMP (only 1 CPU — qcom_scm boot address issue)
+- SMP on mainline (only 1 CPU — qcom_scm boot address issue)
+- Suspend-to-RAM (CAF kernel has CONFIG_SUSPEND=y, untested)
 
 ## DTS Status
 
@@ -46,6 +56,25 @@ working subsystems. Located in the kernel repo at
 | Regulators | Done | Working |
 
 ## Remaining Work
+
+### 0. Userspace infrastructure (in progress)
+
+Power management, connectivity, and production hardening. Tracked in the
+plan at `.claude/plans/cheeky-brewing-cookie.md`.
+
+**Done (phases 1–3):**
+- Battery monitor daemon with LED feedback + critical shutdown
+- Device config (`/etc/bq268.conf`: backlight brightness, timeouts, thresholds)
+- Power button screen toggle (evtest-based keyd)
+- Screen idle blanker
+- CPU interactive governor
+- WiFi (wpa_supplicant + udhcpc)
+- NTP (chrony)
+- Logging to tmpfs, panic_on_oops, consoleblank
+
+**Next (phases 4–5, blocked):**
+- Cellular auto-connect + WiFi/cellular failover (needs modem DTS)
+- Single-app boot, app watchdog, read-only rootfs, OTA, security (needs app)
 
 ### 1. Modem bringup (cellular data)
 
