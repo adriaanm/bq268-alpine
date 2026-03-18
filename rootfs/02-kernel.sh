@@ -30,3 +30,10 @@ find "$CAF_KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$CA
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$CAF_KVER" 2>/dev/null || true
 echo "  Modules:"
 ls "$ROOTFS/lib/modules/$CAF_KVER/"*.ko 2>/dev/null | xargs -I{} basename {} || true
+
+# Custom reboot-bootloader (uses RESTART2 syscall with "bootloader" arg)
+if [ -f "$SCRIPT_DIR/tools/reboot-bootloader" ]; then
+    cp "$SCRIPT_DIR/tools/reboot-bootloader" "$ROOTFS/usr/local/bin/"
+    chmod 755 "$ROOTFS/usr/local/bin/reboot-bootloader"
+    echo "  reboot-bootloader installed"
+fi

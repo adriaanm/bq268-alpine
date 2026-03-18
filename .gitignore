@@ -5,6 +5,9 @@ firmware/
 out/
 *.img
 
+# Compiled tools (rebuild with: just build-tools)
+tools/reboot-bootloader
+
 # Local WiFi config (contains passwords)
 wifi.conf
 

@@ -65,6 +65,10 @@ task-start pattern:
 
 # ── Rootfs ───────────────────────────────────────────────────────────────
 
+# cross-compile tools/ for ARM (static)
+build-tools:
+    arm-linux-gnueabihf-gcc -static -o tools/reboot-bootloader tools/reboot-bootloader.c
+
 # build Alpine rootfs image (requires sudo)
 build-rootfs:
     sudo bash build-rootfs.sh

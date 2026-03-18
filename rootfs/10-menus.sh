@@ -132,7 +132,7 @@ adjust() {
                 printf '\033[H\033[2J'
                 printf 'Rebooting to\nbootloader...\n'
                 sleep 1
-                reboot bootloader
+                /usr/local/bin/reboot-bootloader
             fi
             ;;
     esac
