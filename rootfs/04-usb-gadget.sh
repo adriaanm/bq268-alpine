@@ -3,7 +3,7 @@ echo "--- Creating USB gadget setup ---"
 mkdir -p "$ROOTFS/etc/init.d"
 
 # Stage 1 (boot): ACM serial only — the debug lifeline.
-# Detects CAF android_usb vs mainline configfs automatically.
+# Detects CAF android_usb (3.18) vs configfs (4.4+, mainline) automatically.
 cat > "$ROOTFS/etc/init.d/usb-gadget" << 'GADGET'
 #!/sbin/openrc-run
 
@@ -28,11 +28,13 @@ start() {
         echo 1 > $A/enable
         eend $?
     else
-        # Mainline configfs
+        # configfs gadget (kernel 4.4+ / mainline)
         ebegin "Configuring USB gadget (ACM serial) via configfs"
         G=/sys/kernel/config/usb_gadget/g1
 
-        [ -d /sys/kernel/config ] || mount -t configfs none /sys/kernel/config 2>/dev/null
+        # Load gadget modules (no-op if built-in; needed on some 4.4 configs)
+        modprobe -q libcomposite 2>/dev/null
+        mount -t configfs none /sys/kernel/config 2>/dev/null
 
         # Wait for a UDC controller to appear (up to 5s)
         local udc="" i=0
@@ -60,6 +62,7 @@ start() {
         echo "Serial" > $G/configs/c.1/strings/0x409/configuration
 
         # ACM serial only — ECM added later in default runlevel
+        modprobe -q usb_f_acm 2>/dev/null
         mkdir -p $G/functions/acm.usb0
         ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
 
@@ -71,8 +74,8 @@ GADGET
 chmod 755 "$ROOTFS/etc/init.d/usb-gadget"
 
 # Stage 2 (default): Add ECM ethernet after boot is stable.
-# Skipped on CAF (android_usb handles functions in a single step).
-# On mainline, unbinds UDC briefly to add the function.
+# Skipped on CAF android_usb (3.18).
+# On configfs (4.4+, mainline), unbinds UDC briefly to add the function.
 cat > "$ROOTFS/etc/init.d/usb-gadget-ecm" << 'GADGETECM'
 #!/sbin/openrc-run
 
@@ -93,6 +96,8 @@ start() {
 
     ebegin "Adding ECM ethernet to USB gadget"
     G=/sys/kernel/config/usb_gadget/g1
+
+    modprobe -q usb_f_ecm 2>/dev/null
 
     # Read current UDC
     local udc
