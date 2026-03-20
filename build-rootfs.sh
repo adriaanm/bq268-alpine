@@ -15,8 +15,10 @@ ROOTFS="$OUTDIR/rootfs"
 ROOTFS_IMG="$OUTDIR/rootfs.img"
 KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-kernel"
 KERNEL_REPO="${KERNEL_REPO:-$HOME/bq268-kernel}"
-CAF_KERNEL_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-caf_msm-3.18"
-CAF_KERNEL_REPO="${CAF_KERNEL_REPO:-$HOME/bq268-caf_msm-3.18}"
+CAF_318_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-caf_msm-3.18"
+CAF_318_REPO="${CAF_318_REPO:-$HOME/bq268-caf_msm-3.18}"
+CAF_44_REPO="${SUDO_USER:+/home/$SUDO_USER}/bq268-caf-4.4"
+CAF_44_REPO="${CAF_44_REPO:-$HOME/bq268-caf-4.4}"
 FIRMWARE_DIR="$SCRIPT_DIR/firmware"
 
 # Alpine minirootfs URL (armv7, latest stable)

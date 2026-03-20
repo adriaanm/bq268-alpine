@@ -1,4 +1,4 @@
-# Install kernel + modules (mainline and CAF)
+# Install kernel + CAF modules
 echo "--- Installing kernel ---"
 mkdir -p "$ROOTFS/boot"
 if [ -f "$KERNEL_REPO/out/zImage" ]; then
@@ -9,27 +9,27 @@ else
     echo "  WARN: kernel not built yet — skipping /boot copy"
 fi
 
-# Kernel modules
-KVER="$(cat "$KERNEL_REPO/out/include/config/kernel.release" 2>/dev/null || echo "6.19.0-msm8916")"
-if [ -d "$KERNEL_REPO/out/lib/modules/$KVER" ]; then
-    cp -a "$KERNEL_REPO/out/lib/modules/$KVER" "$ROOTFS/lib/modules/"
-    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
-    echo "  Modules installed for $KVER"
-else
-    mkdir -p "$ROOTFS/lib/modules/$KVER"
-    find "$KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$KVER/" \; 2>/dev/null || true
-    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$KVER" 2>/dev/null || true
-    echo "  Modules dir: $KVER"
-fi
+# Helper: install CAF wlan.ko from a kernel build tree
+# Derives module version from vermagic, stripping any -gSHA/-dirty suffix
+install_caf_modules() {
+    local label="$1" repo="$2"
+    local wlan="$repo/output/drivers/staging/prima/wlan.ko"
+    if [ ! -f "$wlan" ]; then
+        echo "  WARN: $label wlan.ko not found — skipping"
+        return
+    fi
+    local kver
+    kver="$(strings "$wlan" | sed -n 's/^vermagic=\([^ ]*\).*/\1/p' | sed 's/-g[0-9a-f]*\(-dirty\)\?$//')"
+    echo "--- Installing $label modules ($kver) ---"
+    mkdir -p "$ROOTFS/lib/modules/$kver"
+    find "$repo/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$kver/" \; 2>/dev/null || true
+    chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$kver" 2>/dev/null || true
+    echo "  Modules:"
+    ls "$ROOTFS/lib/modules/$kver/"*.ko 2>/dev/null | xargs -I{} basename {} || true
+}
 
-# CAF 3.18 kernel modules (wlan.ko from prima build)
-CAF_KVER="3.18.140-bq268"
-echo "--- Installing CAF kernel modules ($CAF_KVER) ---"
-mkdir -p "$ROOTFS/lib/modules/$CAF_KVER"
-find "$CAF_KERNEL_REPO/output" -name "*.ko" -exec cp {} "$ROOTFS/lib/modules/$CAF_KVER/" \; 2>/dev/null || true
-chroot "$ROOTFS" /usr/bin/qemu-arm-static /sbin/depmod "$CAF_KVER" 2>/dev/null || true
-echo "  Modules:"
-ls "$ROOTFS/lib/modules/$CAF_KVER/"*.ko 2>/dev/null | xargs -I{} basename {} || true
+install_caf_modules "CAF 3.18" "$CAF_318_REPO"
+install_caf_modules "CAF 4.4"  "$CAF_44_REPO"
 
 # Custom reboot-bootloader (uses RESTART2 syscall with "bootloader" arg)
 if [ -f "$SCRIPT_DIR/tools/reboot-bootloader" ]; then

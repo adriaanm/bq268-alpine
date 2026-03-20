@@ -12,7 +12,7 @@ depend() {
 
 start() {
     if [ -e /dev/wcnss_wlan ]; then
-        # CAF 3.18: trigger WCNSS PIL firmware load, then insmod wlan.ko
+        # CAF: trigger WCNSS PIL firmware load, then insmod wlan.ko
         ebegin "Starting WiFi (CAF WCNSS)"
         cat /dev/wcnss_wlan &
         sleep 5  # wait for SMD channel + NV download
