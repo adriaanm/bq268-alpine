@@ -695,7 +695,8 @@ static void handle_rw_iovec(int sock, const struct sockaddr_msm_ipc *from,
 
 		for (uint32_t j = 0; j < num_sector; j++) {
 			off_t file_off = (off_t)(sector_addr + j) * SECTOR_SIZE;
-			uint64_t phys = (uint64_t)phys_offset +
+			uint64_t phys = shmem.phys_addr +
+					(uint64_t)phys_offset +
 					(uint64_t)j * SECTOR_SIZE;
 
 			void *sp = shm_ptr(&shmem, phys, SECTOR_SIZE);
