@@ -65,10 +65,7 @@ stop() {
 MODEM
 chmod 755 "$ROOTFS/etc/init.d/modem"
 
-# Enable services
-chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
-rc-update add rmt-storage default
-rc-update add modem default
-'
-
-echo "  rmt-storage + modem services enabled"
+# Services installed but NOT auto-enabled — start manually:
+#   rc-service rmt-storage start
+#   rc-service modem start
+echo "  rmt-storage + modem services installed (manual start)"
