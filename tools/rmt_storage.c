@@ -177,6 +177,9 @@ static void resp_add_u8(struct resp_buf *r, uint8_t type, uint8_t val)
 static const uint8_t *find_tlv(const uint8_t *data, size_t len,
 			       uint8_t type, uint16_t *out_len)
 {
+	if (!data || len == 0)
+		return NULL;
+
 	size_t off = 0;
 
 	while (off + 3 <= len) {
@@ -298,6 +301,9 @@ static void caller_close(int id)
 		return;
 	close(callers[id].fd);
 	callers[id].fd = -1;
+	callers[id].dev_size = 0;
+	callers[id].node = 0;
+	callers[id].port = 0;
 	callers[id].part = NULL;
 }
 
@@ -378,7 +384,13 @@ static int sharedmem_open(struct sharedmem *sm, const char *uio_name)
 	if (n <= 0)
 		return -1;
 	buf[n] = '\0';
-	sm->phys_addr = strtoull(buf, NULL, 16);
+	char *endptr;
+	errno = 0;
+	sm->phys_addr = strtoull(buf, &endptr, 16);
+	if (errno || endptr == buf) {
+		fprintf(stderr, "[rmt_storage] bad phys_addr: '%s'\n", buf);
+		return -1;
+	}
 
 	/* Read size */
 	snprintf(path, sizeof(path),
@@ -393,7 +405,12 @@ static int sharedmem_open(struct sharedmem *sm, const char *uio_name)
 	if (n <= 0)
 		return -1;
 	buf[n] = '\0';
-	sm->size = strtoull(buf, NULL, 16);
+	errno = 0;
+	sm->size = strtoull(buf, &endptr, 16);
+	if (errno || endptr == buf) {
+		fprintf(stderr, "[rmt_storage] bad size: '%s'\n", buf);
+		return -1;
+	}
 
 	/* mmap the UIO device */
 	snprintf(path, sizeof(path), "/dev/uio%d", uio_num);
@@ -442,6 +459,8 @@ static void sharedmem_close(struct sharedmem *sm)
  */
 static void *shm_ptr(struct sharedmem *sm, uint64_t phys, size_t len)
 {
+	if (!sm->base || sm->base == MAP_FAILED || sm->size == 0)
+		return NULL;
 	/* Guard against integer overflow in phys + len */
 	if (len > sm->size || phys < sm->phys_addr)
 		return NULL;
@@ -460,6 +479,8 @@ static int verbose;
 
 static void hex_dump(const char *prefix, const void *buf, size_t len)
 {
+	if (!buf || len == 0)
+		return;
 	const uint8_t *p = buf;
 	for (size_t i = 0; i < len; i += 16) {
 		fprintf(stderr, "%s %04zx: ", prefix, i);
@@ -481,6 +502,11 @@ static void hex_dump(const char *prefix, const void *buf, size_t len)
 static void resp_send(int sock, const struct sockaddr_msm_ipc *to,
 		      socklen_t to_len, struct resp_buf *r)
 {
+	if (r->len < sizeof(struct qmi_hdr)) {
+		fprintf(stderr, "[rmt_storage] BUG: resp_send with "
+			"len=%zu < hdr\n", r->len);
+		return;
+	}
 	if (verbose) {
 		struct qmi_hdr *hdr = (struct qmi_hdr *)r->data;
 		fprintf(stderr, "[rmt_storage] >> msg_id=%d txn=%d len=%zu\n",
@@ -542,6 +568,23 @@ static void handle_close(int sock, const struct sockaddr_msm_ipc *from,
 	uint32_t caller_id;
 	memcpy(&caller_id, tlv, 4);
 
+	/* Validate caller exists and belongs to this node */
+	if (caller_id >= MAX_CALLERS || callers[caller_id].fd < 0) {
+		fprintf(stderr, "[rmt_storage] close: bad caller %u\n",
+			caller_id);
+		resp_add_result(&resp, 1, 3);
+		goto send;
+	}
+	if (callers[caller_id].node !=
+	    from->address.addr.port_addr.node_id) {
+		fprintf(stderr, "[rmt_storage] close: caller %u owned by "
+			"node %u, not %u\n", caller_id,
+			callers[caller_id].node,
+			from->address.addr.port_addr.node_id);
+		resp_add_result(&resp, 1, 3);
+		goto send;
+	}
+
 	if (verbose)
 		fprintf(stderr, "[rmt_storage] close caller %u\n", caller_id);
 
@@ -574,6 +617,15 @@ static void handle_rw_iovec(int sock, const struct sockaddr_msm_ipc *from,
 	if (caller_id >= MAX_CALLERS || callers[caller_id].fd < 0) {
 		fprintf(stderr, "[rmt_storage] iovec: bad caller %u\n",
 			caller_id);
+		resp_add_result(&resp, 1, 3);
+		goto send;
+	}
+	if (callers[caller_id].node !=
+	    from->address.addr.port_addr.node_id) {
+		fprintf(stderr, "[rmt_storage] iovec: caller %u owned by "
+			"node %u, not %u\n", caller_id,
+			callers[caller_id].node,
+			from->address.addr.port_addr.node_id);
 		resp_add_result(&resp, 1, 3);
 		goto send;
 	}
