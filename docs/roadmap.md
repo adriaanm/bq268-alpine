@@ -5,14 +5,14 @@
 Single-app walkie-talkie device running on Alpine Linux with mainline kernel.
 Voice messaging over cellular data (4G) or WiFi.
 
-## Current Status (2026-03-18)
+## Current Status (2026-03-22)
 
-Alpine Linux boots on BQ268 with CAF 3.18 kernel (stable) and mainline 6.19
-kernel (development). Userspace infrastructure for a single-app device is
-being built up.
+Alpine Linux boots on BQ268 with CAF 4.4 kernel (modem working) and mainline
+6.19 kernel (development). Userspace infrastructure for a single-app device
+is being built up.
 
 **Working:**
-- CAF 3.18 kernel boots (~5s to login), SMP (4 cores)
+- CAF 4.4 kernel boots, SMP (4 cores)
 - Mainline 6.19 kernel also boots (1 core, SMP issue)
 - USB gadget serial console (ttyGS0/ttyACM0)
 - ST7735S 128x160 SPI display with fbcon
@@ -27,10 +27,12 @@ being built up.
 - wpa_supplicant + DHCP ready (configure via wpa_cli)
 - chrony NTP time sync
 - Logging to tmpfs (eMMC-safe)
+- Modem Q6 DSP boots and completes initialization (rmt_storage + subsys_modem)
+- Modem EFS partitions served via rmt_storage daemon (QMI service 14 over IPC Router)
 
 **Not working yet:**
 - Audio (LPASS not in mainline MSM8909 DTSI — biggest gap)
-- Modem (disabled in DTS — firmware + userspace needed)
+- Modem data path (BAM-DMUX / wwan0 — needs testing now that Q6 boots)
 - Bluetooth (btqcomsmd should work once WCNSS loads)
 - SMP on mainline (only 1 CPU — qcom_scm boot address issue)
 - Suspend-to-RAM (CAF kernel has CONFIG_SUSPEND=y, untested)
@@ -50,7 +52,7 @@ working subsystems. Located in the kernel repo at
 | eMMC | Done | Working |
 | Battery (charger + BMS) | Done | Working |
 | WiFi/BT (WCNSS + WCN3620) | Done | Needs testing |
-| Modem (q6v5-mss) | Done (disabled) | Needs firmware + testing |
+| Modem (q6v5-mss) | Done | Q6 boots, EFS served, full QMI services registered |
 | Audio (LPASS) | Blocked | No mainline MSM8909 LPASS DTSI |
 | PON keys (pm8909_resin) | Done | Working |
 | Regulators | Done | Working |
@@ -76,9 +78,10 @@ plan at `.claude/plans/cheeky-brewing-cookie.md`.
 - Cellular auto-connect + WiFi/cellular failover (needs modem DTS)
 - Single-app boot, app watchdog, read-only rootfs, OTA, security (needs app)
 
-### 1. Modem bringup (cellular data)
+### 1. Modem data path (cellular data)
 
-Enable `&mpss` in DTS, validate firmware loading, test with ModemManager.
+Modem Q6 DSP boots successfully with rmt_storage serving EFS partitions.
+Next step: test BAM-DMUX data path (wwan0) and ModemManager connectivity.
 See `docs/modem_bringup.md` for details.
 
 ### 2. Audio

@@ -1,6 +1,29 @@
 # Modem & Connectivity Bringup — BQ268
 
-## Architecture (mainline kernel)
+## Status (2026-03-22)
+
+**Modem Q6 DSP boots successfully** on the CAF 4.4 kernel. The rmt_storage
+daemon serves EFS partitions (modemst1, modemst2, fsg, fsc) via QMI over
+IPC Router, allowing the modem to complete initialization and register all
+QMI services (NAS, DMS, WDS, etc.).
+
+Next: test BAM-DMUX data path and ModemManager.
+
+## Architecture (CAF 4.4 kernel)
+
+```
+[Modem firmware on Hexagon DSP]
+        |
+  [BAM-DMUX] ---- data plane (IP packets) --> rmnet0 network interface
+        |
+  [IPC Router] --- control plane (QMI)    --> /dev/smdcntl0, ModemManager
+        |
+  [pil-q6v5-mss]-- firmware loading       --> modem.mdt + modem.b00-b25, mba.mbn
+        |
+  [rmt_storage] -- EFS partition I/O      --> /dev/uio0 (shared memory)
+```
+
+## Architecture (mainline kernel, future)
 
 ```
 [Modem firmware on Hexagon DSP]
@@ -12,15 +35,31 @@
   [q6v5-mss] ----- firmware loading       --> modem.mdt + modem.b00-b25, mba.mbn
 ```
 
+## rmt_storage
+
+The modem Q6 DSP requires its EFS (Embedded File System) partitions served
+from eMMC. Without this, the modem stalls during init and its watchdog fires
+after ~55 seconds.
+
+Custom `rmt_storage` daemon in `tools/rmt_storage.c`:
+- Registers QMI service 14 (RMTFS) on IPC Router (`AF_MSM_IPC`)
+- Opens `/dev/uioN` (UIO shared memory, named "rmtfs") and mmaps it
+- Serves OPEN, CLOSE, RW_IOVEC, ALLOC_BUFF, GET_DEV_ERROR requests
+- Partition mapping: modem_fs1→p26, modem_fs2→p27, fsg→p3, fsc→p29
+
+Start manually:
+```sh
+rc-service rmt-storage start   # starts rmt_storage daemon
+rc-service modem start         # holds /dev/subsys_modem fd to keep Q6 running
+```
+
 ## DTS (already in mainline DTS)
 
 ```dts
-&mpss { status = "okay"; };          /* currently disabled — enable when ready */
+&mpss { status = "okay"; };
 &wcnss { status = "okay"; };
 &wcnss_iris { compatible = "qcom,wcn3620"; };
 ```
-
-Modem is disabled (`status = "disabled"`) until firmware and userspace are validated.
 
 ## Firmware files
 
@@ -41,7 +80,7 @@ All extracted by `just extract-firmware` from EDL dumps.
 | Modem PIL | `qcom,pil-q6v55-mss` | `qcom,msm8909-mss-pil` (q6v5-mss) |
 | Data interface | `rmnet_bam0` | `wwan0` (BAM-DMUX) |
 | QMI transport | SMD (`/dev/smdcntl0`) | rpmsg / QRTR |
-| rmtfs | needs LD_PRELOAD hacks | native QRTR, no workarounds |
+| rmtfs | rmt_storage (QMI over IPC Router) | rmtfs (native QRTR) |
 | WiFi driver | Prima (out-of-tree) | wcn36xx (in-tree) |
 | BT driver | missing hci_smd | btqcomsmd (in-tree) |
 | ModemManager | needs workarounds | works natively |
@@ -89,4 +128,5 @@ BlueZ should work out of the box once WCNSS firmware is loaded.
 - **No wwan0**: Check `dmesg | grep bam` — BAM-DMUX may not have initialized
 - **ModemManager can't find modem**: Check `dmesg | grep q6v5` — firmware load may have failed
 - **WiFi scan fails**: Check `dmesg | grep wcn` and verify NV data at `/lib/firmware/wlan/prima/`
-- **rmtfs**: May be needed for modem EFS access — install `rmtfs` package if modem won't fully initialize
+- **rmtfs**: rmt_storage daemon must be running before modem boot — `rc-service rmt-storage start`
+- **Modem won't init**: Check `dmesg | grep rmt_storage` — EFS open/read must succeed before Q6 registers QMI services
