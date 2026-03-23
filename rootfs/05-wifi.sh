@@ -14,10 +14,15 @@ start() {
         # CAF: trigger WCNSS PIL firmware load, then insmod wlan.ko
         ebegin "Starting WiFi (CAF WCNSS)"
         cat /dev/wcnss_wlan &
-        sleep 5  # wait for SMD channel + NV download
-        local kver
+        # Poll for WCNSS PIL ready — retry insmod until SMD channel is up (timeout 10s)
+        local kver w=0
         kver=$(uname -r)
-        insmod /lib/modules/$kver/wlan.ko
+        while [ $w -lt 100 ]; do
+            insmod /lib/modules/$kver/wlan.ko 2>/dev/null && break
+            sleep 0.1
+            w=$((w + 1))
+        done
+        grep -q '^wlan ' /proc/modules
         eend $?
     else
         # Mainline: wcn36xx/pronto_wlan loaded by hwdrivers or modprobe

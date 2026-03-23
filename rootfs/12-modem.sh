@@ -65,8 +65,13 @@ start() {
         --pidfile "$pidfile" \
         --exec /bin/sh -- -c '
             exec 3< /dev/subsys_modem
-            sleep 5
-            qmicli -d msmipc://0 --dms-set-operating-mode=online 2>&1 | logger -t modem
+            # Poll for QMI DMS service ready (timeout 15s)
+            w=0
+            while [ $w -lt 30 ]; do
+                qmicli -d msmipc://0 --dms-set-operating-mode=online 2>&1 | logger -t modem && break
+                sleep 0.5
+                w=$((w + 1))
+            done
             exec sleep 999999
         '
     eend $?
