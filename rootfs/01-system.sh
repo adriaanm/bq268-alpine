@@ -68,9 +68,48 @@ cat > "$ROOTFS/etc/conf.d/syslog" << 'SYSLOGCONF'
 SYSLOGD_OPTS="-s 256 -b 2 -O /var/log/messages"
 SYSLOGCONF
 
+# 'dev' service — satisfies the 'dev' dependency for hwdrivers, acpid, etc.
+# On this device /dev is kernel-managed devtmpfs, so no mdev/udev needed.
+cat > "$ROOTFS/etc/init.d/dev" << 'DEVINIT'
+#!/sbin/openrc-run
+description="devtmpfs (kernel-managed /dev)"
+depend() {
+    provide dev
+    need devfs
+    keyword -docker -podman -prefix -systemd-nspawn -vserver
+}
+start() {
+    ebegin "Using kernel devtmpfs for /dev"
+    eend 0
+}
+DEVINIT
+chmod 755 "$ROOTFS/etc/init.d/dev"
+
+# Override /usr/lib/sysctl.d/00-alpine.conf — same file minus keys unsupported
+# by the CAF 4.4 kernel (no CONFIG_SYN_COOKIES, no CONFIG_BPF_SYSCALL).
+# OpenRC's sysctl init skips /usr/lib/sysctl.d/X if /etc/sysctl.d/X exists.
+mkdir -p "$ROOTFS/etc/sysctl.d"
+cat > "$ROOTFS/etc/sysctl.d/00-alpine.conf" << 'SYSCTL'
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.ping_group_range=999 59999
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 1
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv6.conf.all.accept_source_route = 0
+net.ipv4.tcp_rfc1337 = 1
+net.ipv6.conf.default.use_tempaddr = 2
+net.ipv6.conf.all.use_tempaddr = 2
+kernel.panic = 120
+fs.protected_hardlinks = 1
+fs.protected_symlinks = 1
+SYSCTL
+
 # Enable services
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add devfs sysinit
+rc-update add dev sysinit
 rc-update add dmesg sysinit
 rc-update add hwdrivers sysinit
 rc-update add modules boot
