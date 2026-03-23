@@ -4,6 +4,15 @@ echo "--- Setting up modem support ---"
 # Install rmt_storage binary
 install -m 755 "$SCRIPT_DIR/tools/rmt_storage" "$ROOTFS/usr/sbin/rmt_storage"
 
+# Install custom libqmi with native AF_MSM_IPC support (replaces Alpine's libqmi/qmi-utils).
+# Built from ~/libqmi with -Dmsmipc=true — no LD_PRELOAD shim needed.
+install -m 755 "$SCRIPT_DIR/tools/libqmi/libqmi-glib.so.5.12.0" "$ROOTFS/usr/lib/"
+ln -sf libqmi-glib.so.5.12.0 "$ROOTFS/usr/lib/libqmi-glib.so.5"
+ln -sf libqmi-glib.so.5 "$ROOTFS/usr/lib/libqmi-glib.so"
+install -m 755 "$SCRIPT_DIR/tools/libqmi/qmicli" "$ROOTFS/usr/bin/"
+install -m 755 "$SCRIPT_DIR/tools/libqmi/qmi-network" "$ROOTFS/usr/bin/"
+install -D -m 755 "$SCRIPT_DIR/tools/libqmi/qmi-proxy" "$ROOTFS/usr/libexec/qmi-proxy"
+
 # OpenRC init script: rmt_storage daemon
 cat > "$ROOTFS/etc/init.d/rmt-storage" << 'RMTFS'
 #!/sbin/openrc-run
@@ -65,7 +74,7 @@ stop() {
 MODEM
 chmod 755 "$ROOTFS/etc/init.d/modem"
 
-# Services installed but NOT auto-enabled — start manually:
-#   rc-service rmt-storage start
-#   rc-service modem start
-echo "  rmt-storage + modem services installed (manual start)"
+# Enable at default runlevel
+rc-update add rmt-storage default
+rc-update add modem default
+echo "  rmt-storage + modem services enabled (default runlevel)"
