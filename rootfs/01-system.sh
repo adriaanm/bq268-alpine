@@ -111,7 +111,6 @@ chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add devfs sysinit
 rc-update add dev sysinit
 rc-update add dmesg sysinit
-rc-update add hwdrivers sysinit
 rc-update add modules boot
 rc-update add sysctl boot
 rc-update add hostname boot
