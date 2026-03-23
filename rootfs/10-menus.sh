@@ -24,10 +24,6 @@ start() {
 KMAPINIT
 chmod 755 "$ROOTFS/etc/init.d/console-keymap"
 
-chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
-rc-update add console-keymap boot
-'
-
 # Settings menu (F3) — brightness, WiFi, screen timeout, reboot
 # Designed for 20×8 char fbcon (160×128 px, 8×16 font)
 cat > "$ROOTFS/usr/local/bin/settings-menu.sh" << 'SETMENU'

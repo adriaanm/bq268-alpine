@@ -120,7 +120,6 @@ rc-update add networking boot
 rc-update add dropbear default
 rc-update add killprocs shutdown
 rc-update add mount-ro shutdown
-rc-update add savecache shutdown
 '
 
 # Network interfaces
