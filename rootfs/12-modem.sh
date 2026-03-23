@@ -60,9 +60,15 @@ start() {
     ebegin "Booting modem (Q6 DSP)"
     # Hold subsys_modem fd open to keep the modem running.
     # When this process dies, the fd closes and subsystem_put() shuts it down.
+    # After boot, wait for Q6 to initialize then set operating mode online.
     start-stop-daemon --start --background --make-pidfile \
         --pidfile "$pidfile" \
-        --exec /bin/sh -- -c 'exec sleep 999999 < /dev/subsys_modem'
+        --exec /bin/sh -- -c '
+            exec 3< /dev/subsys_modem
+            sleep 5
+            qmicli -d msmipc://0 --dms-set-operating-mode=online 2>&1 | logger -t modem
+            exec sleep 999999
+        '
     eend $?
 }
 
