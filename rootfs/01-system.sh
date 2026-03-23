@@ -100,6 +100,12 @@ iface usb0 inet static
 iface wlan0 inet dhcp
 NET
 
+# SSH authorized key (passwordless login from buildbox)
+mkdir -p "$ROOTFS/root/.ssh"
+chmod 700 "$ROOTFS/root/.ssh"
+cp ~/.ssh/id_*.pub "$ROOTFS/root/.ssh/authorized_keys" 2>/dev/null || true
+chmod 600 "$ROOTFS/root/.ssh/authorized_keys" 2>/dev/null || true
+
 # Module loading
 mkdir -p "$ROOTFS/etc/modules-load.d"
 # WiFi module not auto-loaded — load manually: modprobe pronto_wlan
