@@ -28,7 +28,7 @@ ALPINE_URL="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/releases/ar
 ALPINE_TAR="$OUTDIR/alpine-minirootfs-${ALPINE_MINOR}-armhf.tar.gz"
 
 # Image size (MB)
-IMG_SIZE=256
+IMG_SIZE=512
 
 echo "=== BQ268 Alpine rootfs builder ==="
 
