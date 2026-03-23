@@ -42,7 +42,7 @@ start() {
         # Wait for association before requesting DHCP (up to 15s)
         ebegin "Waiting for WiFi association"
         local associated=0
-        wpa_cli -i wlan0 -a /dev/null status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && associated=1
+        wpa_cli -i wlan0 status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && associated=1
         if [ "$associated" -eq 0 ]; then
             local j=0
             while [ $j -lt 150 ]; do
