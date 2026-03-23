@@ -75,6 +75,8 @@ MODEM
 chmod 755 "$ROOTFS/etc/init.d/modem"
 
 # Enable at default runlevel
+chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add rmt-storage default
 rc-update add modem default
+'
 echo "  rmt-storage + modem services enabled (default runlevel)"
