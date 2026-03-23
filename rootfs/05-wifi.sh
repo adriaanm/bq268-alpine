@@ -37,10 +37,6 @@ start() {
         ebegin "Starting wpa_supplicant"
         wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
         eend $?
-        # wpa_cli in daemon mode: runs action script on CONNECTED/DISCONNECTED
-        ebegin "Starting wpa_cli action daemon"
-        wpa_cli -B -i wlan0 -a /usr/local/bin/wpa-action.sh
-        eend $?
     else
         ewarn "wlan0 not found — skipping wpa_supplicant"
     fi
@@ -49,24 +45,24 @@ start() {
 stop() {
     ebegin "Stopping WiFi"
     kill $(cat /run/udhcpc.wlan0.pid 2>/dev/null) 2>/dev/null
-    killall wpa_cli 2>/dev/null
     killall wpa_supplicant 2>/dev/null
     eend 0
 }
 WIFI
 chmod 755 "$ROOTFS/etc/init.d/wifi"
 
-# wpa_supplicant action script — called on CONNECTED/DISCONNECTED events
-cat > "$ROOTFS/usr/local/bin/wpa-action.sh" << 'ACTION'
+# wpa_cli action script — called by the wpa_cli service on CONNECTED/DISCONNECTED
+# Alpine's wpa_cli service reads /etc/conf.d/wpa_cli which defaults to:
+#   WPACLI_OPTS="-a /etc/wpa_supplicant/wpa_cli.sh"
+cat > "$ROOTFS/etc/wpa_supplicant/wpa_cli.sh" << 'ACTION'
 #!/bin/sh
-# Called by wpa_supplicant: $1=interface, $2=event
+# Called by wpa_cli -a: $1=interface, $2=event
 IFACE="$1"
 EVENT="$2"
 
 case "$EVENT" in
     CONNECTED)
         logger -t wpa-action "$IFACE: connected, starting DHCP"
-        # Kill any stale udhcpc for this interface
         kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
         udhcpc -i "$IFACE" -b -R -p /run/udhcpc.$IFACE.pid -q
         ;;
@@ -77,7 +73,7 @@ case "$EVENT" in
         ;;
 esac
 ACTION
-chmod 755 "$ROOTFS/usr/local/bin/wpa-action.sh"
+chmod 755 "$ROOTFS/etc/wpa_supplicant/wpa_cli.sh"
 
 # wpa_supplicant base config
 mkdir -p "$ROOTFS/etc/wpa_supplicant"
@@ -103,6 +99,7 @@ fi
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add wifi default
+rc-update add wpa_cli default
 '
 
 echo "--- Setting up modem ---"
