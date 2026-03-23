@@ -80,9 +80,9 @@ stop() {
 MODEM
 chmod 755 "$ROOTFS/etc/init.d/modem"
 
-# Enable at default runlevel
+# Enable at boot runlevel (start early so modem init overlaps with wifi)
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
-rc-update add rmt-storage default
-rc-update add modem default
+rc-update add rmt-storage boot
+rc-update add modem boot
 '
-echo "  rmt-storage + modem services enabled (default runlevel)"
+echo "  rmt-storage + modem services enabled (boot runlevel)"
