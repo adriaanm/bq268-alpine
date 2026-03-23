@@ -8,6 +8,8 @@ out/
 # Compiled tools (rebuild with: just build-tools)
 tools/reboot-bootloader
 tools/rmt_storage
+tools/libqipcrtr4msmipc.so
+tools/libqmi/
 
 # Local WiFi config (contains passwords)
 wifi.conf

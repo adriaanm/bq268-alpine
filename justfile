@@ -65,10 +65,19 @@ task-start pattern:
 
 # ── Rootfs ───────────────────────────────────────────────────────────────
 
-# cross-compile tools/ for ARM (static)
+# cross-compile tools/ for ARM
 build-tools:
     arm-linux-gnueabihf-gcc -static -o tools/reboot-bootloader tools/reboot-bootloader.c
     arm-linux-gnueabihf-gcc -static -o tools/rmt_storage tools/rmt_storage.c
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -std=c99 -Wall -Wextra -Werror -fPIC -shared -o tools/libqipcrtr4msmipc.so tools/libqipcrtr4msmipc.c -ldl
+
+# cross-compile libqmi with AF_MSM_IPC support (requires sudo for chroot)
+build-libqmi:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    sudo bash build-libqmi.sh
+    echo "--- Output in tools/libqmi/ ---"
+    ls -lh tools/libqmi/
 
 # build Alpine rootfs image (requires sudo)
 build-rootfs:
