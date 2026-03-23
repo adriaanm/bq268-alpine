@@ -37,10 +37,23 @@ start() {
         ebegin "Starting wpa_supplicant"
         wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
         eend $?
+
+        # Wait for wpa_supplicant control socket before starting wpa_cli
+        local j=0
+        while [ $j -lt 20 ] && [ ! -S /var/run/wpa_supplicant/wlan0 ]; do
+            sleep 0.1
+            j=$((j + 1))
+        done
+
         # wpa_cli in daemon mode on wlan0: runs action script on CONNECTED/DISCONNECTED
         ebegin "Starting wpa_cli (DHCP action daemon)"
         wpa_cli -B -i wlan0 -a /etc/wpa_supplicant/wpa_cli.sh
         eend $?
+
+        # If already connected (event fired before wpa_cli attached), trigger DHCP now
+        if wpa_cli -i wlan0 status 2>/dev/null | grep -q 'wpa_state=COMPLETED'; then
+            /etc/wpa_supplicant/wpa_cli.sh wlan0 CONNECTED
+        fi
     else
         ewarn "wlan0 not found — skipping wpa_supplicant"
     fi
@@ -67,7 +80,7 @@ case "$EVENT" in
     CONNECTED)
         logger -t wpa-action "$IFACE: connected, starting DHCP"
         kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
-        udhcpc -i "$IFACE" -b -R -p /run/udhcpc.$IFACE.pid -q
+        udhcpc -i "$IFACE" -b -R -p /run/udhcpc.$IFACE.pid
         ;;
     DISCONNECTED)
         logger -t wpa-action "$IFACE: disconnected, releasing DHCP"
