@@ -28,7 +28,7 @@ cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 # OpenRC init sequence
 ::sysinit:/sbin/openrc sysinit
 ::sysinit:/sbin/openrc boot
-::wait:/sbin/openrc default
+::once:/sbin/openrc default
 
 # Consoles (autologin root, no password prompt)
 tty0::respawn:/sbin/getty -n -l /bin/sh 38400 tty0
