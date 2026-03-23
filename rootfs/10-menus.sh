@@ -48,6 +48,10 @@ TIMEOUT=${SCREEN_TIMEOUT:-30}
 bl=$(cat /sys/class/leds/lcd-bl/brightness 2>/dev/null)
 [ -n "$bl" ] && [ "$bl" -gt 0 ] 2>/dev/null && BRIGHTNESS=$bl
 
+# Cache modem status (qmicli is slow)
+MODEM="off"
+qmicli -d msmipc://0 --dms-get-operating-mode 2>/dev/null | grep -q online && MODEM="online"
+
 # Key reader: evtest → awk → FIFO
 FIFO="/tmp/menu-keys.$$"
 mkfifo "$FIFO" 2>/dev/null
@@ -73,7 +77,12 @@ KR_PID=$!
 
 draw() {
     printf '\033[H\033[2J'
-    printf '=== SETTINGS ===\n'
+    # Status bar (refreshes battery/IP each draw)
+    local bat=$(cat /sys/class/power_supply/battery/capacity 2>/dev/null || echo "?")
+    local ip=$(ip -4 addr show wlan0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)
+    [ -z "$ip" ] && ip="--"
+    printf '%s%% %s mdm:%s\n' "$bat" "$ip" "$MODEM"
+    printf '--------------------\n'
     [ $SEL -eq 0 ] && printf '>' || printf ' '
     printf ' Bright   [%3d]\n' "$BRIGHTNESS"
     [ $SEL -eq 1 ] && printf '>' || printf ' '
@@ -81,9 +90,7 @@ draw() {
     [ $SEL -eq 2 ] && printf '>' || printf ' '
     printf ' Timeout  [%3ds]\n' "$TIMEOUT"
     [ $SEL -eq 3 ] && printf '>' || printf ' '
-    printf ' Reboot  [ENTER]\n'
-    printf ' U/D sel  L/R adj\n'
-    printf ' BACK: close\n'
+    printf ' Reboot\n'
 }
 
 adjust() {
@@ -128,12 +135,10 @@ adjust() {
             sed -i "s/^SCREEN_TIMEOUT=.*/SCREEN_TIMEOUT=$TIMEOUT/" /etc/bq268.conf
             ;;
         3) # Reboot to bootloader (fastboot mode)
-            if [ "$dir" = "ENTER" ]; then
-                printf '\033[H\033[2J'
-                printf 'Rebooting to\nbootloader...\n'
-                sleep 1
-                /usr/local/bin/reboot-bootloader
-            fi
+            printf '\033[H\033[2J'
+            printf 'Rebooting to\nbootloader...\n'
+            sleep 1
+            /usr/local/bin/reboot-bootloader
             ;;
     esac
 }
@@ -146,7 +151,7 @@ while read -r key; do
         KEY_LEFT)  adjust L ;;
         KEY_RIGHT) adjust R ;;
         KEY_ENTER) adjust ENTER ;;
-        KEY_BACK|KEY_F3) break ;;
+        KEY_ESC|KEY_F3) break ;;
     esac
     draw
 done < "$FIFO"
@@ -212,7 +217,7 @@ draw() {
 draw
 while read -r key; do
     case "$key" in
-        KEY_BACK|KEY_F6) break ;;
+        KEY_ESC|KEY_F6) break ;;
         *) draw ;;
     esac
 done < "$FIFO"
