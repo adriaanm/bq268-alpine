@@ -8,7 +8,7 @@ Inspired by the postmarketOS project's approach to running mainline Linux on Qua
 
 ## Build Environment
 
-This repo runs on a headless buildbox. Flashing and device interaction (fastboot, serial console) happens from a separate machine. The justfile `flash-*` and `serial` recipes are for reference only — they won't be run from this machine.
+This repo runs on a headless buildbox. The device is attached directly — `just flash-*` and `ssh bq268` work from this machine.
 
 ## Hardware
 
