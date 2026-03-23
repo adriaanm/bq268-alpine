@@ -70,11 +70,12 @@ echo "--- Extracting Alpine rootfs ---"
 tar xzf "$ALPINE_TAR" -C "$ROOTFS"
 
 # Create essential device nodes (needed before devtmpfs is mounted)
-mknod -m 622 "$ROOTFS/dev/console" c 5 1
-mknod -m 666 "$ROOTFS/dev/null" c 1 3
-mknod -m 666 "$ROOTFS/dev/zero" c 1 5
-mknod -m 444 "$ROOTFS/dev/urandom" c 1 9
-mknod -m 666 "$ROOTFS/dev/tty" c 5 0
+# Alpine minirootfs may already ship some of these, so ignore EEXIST.
+[ -e "$ROOTFS/dev/console" ]  || mknod -m 622 "$ROOTFS/dev/console" c 5 1
+[ -e "$ROOTFS/dev/null" ]     || mknod -m 666 "$ROOTFS/dev/null" c 1 3
+[ -e "$ROOTFS/dev/zero" ]     || mknod -m 666 "$ROOTFS/dev/zero" c 1 5
+[ -e "$ROOTFS/dev/urandom" ]  || mknod -m 666 "$ROOTFS/dev/urandom" c 1 9
+[ -e "$ROOTFS/dev/tty" ]      || mknod -m 666 "$ROOTFS/dev/tty" c 5 0
 
 # ── 3. Set up chroot ─────────────────────────────────────────────────────
 echo "--- Setting up chroot ---"
