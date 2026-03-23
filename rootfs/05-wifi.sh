@@ -35,10 +35,11 @@ start() {
 
     if [ -d /sys/class/net/wlan0 ]; then
         ebegin "Starting wpa_supplicant"
-        # -B: background, -a: action script called on CONNECTED/DISCONNECTED
-        wpa_supplicant -B -i wlan0 \
-            -c /etc/wpa_supplicant/wpa_supplicant.conf \
-            -a /usr/local/bin/wpa-action.sh
+        wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
+        eend $?
+        # wpa_cli in daemon mode: runs action script on CONNECTED/DISCONNECTED
+        ebegin "Starting wpa_cli action daemon"
+        wpa_cli -B -i wlan0 -a /usr/local/bin/wpa-action.sh
         eend $?
     else
         ewarn "wlan0 not found — skipping wpa_supplicant"
@@ -48,6 +49,7 @@ start() {
 stop() {
     ebegin "Stopping WiFi"
     kill $(cat /run/udhcpc.wlan0.pid 2>/dev/null) 2>/dev/null
+    killall wpa_cli 2>/dev/null
     killall wpa_supplicant 2>/dev/null
     eend 0
 }
