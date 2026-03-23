@@ -19,7 +19,9 @@ apk add \
     modemmanager \
     bluez \
     chrony \
-    kbd
+    kbd \
+    alsa-utils \
+    sox
 '
 
 # Fix /run — ensure it's a real directory so tmpfs mount works at boot
