@@ -104,15 +104,19 @@ Same discipline as the kernel and lineage repos:
 2. Build / flash
 3. Record outcome: `just note "BOOT TEST: PASS"` or `just note "BOOT TEST: FAIL (reason)"`
 
+### Task Tracking
+
+`TASKS.md` is the single source of truth for open work. Update it as tasks are added, completed, or change status. Keep it concise — one line per task, checkbox format.
+
 ### Git Notes
 
 - **`experiments`** — build/boot test log attached to the commit that was tested
-- **`tasks`** — lightweight task tracking on HEAD
 
 ## Important Docs
 
 | File | Contents |
 |------|----------|
+| `TASKS.md` | Open tasks (active + backlog) |
 | `docs/roadmap.md` | Project roadmap, DTS status, remaining work (audio, modem, app) |
 | `docs/modem_bringup.md` | Modem/WiFi/BT bringup guide (mainline stack) |
 | `docs/device_properties.md` | Hardware analysis, partition layout, build.prop dumps |
