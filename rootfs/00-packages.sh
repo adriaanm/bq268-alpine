@@ -16,7 +16,7 @@ apk add \
     linux-firmware-none \
     wireless-regdb \
     kmod \
-    modemmanager libqmi qmi-utils \
+    modemmanager \
     bluez \
     chrony \
     kbd
