@@ -103,8 +103,10 @@ NET
 # SSH authorized key (passwordless login from buildbox)
 mkdir -p "$ROOTFS/root/.ssh"
 chmod 700 "$ROOTFS/root/.ssh"
-cp ~/.ssh/id_*.pub "$ROOTFS/root/.ssh/authorized_keys" 2>/dev/null || true
-chmod 600 "$ROOTFS/root/.ssh/authorized_keys" 2>/dev/null || true
+cat > "$ROOTFS/root/.ssh/authorized_keys" << 'SSHKEY'
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPo7EfYxKIzg5LwncN5r2kpeTlNQl6GFLJCv0qE8DeOk adriaan@debian-bq268
+SSHKEY
+chmod 600 "$ROOTFS/root/.ssh/authorized_keys"
 
 # Module loading
 mkdir -p "$ROOTFS/etc/modules-load.d"
