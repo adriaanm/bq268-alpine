@@ -38,9 +38,29 @@ start() {
         ebegin "Starting wpa_supplicant"
         wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
         eend $?
-        ebegin "Starting DHCP on wlan0"
-        udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid -q 2>/dev/null &
-        eend 0
+
+        # Wait for association before requesting DHCP (up to 15s)
+        ebegin "Waiting for WiFi association"
+        local associated=0
+        wpa_cli -i wlan0 -a /dev/null status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && associated=1
+        if [ "$associated" -eq 0 ]; then
+            local j=0
+            while [ $j -lt 150 ]; do
+                sleep 0.1
+                wpa_cli -i wlan0 status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && { associated=1; break; }
+                j=$((j + 1))
+            done
+        fi
+        eend $((1 - associated))
+
+        if [ "$associated" -eq 1 ]; then
+            ebegin "Starting DHCP on wlan0"
+            udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid -q 2>/dev/null &
+            eend 0
+        else
+            ewarn "WiFi not associated — starting DHCP in background (will retry)"
+            udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid 2>/dev/null &
+        fi
     else
         ewarn "wlan0 not found — skipping wpa_supplicant"
     fi
