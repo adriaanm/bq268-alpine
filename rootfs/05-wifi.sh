@@ -1,13 +1,12 @@
-# WiFi bringup: driver load + wpa_supplicant + DHCP
+# WiFi bringup: driver load + wpa_supplicant (DHCP handled by action script)
 echo "--- Creating WiFi init script ---"
 cat > "$ROOTFS/etc/init.d/wifi" << 'WIFI'
 #!/sbin/openrc-run
 
-description="WiFi (WCNSS + wlan driver + wpa_supplicant + DHCP)"
+description="WiFi (WCNSS + wlan driver + wpa_supplicant)"
 
 depend() {
     after modules
-    before chronyd
 }
 
 start() {
@@ -36,31 +35,11 @@ start() {
 
     if [ -d /sys/class/net/wlan0 ]; then
         ebegin "Starting wpa_supplicant"
-        wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
+        # -B: background, -a: action script called on CONNECTED/DISCONNECTED
+        wpa_supplicant -B -i wlan0 \
+            -c /etc/wpa_supplicant/wpa_supplicant.conf \
+            -a /usr/local/bin/wpa-action.sh
         eend $?
-
-        # Wait for association before requesting DHCP (up to 15s)
-        ebegin "Waiting for WiFi association"
-        local associated=0
-        wpa_cli -i wlan0 status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && associated=1
-        if [ "$associated" -eq 0 ]; then
-            local j=0
-            while [ $j -lt 150 ]; do
-                sleep 0.1
-                wpa_cli -i wlan0 status 2>/dev/null | grep -q 'wpa_state=COMPLETED' && { associated=1; break; }
-                j=$((j + 1))
-            done
-        fi
-        eend $((1 - associated))
-
-        if [ "$associated" -eq 1 ]; then
-            ebegin "Starting DHCP on wlan0"
-            udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid -q 2>/dev/null &
-            eend 0
-        else
-            ewarn "WiFi not associated — starting DHCP in background (will retry)"
-            udhcpc -i wlan0 -b -R -p /run/udhcpc.wlan0.pid 2>/dev/null &
-        fi
     else
         ewarn "wlan0 not found — skipping wpa_supplicant"
     fi
@@ -74,6 +53,29 @@ stop() {
 }
 WIFI
 chmod 755 "$ROOTFS/etc/init.d/wifi"
+
+# wpa_supplicant action script — called on CONNECTED/DISCONNECTED events
+cat > "$ROOTFS/usr/local/bin/wpa-action.sh" << 'ACTION'
+#!/bin/sh
+# Called by wpa_supplicant: $1=interface, $2=event
+IFACE="$1"
+EVENT="$2"
+
+case "$EVENT" in
+    CONNECTED)
+        logger -t wpa-action "$IFACE: connected, starting DHCP"
+        # Kill any stale udhcpc for this interface
+        kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
+        udhcpc -i "$IFACE" -b -R -p /run/udhcpc.$IFACE.pid -q
+        ;;
+    DISCONNECTED)
+        logger -t wpa-action "$IFACE: disconnected, releasing DHCP"
+        kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
+        ip addr flush dev "$IFACE" 2>/dev/null
+        ;;
+esac
+ACTION
+chmod 755 "$ROOTFS/usr/local/bin/wpa-action.sh"
 
 # wpa_supplicant base config
 mkdir -p "$ROOTFS/etc/wpa_supplicant"
