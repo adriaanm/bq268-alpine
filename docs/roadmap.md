@@ -2,60 +2,65 @@
 
 ## Goal
 
-Single-app walkie-talkie device running on Alpine Linux with mainline kernel.
+Single-app walkie-talkie device running on Alpine Linux with CAF 4.4 kernel.
 Voice messaging over cellular data (4G) or WiFi.
 
-## Current Status (2026-03-22)
+> **Why not mainline?** A mainline 6.19 kernel was tested but abandoned — DDR
+> writes caused PMIC brownouts (likely missing bus bandwidth voting via RPM).
+> CAF 4.4 has all the vendor drivers (bus scaling, modem, audio, WCNSS) that
+> MSM8909 needs.
 
-Alpine Linux boots on BQ268 with CAF 4.4 kernel (modem working) and mainline
-6.19 kernel (development). Userspace infrastructure for a single-app device
-is being built up.
+## Current Status (2026-03-23)
+
+Alpine Linux boots on BQ268 with CAF 4.4 kernel. Modem, audio, WiFi, and SMP
+all working. Userspace infrastructure for a single-app device is being built up.
 
 **Working:**
 - CAF 4.4 kernel boots, SMP (4 cores)
-- Mainline 6.19 kernel also boots (1 core, SMP issue)
 - USB gadget serial console (ttyGS0/ttyACM0)
 - ST7735S 128x160 SPI display with fbcon
 - GPIO matrix keypad (6 keys) + 4 GPIO keys
 - GPIO LEDs (red, green, button backlight)
-- eMMC storage
+- LCD backlight control via qpnp-leds (`/sys/class/leds/lcd-bl/`)
+- eMMC storage (HS200)
 - Battery monitoring (charger + BMS sysfs + battmon daemon)
 - Power button toggles screen on/off (keyd + screen-toggle)
 - Screen auto-blank after 30s idle
 - CPU frequency scaling (interactive governor)
-- WiFi driver (CAF prima wlan.ko) — loads, needs network testing
+- WiFi (CAF prima wlan.ko) — wlan0 up, IPv4+IPv6, internet confirmed
 - wpa_supplicant + DHCP ready (configure via wpa_cli)
 - chrony NTP time sync
 - Logging to tmpfs (eMMC-safe)
 - Modem Q6 DSP boots and completes initialization (rmt_storage + subsys_modem)
 - Modem EFS partitions served via rmt_storage daemon (QMI service 14 over IPC Router)
+- Modem RF online (`qmicli --dms-set-operating-mode=online`), sees cellular networks
+- Audio speaker playback (CAF 4.4: WCD codec → HPHR PA → GPIO36 ext amp)
+- Volume potentiometer
 
 **Not working yet:**
-- Audio (LPASS not in mainline MSM8909 DTSI — biggest gap)
-- Modem data path (BAM-DMUX / wwan0 — needs testing now that Q6 boots)
-- Bluetooth (btqcomsmd should work once WCNSS loads)
-- SMP on mainline (only 1 CPU — qcom_scm boot address issue)
-- Suspend-to-RAM (CAF kernel has CONFIG_SUSPEND=y, untested)
+- Modem data path — BAM DMUX ported but A2_POWER_CONTROL handshake not triggered by modem. RF works (sees networks), needs SIM card to test PS-attach → A2 activation.
+- Bluetooth (WiFi/WCNSS works, BT untested)
+- Suspend-to-RAM (CONFIG_SUSPEND=y, untested)
 
-## DTS Status
+## Subsystem Status
 
-The mainline DTS (`qcom-msm8909-udotech-bq268.dts`) is complete for all
-working subsystems. Located in the kernel repo at
-`arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dts`.
-
-| Subsystem | DTS Status | Runtime Status |
-|-----------|-----------|----------------|
-| Display (panel-mipi-dbi-spi) | Done | Working |
-| GPIO keys + matrix keypad | Done | Working |
-| GPIO LEDs | Done | Working |
-| USB (gadget, peripheral mode) | Done | Working |
-| eMMC | Done | Working |
-| Battery (charger + BMS) | Done | Working |
-| WiFi/BT (WCNSS + WCN3620) | Done | Needs testing |
-| Modem (q6v5-mss) | Done | Q6 boots, EFS served, full QMI services registered |
-| Audio (LPASS) | Blocked | No mainline MSM8909 LPASS DTSI |
-| PON keys (pm8909_resin) | Done | Working |
-| Regulators | Done | Working |
+| Subsystem | Status |
+|-----------|--------|
+| Display (ST7735S SPI + fbcon) | Working |
+| GPIO keys + matrix keypad | Working |
+| GPIO LEDs | Working |
+| LCD backlight (qpnp-leds) | Working |
+| USB (gadget, peripheral mode) | Working |
+| eMMC (HS200) | Working |
+| Battery (charger + BMS) | Working |
+| WiFi (WCNSS + prima wlan.ko) | Working (IPv4+IPv6) |
+| Bluetooth (WCN3620) | Untested |
+| Modem (MSS PIL + rmt_storage) | Q6 boots, EFS served, RF online, sees networks |
+| Modem data path (BAM DMUX) | Open — A2 handshake not triggered |
+| Audio (WCD codec + Q6 DSP) | Working (speaker playback + volume) |
+| PON keys (pm8909_resin) | Working |
+| Regulators (SPMI + PM8909) | Working |
+| SMP (4× Cortex-A7) | Working |
 
 ## Remaining Work
 
@@ -74,48 +79,30 @@ plan at `.claude/plans/cheeky-brewing-cookie.md`.
 - NTP (chrony)
 - Logging to tmpfs, panic_on_oops, consoleblank
 
-**Next (phases 4–5, blocked):**
-- Cellular auto-connect + WiFi/cellular failover (needs modem DTS)
+**Next (phases 4–5):**
+- Cellular auto-connect + WiFi/cellular failover (modem boots + RF works, blocked on BAM DMUX data path)
 - Single-app boot, app watchdog, read-only rootfs, OTA, security (needs app)
 
 ### 1. Modem data path (cellular data)
 
-Modem Q6 DSP boots successfully with rmt_storage serving EFS partitions.
-Next step: test BAM-DMUX data path (wwan0) and ModemManager connectivity.
-See `docs/modem_bringup.md` for details.
+Modem Q6 DSP boots fully with rmt_storage, RF is online (sees cellular
+networks after `qmicli --dms-set-operating-mode=online`). BAM DMUX driver
+ported from 3.18, `msm_rmnet_bam.c` ported for rmnet interfaces. BAM hardware
+confirmed working (0x04044000, 6 pipes). However, modem never sets
+SMSM A2_POWER_CONTROL — forcing it crashes modem (`A2 Assertion Failed`).
 
-### 2. Audio
+**Next:** Test with SIM card inserted — A2 may require PS-attached state.
+If that doesn't work, modem DIAG logs needed to identify A2 precondition.
+See `docs/modem_bringup.md` and kernel `LEARNINGS.md` for full investigation.
 
-**This is the critical blocker for the walkie-talkie use case.**
+### 2. Audio — done
 
-The mainline `qcom-msm8909.dtsi` has no LPASS (Low-Power Audio Subsystem)
-nodes. Adding audio requires:
+Speaker playback and volume control confirmed working on CAF 4.4.
 
-1. Adding SoC-level LPASS/codec nodes to `qcom-msm8909.dtsi`
-2. Verifying MSM8909 LPASS register map matches MSM8916 (likely yes)
-3. Testing `qcom,msm8916-wcd-analog` / `qcom,msm8916-wcd-digital` codecs
-4. Adding speaker amplifier: `simple-audio-amplifier` on GPIO36
-
-When LPASS is available, the BQ268 audio DTS:
-```dts
-/ {
-    speaker-amp {
-        compatible = "simple-audio-amplifier";
-        enable-gpios = <&tlmm 36 GPIO_ACTIVE_HIGH>;
-        sound-name-prefix = "Speaker Amp";
-    };
-};
-
-&sound {
-    model = "udotech-bq268";
-    audio-routing =
-        "Speaker Amp INL", "HPH_R_EXT",
-        "AMIC1", "MIC BIAS Internal1",
-        "AMIC3", "MIC BIAS Internal1";
-    pinctrl-0 = <&cdc_pdm_default>;
-    pinctrl-names = "default";
-};
-```
+Path: WCD msm8x16 codec (regmap wrapper added for 4.4 ASoC) → HPHR PA →
+GPIO36 external amplifier → speaker. Q6 ACDB calibration missing but
+non-fatal. Mixer path: `RX2 MIX1 INP1=RX1`, `RDAC2 MUX=RX2`, `HPHR=Switch`,
+`Ext Spk Switch=On`.
 
 ### 3. Walkie-talkie application
 
@@ -126,17 +113,9 @@ When LPASS is available, the BQ268 audio DTS:
 - Cellular: ModemManager via D-Bus, or direct QMI via libqmi
 - Protocol: voice messaging over cellular data (Opus codec, software decode)
 
-### 4. Upstream DTS
-
-Submit `qcom-msm8909-udotech-bq268.dts` to:
-1. `msm8916-mainline/linux` (community kernel)
-2. `torvalds/linux` (mainline)
-
 ## Risk Register
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Audio LPASS not available for MSM8909 | No speaker/mic — walkie-talkie unusable | Contribute LPASS nodes upstream; worst case use CAF 3.18 for audio |
-| Modem BAM-DMUX flaky on MSM8909 | No cellular data | Nokia 8110 4G has it working; copy their config |
-| SMP broken (qcom_scm) | Single-core performance only | Investigate SCM firmware; may need TZ update |
-| Battery OCV table inaccurate | Wrong percentage readings | Tune with real measurements |
+| Risk | Impact | Mitigation | Status |
+|------|--------|------------|--------|
+| Modem BAM-DMUX A2 handshake | No cellular data | Test with SIM card; get modem DIAG logs for A2 precondition | **Open** — RF works, BAM HW works, but modem won't activate A2 |
+| Battery OCV table inaccurate | Wrong percentage readings | Tune with real measurements | Open |
