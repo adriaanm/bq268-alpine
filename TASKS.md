@@ -6,6 +6,7 @@
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
+- [ ] eSIM provisioning — lpac cross-compiled and tested on device, QMI APDU wrapper working, provisioning script ready. Blocked on easyuicc adapter arrival. Run `esim-provision 'LPA:1$server$code'` once hardware arrives.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog
