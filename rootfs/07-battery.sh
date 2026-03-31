@@ -25,7 +25,10 @@ BATT="/sys/class/power_supply/battery"
 RED="/sys/class/leds/red/brightness"
 GREEN="/sys/class/leds/green/brightness"
 STATE_FILE="/run/battery.state"
+VLOG="/tmp/battery.log"
+VLOG_INTERVAL=10  # log every N polls (10 × 60s = 10min)
 PREV_STATE=""
+TICK=0
 
 while true; do
     capacity=$(cat "$BATT/capacity" 2>/dev/null || echo "-1")
@@ -50,6 +53,13 @@ while true; do
 
     # Write state for other scripts/app to read
     echo "$state $capacity $status $voltage" > "$STATE_FILE"
+
+    # Periodic voltage log (CSV in tmpfs)
+    TICK=$((TICK + 1))
+    if [ "$TICK" -ge "$VLOG_INTERVAL" ]; then
+        TICK=0
+        echo "$(date '+%Y-%m-%d %H:%M'),${capacity},${voltage},${status}" >> "$VLOG"
+    fi
 
     # Log on state change
     if [ "$state" != "$PREV_STATE" ]; then
