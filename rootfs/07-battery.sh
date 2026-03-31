@@ -19,6 +19,7 @@ cat > "$ROOTFS/usr/local/bin/battmon.sh" << 'BATTMON'
 . /etc/bq268.conf 2>/dev/null
 CRITICAL=${BATTERY_CRITICAL:-5}
 LOW=${BATTERY_LOW:-15}
+VMIN=${BATTERY_VMIN:-3400000}  # voltage floor (uV) — shutdown below this
 POLL=60
 BATT="/sys/class/power_supply/battery"
 RED="/sys/class/leds/red/brightness"
@@ -36,9 +37,12 @@ while true; do
         state="unknown"
     elif [ "$status" = "Charging" ] || [ "$status" = "Full" ]; then
         state="charging"
-    elif [ "$capacity" -le "$CRITICAL" ]; then
+    elif [ "$voltage" -gt 0 ] && [ "$voltage" -lt "$VMIN" ]; then
+        # Voltage floor — catches low battery even when SOC reads 0
         state="critical"
-    elif [ "$capacity" -le "$LOW" ]; then
+    elif [ "$capacity" -gt 0 ] && [ "$capacity" -le "$CRITICAL" ]; then
+        state="critical"
+    elif [ "$capacity" -gt 0 ] && [ "$capacity" -le "$LOW" ]; then
         state="low"
     else
         state="normal"
