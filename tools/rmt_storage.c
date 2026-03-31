@@ -200,6 +200,16 @@ static const uint8_t *find_tlv(const uint8_t *data, size_t len,
 
 /* ── Partition Table ────────────────────────────────────────────────────── */
 
+/*
+ * We considered serving these from files (e.g. /lib/firmware/modemst1.bin)
+ * instead of block devices, to decouple the rootfs from the eMMC partition
+ * layout. pread/pwrite work identically on regular files, so it would be a
+ * trivial change. However, the stock Android GPT must be preserved anyway —
+ * the boot chain (PBL→SBL1→TZ→RPM→aboot) reads ~15 partitions before Linux
+ * even starts (see bq268-aboot/docs/partition_access.md). Repartitioning
+ * would brick the device, so the modem partitions will always be there
+ * regardless. No point adding a file-based indirection layer.
+ */
 struct partition {
 	const char *modem_path;  /* path the modem requests */
 	const char *dev_path;    /* block device on eMMC */
