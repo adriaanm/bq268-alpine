@@ -75,9 +75,15 @@ draw() {
     printf '\033[H\033[2J'
     # Status bar (refreshes battery/IP each draw)
     local bat=$(cat /sys/class/power_supply/battery/capacity 2>/dev/null || echo "?")
+    local bst=$(cat /sys/class/power_supply/battery/status 2>/dev/null || echo "?")
+    case "$bst" in
+        Charging)     bst="+" ;;
+        Full)         bst="=" ;;
+        *)            bst="" ;;
+    esac
     local ip=$(ip -4 addr show wlan0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)
     [ -z "$ip" ] && ip="--"
-    printf '%s%% %s mdm:%s\n' "$bat" "$ip" "$MODEM"
+    printf '%s%%%s %s mdm:%s\n' "$bat" "$bst" "$ip" "$MODEM"
     printf '--------------------\n'
     [ $SEL -eq 0 ] && printf '>' || printf ' '
     printf ' Bright   [%3d]\n' "$BRIGHTNESS"
@@ -154,10 +160,10 @@ done < "$FIFO"
 SETMENU
 chmod 755 "$ROOTFS/usr/local/bin/settings-menu.sh"
 
-# System info menu (F6) — battery, WiFi, IP, uptime, memory
+# System info menu (F4) — battery, WiFi, IP, uptime, memory
 cat > "$ROOTFS/usr/local/bin/sysinfo-menu.sh" << 'INFOMENU'
 #!/bin/sh
-# System info — launched via openvt from keyd on F6 press.
+# System info — launched via openvt from keyd on F4 press.
 
 FIFO="/tmp/sysinfo-keys.$$"
 mkfifo "$FIFO" 2>/dev/null
@@ -213,7 +219,7 @@ draw() {
 draw
 while read -r key; do
     case "$key" in
-        KEY_ESC|KEY_F6) break ;;
+        KEY_ESC|KEY_F4) break ;;
         *) draw ;;
     esac
 done < "$FIFO"
