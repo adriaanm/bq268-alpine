@@ -79,6 +79,14 @@ build-libqmi:
     echo "--- Output in tools/libqmi/ ---"
     ls -lh tools/libqmi/
 
+# cross-compile lpac (eSIM LPA) for ARM/musl (requires sudo for chroot)
+build-lpac:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    sudo bash build-lpac.sh
+    echo "--- Output in tools/lpac-esim/ ---"
+    ls -lhR tools/lpac-esim/
+
 # build Alpine rootfs image (requires sudo)
 build-rootfs:
     sudo bash build-rootfs.sh
