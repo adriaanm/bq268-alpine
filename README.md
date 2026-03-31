@@ -21,13 +21,12 @@ the development target.
 
 ## Building
 
-Requires an ARM cross-compiler and a built CAF 3.18 kernel at
-`~/bq268-caf_msm-3.18`.
+Requires an ARM cross-compiler and a built CAF 4.4 kernel at
+`~/bq268-caf-4.4`.
 
 ```sh
 just build-tools    # cross-compile tools/
 just build-rootfs   # build rootfs image (needs sudo)
-just build-bootimg  # package boot.img for fastboot
 ```
 
 WiFi credentials: create `wifi.conf` (gitignored) with

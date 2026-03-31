@@ -29,21 +29,20 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 
 | Repo | Path | Contents |
 |------|------|----------|
-| Kernel (mainline) | `~/bq268-kernel` | Mainline 6.19 kernel, BQ268 DTS, msm8916_defconfig |
-| Kernel (CAF, archived) | `~/bq268-caf_msm-3.18` | CAF 3.18.140 kernel (abandoned — MDSS/USB drivers need Android HAL) |
-| LineageOS device tree | `~/bq268-lineage` | Android device/vendor tree (completed, archived) |
+| Kernel (CAF 4.4) | `~/bq268-caf-4.4` | CAF 4.4.302 kernel, BQ268 DTS, modules (wlan.ko) — the production kernel |
 | EDL dumps | `~/bq268-edl/dump` | Full partition dumps from device |
+| libqmi | `~/libqmi` | Custom libqmi with native AF_MSM_IPC support |
+| lpac | `~/lpac` | eSIM LPA (cross-compiled for ARM/musl) |
 
 ## Key Decisions
 
-- **Mainline 6.x kernel** — standard DRM, USB configfs, no Android HAL dependencies.
+- **CAF 4.4 kernel** — vendor drivers for modem, audio, WiFi, bus scaling. Mainline 6.19 abandoned (PMIC brownouts from missing RPM bus bandwidth voting).
 - **Custom aboot** — built from our own lk/aboot repo, flashed to `aboot` partition.
-- **panel-mipi-dbi-spi** for display — DRM tiny driver, fbcon works directly.
-- **USB configfs** for gadget serial + RNDIS — no CAF android_usb driver.
+- **CAF MDSS** for display — ST7735S via SPI, fbcon works directly.
+- **USB configfs** for gadget serial + RNDIS.
 - **Firmware from EDL dumps** — extract offline, bake into rootfs. No runtime partition reading.
 - **Data-only modem** — no voice calls, no VoLTE/IMS.
 - **No camera, GPS, sensors, touchscreen** — none fitted.
-- **No audio yet** — LPASS has no mainline driver for MSM8909.
 
 ## Boot Chain
 
@@ -124,8 +123,6 @@ Same discipline as the kernel and lineage repos:
 
 ## Reference
 
-- **msm8916-mainline kernel**: `github.com/msm8916-mainline/linux` (`wip/msm8916/6.19`)
-- **Nokia 6300 DTS** (closest reference): `qcom-msm8909-nokia-leo.dts`
+- **BQ268 CAF DTS**: `~/bq268-caf-4.4/arch/arm/boot/dts/qcom/msm8909-bq268.dts`
 - **Nokia 8110 4G wiki**: `wiki.postmarketos.org/wiki/Nokia_8110_4G_(nokia-argon)`
-- **BQ268 mainline DTS**: `~/bq268-kernel/arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dts`
-- **CAF BQ268 DTS** (archived): `~/bq268-caf_msm-3.18/arch/arm/boot/dts/qcom/msm8909-bq268.dts`
+- **msm8916-mainline kernel**: `github.com/msm8916-mainline/linux` (reference only)

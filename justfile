@@ -1,7 +1,6 @@
 # BQ268 Alpine Linux port recipes
 # Run `just` to list available recipes, `just <recipe>` to run one.
 
-kernel_repo := env("HOME") / "bq268-kernel"
 edl_dump    := env("HOME") / "bq268-edl/dump"
 outdir      := "out"
 
@@ -91,70 +90,6 @@ build-lpac:
 build-rootfs:
     sudo bash build-rootfs.sh
 
-# ── Sibling repo shortcuts ────────────────────────────────────────────────────
-
-# build mainline kernel for MSM8909
-kernel-build:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    cd {{kernel_repo}}
-    export ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- O=output
-    if [ ! -f output/.config ]; then
-        echo "--- Generating config from msm8916_defconfig ---"
-        make msm8916_defconfig
-    fi
-    echo "--- Building kernel ---"
-    make -j$(nproc)
-    echo "---"
-    ls -lh output/arch/arm/boot/zImage
-    ls -lh output/arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dtb
-    # Copy to output/ root for easy access
-    cp output/arch/arm/boot/zImage output/zImage
-    cp output/arch/arm/boot/dts/qcom/qcom-msm8909-udotech-bq268.dtb output/qcom-msm8909-udotech-bq268.dtb
-
-# ── boot.img (for stock aboot) ────────────────────────────────────────────────
-
-# build boot.img: mainline kernel + appended DTB + initramfs, for aboot
-build-bootimg:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    mkdir -p {{outdir}}
-    zimage="{{kernel_repo}}/out/zImage"
-    dtb="{{kernel_repo}}/out/qcom-msm8909-udotech-bq268.dtb"
-    # Verify DTB has board-id (aboot won't find it otherwise)
-    if command -v fdtget >/dev/null 2>&1; then
-        msm_id=$(fdtget "$dtb" / qcom,msm-id 2>/dev/null || true)
-        board_id=$(fdtget "$dtb" / qcom,board-id 2>/dev/null || true)
-        if [ -z "$msm_id" ] || [ -z "$board_id" ]; then
-            echo "ERROR: DTB missing qcom,msm-id or qcom,board-id — aboot will not find it!"
-            echo "  Add to DTS: qcom,msm-id = <245 0>; qcom,board-id = <0x08 0x100>;"
-            exit 1
-        fi
-        echo "  DTB msm-id=$msm_id board-id=$board_id"
-    fi
-    # Append DTB to kernel (aboot scans for FDT magic 0xd00dfeed)
-    echo "--- Creating kernel+dtb ---"
-    cat "$zimage" "$dtb" > {{outdir}}/zImage-dtb
-    # Build boot.img (base/addresses don't matter — aboot hardcodes them)
-    # No ramdisk — kernel mounts root= directly
-    echo "--- Building boot.img ---"
-    mkbootimg \
-        --kernel {{outdir}}/zImage-dtb \
-        --cmdline "root=LABEL=rootfs rootfstype=ext4 rootwait rw console=tty0 console=ttyGS0,115200 fbcon=rotate:3 consoleblank=30 panic=5 panic_on_oops=1" \
-        --base 0x80000000 \
-        --pagesize 2048 \
-        -o {{outdir}}/boot.img
-    echo "---"
-    ls -lh {{outdir}}/boot.img
-
-# generate ST7735S panel firmware binary for panel-mipi-dbi driver
-gen-panel-fw:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    mkdir -p firmware/panel
-    python3 {{kernel_repo}}/scripts/gen-panel-fw.py firmware/panel/udotech,bq268-st7735s-panel.bin
-    ls -lh firmware/panel/udotech,bq268-st7735s-panel.bin
-
 # ── QEMU testing ──────────────────────────────────────────────────────────
 
 # boot rootfs in QEMU (tests Alpine userspace without real hardware)
@@ -186,42 +121,20 @@ qemu-test:
 
 buildbox := "debian"
 
-# sync all build artifacts from buildbox
+# sync rootfs from buildbox
 sync:
-    rsync -av {{buildbox}}:~/bq268-pmos/out/rootfs.img {{outdir}}/
-    rsync -av {{buildbox}}:~/bq268-kernel/out/boot.img {{outdir}}/ 2>/dev/null || true
-
-# sync rootfs only
-sync-rootfs:
-    rsync -av {{buildbox}}:~/bq268-pmos/out/rootfs.img {{outdir}}/
-
-# sync boot.img only
-sync-boot:
-    rsync -av {{buildbox}}:~/bq268-kernel/out/boot.img {{outdir}}/
+    rsync -av {{buildbox}}:~/bq268-alpine/out/rootfs.img {{outdir}}/
 
 # ── Flash ────────────────────────────────────────────────────────────────
-
-# flash boot.img to boot partition (device must be in fastboot mode)
-flash-boot:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    img="{{outdir}}/boot.img"
-    [ -f "$img" ] || { echo "ERROR: $img not found — run 'just sync-boot' first"; exit 1; }
-    echo "Flashing $img ($(ls -lh "$img" | awk '{print $5}')) → boot"
-    fastboot flash boot "$img"
 
 # flash rootfs to userdata partition (device must be in fastboot mode)
 flash-rootfs:
     #!/usr/bin/env bash
     set -eo pipefail
     img="{{outdir}}/rootfs.img"
-    [ -f "$img" ] || { echo "ERROR: $img not found — run 'just sync-rootfs' first"; exit 1; }
+    [ -f "$img" ] || { echo "ERROR: $img not found — run 'just build-rootfs' first"; exit 1; }
     echo "Flashing $img ($(ls -lh "$img" | awk '{print $5}')) → userdata"
     fastboot flash userdata "$img"
-
-# flash everything (boot.img + rootfs)
-flash-all: flash-boot flash-rootfs
-    @echo "All images flashed. Run: fastboot reboot"
 
 # reboot device from fastboot
 reboot:

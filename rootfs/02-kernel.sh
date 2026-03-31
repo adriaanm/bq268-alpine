@@ -1,15 +1,6 @@
-# Install kernel + CAF modules
-echo "--- Installing kernel ---"
-mkdir -p "$ROOTFS/boot"
-if [ -f "$KERNEL_REPO/out/zImage" ]; then
-    cp "$KERNEL_REPO/out/zImage" "$ROOTFS/boot/zImage"
-    cp "$KERNEL_REPO/out/qcom-msm8909-udotech-bq268.dtb" "$ROOTFS/boot/msm8909-bq268.dtb" 2>/dev/null || true
-    echo "  Kernel copied to /boot"
-else
-    echo "  WARN: kernel not built yet — skipping /boot copy"
-fi
-
-# Install CAF 4.4 wlan.ko (required for WiFi)
+# Install CAF 4.4 kernel modules
+# The kernel itself lives in the boot partition (boot.img), not the rootfs.
+# boot.img is built and flashed by the CAF 4.4 kernel repo directly.
 wlan="$CAF_44_REPO/output/drivers/staging/prima/wlan.ko"
 if [ ! -f "$wlan" ]; then
     echo "ERROR: CAF 4.4 wlan.ko not found at $wlan" >&2

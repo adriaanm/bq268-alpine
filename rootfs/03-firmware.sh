@@ -2,9 +2,6 @@
 echo "--- Installing firmware ---"
 mkdir -p "$ROOTFS/lib/firmware/qcom"
 
-# Panel firmware (panel-mipi-dbi-spi driver)
-cp "$KERNEL_REPO/out/udotech,bq268-st7735s-panel.bin" "$ROOTFS/lib/firmware/" 2>/dev/null || true
-
 # GPU firmware
 cp "$FIRMWARE_DIR/gpu/a300_pfp.fw" "$ROOTFS/lib/firmware/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/gpu/a300_pm4.fw" "$ROOTFS/lib/firmware/" 2>/dev/null || true
