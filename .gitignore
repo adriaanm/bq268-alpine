@@ -10,6 +10,7 @@ tools/reboot-bootloader
 tools/rmt_storage
 tools/libqipcrtr4msmipc.so
 tools/libqmi/
+tools/lpac-esim/
 
 # Local WiFi config (contains passwords)
 wifi.conf
