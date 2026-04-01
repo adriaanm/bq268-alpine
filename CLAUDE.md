@@ -22,7 +22,7 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 - **Keypad**: 2×3 GPIO matrix (UP/DOWN/LEFT/RIGHT/BACK/SELECT) + 4 GPIO keys (F1=PTT, F2, F3, F6)
 - **LEDs**: GPIO1 (button backlight), GPIO68 (red), GPIO69 (green)
 - **USB**: HS device-mode only
-- **Battery**: Linear charger + VM-BMS, 4.2V / 800mA
+- **Battery**: Linear charger + VM-BMS, 4.2V / 2300mAh, ibatsafe=800mA
 - **PMIC**: PM8909 via SPMI
 
 ## Sibling Repos
