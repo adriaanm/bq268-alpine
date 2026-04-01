@@ -73,32 +73,12 @@ cat > "$ROOTFS/usr/local/bin/keyd.sh" << 'KEYD'
 # Key map:
 #   POWER     → toggle screen on/off
 #   F1 (PTT)  → spacebar (via console keymap)
-#   F3 (side) → settings menu
-#   F4 (side) → system info
 #   All keys  → wake screen from blank
 
 handle_key() {
     case "$1" in
         KEY_POWER)
             /usr/local/bin/screen-toggle.sh
-            ;;
-        KEY_F3)
-            /usr/local/bin/screen-wake.sh
-            (
-                [ -f /run/menu.lock ] && exit 0
-                touch /run/menu.lock
-                openvt -s -w -- /usr/local/bin/settings-menu.sh
-                rm -f /run/menu.lock
-            ) &
-            ;;
-        KEY_F4)
-            /usr/local/bin/screen-wake.sh
-            (
-                [ -f /run/menu.lock ] && exit 0
-                touch /run/menu.lock
-                openvt -s -w -- /usr/local/bin/sysinfo-menu.sh
-                rm -f /run/menu.lock
-            ) &
             ;;
         KEY_*)
             /usr/local/bin/screen-wake.sh

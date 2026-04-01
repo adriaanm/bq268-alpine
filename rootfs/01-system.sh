@@ -30,8 +30,8 @@ cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 ::sysinit:/sbin/openrc boot
 ::once:/sbin/openrc default
 
-# Consoles (autologin root, no password prompt)
-tty0::respawn:/sbin/getty -n -l /bin/sh 38400 tty0
+# App / console on framebuffer (wata app with shell fallback)
+tty0::respawn:/usr/local/bin/wata-launcher.sh
 ttyGS0::respawn:/bin/sh -c 'while [ ! -e /dev/ttyGS0 ]; do sleep 1; done; exec /sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100'
 
 # Shutdown
