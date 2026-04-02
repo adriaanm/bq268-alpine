@@ -20,6 +20,7 @@ Usage:
   pass 2: AID filter chain — called functions from pass 1
   pass 3: Cross-segment functions — OS/utility functions in seg9
   pass 4: ISD-R AID reference search + async handler
+  pass 5: MMGSDI dispatch chain — state machine, dispatch tables, AID routing
 
 See docs/modem_patch_plan.md for firmware layout and VA addresses.
 """
@@ -181,6 +182,27 @@ PASS4_TARGETS = {
     "session_mgr_2":            0xC092A1E4,
 }
 
+PASS5_B12_TARGETS = {
+    # MMGSDI dispatch chain — resolved thunk targets in seg12
+    # dispatch_table_store: just stores R1 at R0+0x14, tiny function
+    "dispatch_table_store":     0xC1736674,
+    # dispatch_table_lookup: searches APDU cmd tables at 0xC1F8B588/0xC1F8B648
+    "dispatch_table_lookup":    0xC1736690,
+    # state_machine: decides callback (returns -2) vs generic path
+    "state_machine":            0xC1735ED4,
+    # generic_handler: processes APDU through normal MMGSDI path
+    "generic_handler":          0xC1735F70,
+    # MMGSDI async callback: entry point for incoming APDU signals
+    "mmgsdi_async_callback":    0xC09CAA78,
+    # LPA main handler: copies ISD-R AID, checks LPA AID table at 0xC27EE260
+    "lpa_main_handler":         0xC0F1173C,
+}
+
+PASS5_FULL_TARGETS = {
+    # validate function in seg9: table index lookup that gates callback path
+    "validate_table_lookup":    0xC071A6C4,
+}
+
 
 def main():
     if len(sys.argv) < 2:
@@ -221,6 +243,11 @@ def main():
             "Async result (immext 0xC2149D80)",
         )
 
+    elif pass_num == "5":
+        print("Pass 5: MMGSDI dispatch chain (b12 + full ELF)")
+        decompile_targets("/tmp/modem_b12.elf", PASS5_B12_TARGETS)
+        decompile_targets("/tmp/modem.elf", PASS5_FULL_TARGETS)
+
     elif pass_num == "search":
         print("Searching for ISD-R AID references in b12")
         # immext(#0xc1cd0640) = 19 74 1c 0c
@@ -232,7 +259,7 @@ def main():
 
     else:
         print(f"Unknown pass: {pass_num}")
-        print("Valid passes: 1, 2, 3, 4, search")
+        print("Valid passes: 1, 2, 3, 4, 5, search")
         sys.exit(1)
 
     print("\n\nDone.")

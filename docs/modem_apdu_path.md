@@ -136,21 +136,38 @@ qmicli open_logical_channel(AID=A0000005591010...)
 
 ## Patch options to unblock ISD-R
 
-### Option C: prevent LPA from registering (preferred)
+### Option D: corrupt ISD-R AID in data segment (NEW — preferred)
 
-Prevent the LPA from registering its handler in the MMGSDI dispatch
-table. Then ISD-R AID is treated like any other AID — goes through
-the generic UICC driver and reaches the card.
+The ISD-R AID bytes exist in exactly ONE place in the entire firmware:
+b14 offset 0x2D0679 (VA 0xC1CD0679). LPA uses this as its reference
+for the ISD-R AID during registration and matching.
 
-**Where**: the LPA init code that registers the callback. Likely in
-FUN_c0f11758 or a function it calls. Need to find the exact call
-that writes the LPA handler pointer into the dispatch table.
+**Patch**: change the first AID byte from `A0` to `00`.
 
-**Effect**: ISD-R AID flows through the generic path. Card receives
-MANAGE CHANNEL + SELECT. Card responds normally. Clean.
+**Effect**: LPA registers for AID `00000005591010...` (non-existent).
+Real ISD-R requests (`A0000005591010...`) don't match any registered
+handler, so they flow through the generic UICC path to the card.
 
-**Risk**: the modem's LPA becomes non-functional (can't manage eSIM
-profiles internally). This is fine — we use lpac on the AP instead.
+**Why this works**: the AID comparison happens at LPA registration
+time (boot), not at dispatch time. The MMGSDI dispatch tables store
+callback pointers indexed by session/AID. With a corrupted reference
+AID, LPA registers its callback under a wrong AID key. The real
+ISD-R AID maps to no callback → generic path → card access.
+
+**Risk**: LPA's internal eSIM stack registers for a bogus AID.
+It will never receive any matching traffic, so it's effectively
+disabled. This is intentional — we use lpac on the AP instead.
+
+**Implementation**: single byte change in modem.b14, plus hash[14]
+update in b01/mdt. Already integrated into patch-modem-b12.py as
+Patch 3.
+
+### Option C: prevent LPA from registering
+
+NOP the LPA registration call. Tried at b12 offset 0x619014
+(`call lpa_register` → `r0 = #0x1`), but this was NOT sufficient —
+the AID routing uses a mechanism we couldn't fully disable via this
+single call site. Multiple registration paths may exist.
 
 ### Option B: ignore -2 result in async callback
 
@@ -172,6 +189,21 @@ return success. Same risk: no actual channel opened.
 
 ## Conclusion
 
-**Option C is the right approach.** The others fake success without
-actually talking to the card. We need to find where the LPA registers
-its ISD-R handler callback and NOP that registration.
+**Option D is the right approach.** It's the most targeted: one byte
+change in the data segment corrupts LPA's reference AID. No code flow
+changes needed. The real ISD-R AID naturally falls through to the
+generic UICC path.
+
+### Key addresses for the dispatch chain (Rizin disassembly)
+
+| Address | Function | Role |
+|---------|----------|------|
+| 0xC09CAA78 | mmgsdi_async_callback | Entry: receives APDU signal |
+| 0xC0A23140 | session_lookup | Returns session_table[slot] |
+| 0xC093B13C → 0xC1736674 | dispatch_table_store | Stores handler in request |
+| 0xC1736690 | dispatch_table_lookup | Searches cmd tables |
+| 0xC092A1E4 → 0xC1735ED4 | state_machine | Callback vs generic decision |
+| 0xC071A6C4 | validate_table_lookup | Table index bounds check |
+| 0xC1735F70 | generic_handler | Normal APDU processing |
+| 0xC0F1173C | lpa_main_handler | LPA's APDU handler |
+| 0xC1CD0679 | (data) ISD-R AID | Only copy in firmware ← PATCH HERE |
