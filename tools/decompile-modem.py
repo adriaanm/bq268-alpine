@@ -327,52 +327,54 @@ def apply_thunks(program):
 
 
 def run_analysis(program):
-    """Run Ghidra's auto-analysis on the program."""
-    from ghidra.app.util.importer import AutoImporter
+    """Disassemble and create functions at all known addresses."""
+    from ghidra.app.cmd.disassemble import DisassembleCommand
+    from ghidra.app.cmd.function import CreateFunctionCmd
+    from ghidra.program.model.address import AddressSet
     from ghidra.program.util import GhidraProgramUtilities
-    from ghidra.app.script import GhidraScriptUtil
 
-    if GhidraProgramUtilities.shouldAskToAnalyze(program):
-        print("  Running analysis (this may take several minutes)...")
-        t0 = time.time()
-        from ghidra.program.flatapi import FlatProgramAPI
-        from ghidra.app.cmd.disassemble import DisassembleCommand
-        from ghidra.program.model.address import AddressSet
+    print("  Disassembling known function regions...")
+    t0 = time.time()
+    af = program.getAddressFactory()
+    space = af.getDefaultAddressSpace()
+    fm = program.getFunctionManager()
 
-        af = program.getAddressFactory()
-        space = af.getDefaultAddressSpace()
+    tid = program.startTransaction("Targeted disassembly and function creation")
+    try:
+        # Disassemble generous regions around each known function
+        for va in KNOWN_FUNCTIONS:
+            addr = space.getAddress(va)
+            # Disassemble 16KB around each target (covers most functions + callees)
+            start = max(va - 0x400, 0)
+            end = min(va + 0x4000, 0xFFFFFFFF)
+            addr_set = AddressSet(space.getAddress(start), space.getAddress(end))
+            cmd = DisassembleCommand(addr, addr_set, True)
+            cmd.applyTo(program)
 
-        # Disassemble around known function entries first
-        tid = program.startTransaction("Pre-analysis disassembly")
-        try:
-            for va in KNOWN_FUNCTIONS:
-                addr = space.getAddress(va)
-                addr_set = AddressSet(
-                    space.getAddress(max(va - 0x100, 0)),
-                    space.getAddress(min(va + 0x4000, 0xFFFFFFFF)),
-                )
-                cmd = DisassembleCommand(addr, addr_set, True)
+        # Create functions at each known address
+        created = 0
+        for va in KNOWN_FUNCTIONS:
+            addr = space.getAddress(va)
+            if fm.getFunctionAt(addr) is None:
+                cmd = CreateFunctionCmd(addr)
                 cmd.applyTo(program)
-        finally:
-            program.endTransaction(tid, True)
-
-        # Run auto-analysis
-        from ghidra.app.plugin.core.analysis import AutoAnalysisManager
-        from ghidra.util.task import ConsoleTaskMonitor
-        monitor = ConsoleTaskMonitor()
-        mgr = AutoAnalysisManager.getAnalysisManager(program)
-        tid = program.startTransaction("Auto-analysis")
-        try:
-            mgr.reAnalyzeAll(None)
-            mgr.startAnalysis(monitor, False)
-        finally:
-            program.endTransaction(tid, True)
+                if fm.getFunctionAt(addr) is not None:
+                    created += 1
 
         elapsed = time.time() - t0
-        print(f"  Analysis complete ({elapsed:.0f}s)")
-        GhidraProgramUtilities.setAnalyzedFlag(program, True)
-    else:
-        print("  Project already analyzed")
+        print(f"  Disassembled {len(KNOWN_FUNCTIONS)} regions, "
+              f"created {created} functions ({elapsed:.0f}s)")
+    finally:
+        program.endTransaction(tid, True)
+
+    # Mark as analyzed so we skip re-analysis on future opens
+    tid2 = program.startTransaction("Mark analyzed")
+    try:
+        from ghidra.program.model.listing import Program
+        opts = program.getOptions(Program.PROGRAM_INFO)
+        opts.setBoolean("Analyzed", True)
+    finally:
+        program.endTransaction(tid2, True)
 
 
 def decompile_function(program, va, timeout=180):
