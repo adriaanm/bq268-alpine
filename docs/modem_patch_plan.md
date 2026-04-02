@@ -20,8 +20,8 @@ has been tried and failed:
 
 | Approach | Result | Notes |
 |----------|--------|-------|
-| DIAG EFS PUT | No response | Kernel DIAG MUX bug: `encode_rsp_and_send err -19`. Earlier sessions reported "returns success but silently discards" — but that was also with broken DIAG responses, so the actual modem-side behavior is **unconfirmed**. |
-| DIAG EFS OPEN+O_CREAT | No response | Same kernel bug. Earlier reported "rejected as bad command" — also unconfirmed. |
+| DIAG EFS PUT | **Returns success, silently discards** | Confirmed with fixed DIAG driver (kernel #52). PUT returns error code 0 but file does not exist on read-back. Modem EFS security policy accepts the command but blocks creation on protected `/nv/item_files/modem/qmi/uim/` paths. SPC unlock does not help. |
+| DIAG EFS OPEN+O_CREAT | fd=-1 errno=2 | OPEN with O_CREAT returns ENOENT — same security policy. |
 | QMI PDC (MBN config) | NV items not applied | Config loads and activates, but SW configs only apply NV items when SIM PLMN matches the carrier profile. No SIM → no NV writes. Activating Reliance config + reboot **crashed the modem** (incompatible NVs for BQ268 hardware — caused bootloop, required EFS wipe). |
 | QMI UIM | AccessDenied | This is the restriction we're trying to bypass. |
 | AT+CSIM | "operation not supported" | Firmware advertises AT+CSIM but doesn't implement it. |
@@ -36,13 +36,11 @@ has been tried and failed:
 custom NV_FILE items" from earlier docs was wrong — the crash came from
 activating a full carrier config with NVs incompatible with BQ268 hardware.
 
-**Key finding on DIAG**: The kernel DIAG driver's response path is completely
-broken (`encode_rsp_and_send` returns `-ENODEV` for every response). Commands
-are sent to the modem but responses never reach userspace. All "silently
-discards" and "rejected" results from DIAG EFS were observed with this broken
-response path — the modem's actual behavior is unknown. **Fixing the kernel
-DIAG driver is a viable alternative path** — if EFS PUT actually works after
-SPC unlock, firmware patching is unnecessary.
+**Key finding on DIAG**: The kernel DIAG driver fix (commit 034ada814c88,
+kernel #52) restored bidirectional DIAG communication. With working responses,
+we confirmed that EFS PUT **returns success but silently discards** — the
+modem's EFS security policy blocks file creation on protected NV paths even
+after SPC unlock. This eliminates DIAG EFS as a viable path.
 
 ## Firmware details
 
@@ -204,37 +202,7 @@ candidates (header+hashes, hashes-only) didn't match the decrypted signature.
 
 ## Next steps (priority order)
 
-### 1. Fix kernel DIAG driver (alternative to firmware patching)
-
-The DIAG MUX response path is broken: `encode_rsp_and_send` returns
-`-ENODEV` (-19) for every modem response. This means we never confirmed
-whether DIAG EFS PUT actually works on this modem — the "silently discards"
-finding from earlier sessions was observed without receiving any response.
-
-If the DIAG response path is fixed and EFS PUT works after SPC unlock,
-we can create the NV file directly without patching firmware at all.
-
-The bug is in `drivers/char/diag/diagfwd.c:371`:
-```c
-err = diag_mux_write(DIAG_LOCAL_PROC, rsp_ptr, driver->encoded_rsp_len,
-                     driver->rsp_buf_ctxt);
-```
-Returns -ENODEV. The MUX layer can't deliver responses to the userspace
-`/dev/diag` client. Root cause likely in MUX table initialization or
-the MEMORY_DEVICE_MODE setup for the SMD transport.
-
-### 2. Obtain QPSA F4 TEST private keys
-
-The firmware is signed with Qualcomm's publicly known test certificates.
-The private key for `SecTools Test User` (or `QPSA F4 TEST CA` to issue
-a new attestation cert) would allow re-signing the modified hash segment.
-
-Sources:
-- Qualcomm SecTools package (part of AMSS/MPSS SDK)
-- CodeLinaro / CAF source distributions
-- Android BSP signing directories
-
-### 3. Check QFPROM secure boot fuses
+### 1. Check QFPROM secure boot fuses
 
 Read QFPROM to determine if a root certificate hash is programmed:
 ```bash
@@ -246,7 +214,7 @@ If the root hash fuse is all-zeros, the MBA accepts ANY certificate chain.
 We can generate our own RSA-2048 key pair, create a self-signed cert chain,
 and sign the modified hash segment ourselves.
 
-### 4. Try unsigned hash segment (long shot)
+### 2. Try unsigned hash segment (long shot)
 
 Test if MBA accepts a hash segment with `sig_size=0, cert_size=0`.
 File ready: `/tmp/modem_b01_nosig.bin`. If the MBA falls through on
