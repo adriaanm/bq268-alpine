@@ -5,45 +5,172 @@
 Bypass the modem's QMI UIM APDU security restriction (NV 67312) to allow
 logical channel operations for eSIM provisioning.
 
-## Status: general APDU restriction lifted, ISD-R AID still blocked
+## Status: two patches, both in modem.b12
 
-**What works**: The restriction bitmask patch lifts general APDU security.
-Logical channel opens to non-ISD-R AIDs succeed (return SimFileNotFound
-from the card instead of AccessDenied from the modem). Basic logical
-channel opens work.
+### Patch 1: APDU restriction bypass (offset 0x121DCC) — VERIFIED
 
-**What's blocked**: Opening a logical channel to the ISD-R AID
-(`A0000005591010...`) still returns QMI error 82 (AccessDenied). This is
-a SEPARATE AID-specific filter in the modem, distinct from the bitmask
-restriction. The modem has a built-in LPA (eSIM stack) that intercepts
-ISD-R access. Same result via `AT+CCHO` and `AT+CGLA`. DIAG EFS writes
-to `apdu_security_aid_list` are silently discarded (same as restrictions).
+Lifts the QMI UIM APDU security restriction bitmask. Without this,
+open_logical_channel and send_apdu are blocked for all AIDs.
 
-**Signing chain solved**: QFPROM root hash fuses are not programmed, so
-any cert chain is accepted. MBA only checks SHA-256 hashes, not the RSA
-signature. Just update hash[12] in modem.mdt — no re-signing needed.
-
-**To apply the patch**, deploy three files to `/lib/firmware/` and reboot:
 ```
-modem.b12  — 4-byte code patch at offset 0x121DCC
-modem.b01  — updated SHA-256 hash for b12 (hash[12])
-modem.mdt  — embeds the updated b01 (replaces bytes at offset 884+)
+Original: C0 7D 81 91  →  r0 = memw(r1+#0x7B8)   // load restriction bitmask
+Patched:  00 40 00 78  →  r0 = #0x0                // always "no restrictions"
 ```
 
-Patched files on buildbox:
-- `/tmp/modem_b12_patched.bin`
-- `/tmp/modem_b01_hashonly.bin`
-- `/tmp/modem_mdt_hashonly.bin`
+### Patch 2: LPA ISD-R disable (offset 0x619014) — TESTED, NOT SUFFICIENT
+
+Replaces the `call lpa_register` at VA 0xC0F0E014 with `r0 = #0x1`,
+preventing the LPA from writing its callback into the table at
+0xC27EDEB8. The LPA task still starts but skips ISD-R registration.
+
+```
+Original: B8 79 FF 5B  →  call 0xC0F0D384   // lpa_register(slot, callbacks, aid_type)
+Patched:  20 40 00 78  →  r0 = #0x1          // pretend registration returned "already done"
+```
+
+**Result: still AccessDenied.** The MMGSDI routing to the LPA uses a
+DIFFERENT mechanism than this table. The actual AID comparison and
+routing happens inside the MMGSDI state machine (FUN_c093b13c /
+FUN_c092a1e4), and the LPA's claim on the ISD-R AID is registered
+through a path we haven't identified yet.
+
+**Attempted patches that don't work:**
+- 0x618F7C: force `lpa_support` check to "disabled" — too early,
+  gets overwritten by later init code
+- 0x61901C: force `r17 = #0x1` after registration call — registration
+  already happened at 0xC0F0D384 before this point
+- 0x619014: NOP the registration call — table at 0xC27EDEB8 is not
+  what MMGSDI uses for AID routing
+
+See `docs/modem_apdu_path.md` for the full APDU routing architecture.
+
+### Signing chain
+
+QFPROM root hash fuses are not programmed — any cert chain is accepted.
+MBA only checks SHA-256 hashes, not the RSA signature. Just update
+hash[12] in modem.mdt — no re-signing needed.
+
+### Applying the patches
+
+```bash
+python3 tools/patch-modem-b12.py firmware/modem     # patch b12 + update hash
+just flash-modem                                     # deploy to device
+```
+
+Three files are modified in `firmware/modem/`:
+- `modem.b12` — two 4-byte code patches
+- `modem.b01` — updated SHA-256 hash for b12 (hash[12])
+- `modem.mdt` — embeds the updated b01 (at offset 884)
 
 ## Next steps
 
 ### 1. Bypass ISD-R AID filter (second firmware patch)
 
-The ISD-R AID (`A0000005591010`) is referenced at VA 0xC1CD0679 in b14.
-Code at VA 0xC0F115E8, 0xC0F116B4, 0xC0F11758 (in b12) references this
-via immext — this is the modem's LPA subsystem. The QMI UIM handler at
-0xC0A15234 calls 0xC0985CC4 which performs AID-specific checks. Need to
-trace the exact comparison and patch it.
+**Decompilation findings** (pyghidra + Ghidra Hexagon sleigh plugin):
+
+The ISD-R AID is at VA 0xC1CD0678 in b14 as a length-prefixed blob:
+`10 A0 00 00 05 59 10 10 FF FF FF FF 89 00 00 01` (16 bytes + length).
+
+The AID filter is NOT in the QMI UIM handler (FUN_c0a15234). The handler
+does a restriction bitmask check (our existing patch) and session state
+lookup, but never examines AID bytes. The actual filter is in the MMGSDI
+async processing layer:
+
+**Call chain for open_logical_channel**:
+```
+FUN_c0a15234 (QMI UIM handler)
+  → FUN_c0a16da8 (restriction bitmask — PATCHED, returns 0)
+  → signal(0x402) → wait → read result from 0xC2149DB0+4
+                            ↓
+FUN_c09caa78 (async callback, fires via signal)
+  → FUN_c0a23140 (table lookup: *(0xC2DA5648 + param*4))
+  → FUN_c093b13c (session manager — resolves request via dispatch tables)
+  → FUN_c092a1e4 (state machine processor — returns -2 on denial)
+      → dispatches via callback at offset +0x20 of request structure
+      → if callback returns or is NULL: returns 0xFFFFFFFE (-2)
+      → -2 written to 0xC2149DB4 → handler reads it → AccessDenied
+```
+
+The state machine in FUN_c092a1e4 uses a callback-based dispatch. The
+LPA registers itself in this dispatch table during initialization, causing
+ISD-R AID requests to be routed to the LPA callback which returns -2.
+
+**Key structures**:
+- Session table: `0xC2DA5218[slot*4]` — per-slot session pointers
+- Async result: `0xC2149DB0` — signal variable, +4 = result value
+- LPA AID table: `0xC27EE290[idx*4]` — LPA's own registered AIDs
+  (referenced ONLY from LPA code at 0xC0F0F000-0xC0F13A00)
+- ISD-R data: VA 0xC1CD0600+ — LPA strings ("cancelSessionResponse",
+  "pendingNotification", ISD-R AID, "/lpa/store_data_resp_from_card")
+- Dispatch tables: `0xC1F8B588` (22 entries), `0xC1F8B648` (dynamic)
+
+**Decompiled key functions**:
+- `FUN_c0999610`: returns `func_0xc0717134(0xC21499B0) == 0` (LPA idle)
+- `FUN_c0999630`: returns `func_0xc0717134(0xC21499B0) == 8` (LPA state 8)
+- `FUN_c0717d4c`: session state lookup — `table[param1*4][param2*0x2C+2]`
+- `FUN_c0717134`: reads `*(param+4)` (generic signal/state reader)
+
+**Patch candidates** (in order of preference):
+
+a) **Patch FUN_c092a1e4 to skip LPA callback**: NOP the callback dispatch
+   at the point where it calls `*(request+0x20)` for ISD-R requests.
+   The function is in seg23 (modem.b23, 0xC3F49000-0xC40DA000, RWX).
+   Same hash-update workflow as b12 — just also update hash[23] in b01/mdt.
+
+b) **Patch FUN_c09caa78 to ignore -2 result**: Change the comparison at
+   0xC09CAABC from `cmpb.eq(r0, #0x0)` to always succeed. This would
+   make ALL open_logical_channel succeed regardless of AID, which is safe
+   since the card itself will reject invalid requests.
+
+c) **Patch the LPA initialization** (FUN_c0f11758) to skip ISD-R AID
+   registration. The call `func_0xc0f1051c(param_1, 0xc1cd0678)` copies
+   the AID into the LPA structure. NOPing this prevents registration, but
+   may break the LPA's own eSIM operations (which we don't need).
+
+d) **Patch the async result check** in the handler at 0xC0A153DC: change
+   `r0 = !cmp.eq(r0, #-0x2)` to `r0 = #0x1`. This skips the -2 check
+   but the actual channel still won't be opened — the async handler
+   would have already failed.
+
+**Patch approach (b) detail** — at b12 offset **0x0D5ABC** (VA 0xC09CAABC):
+```hexagon
+; Current: check if FUN_c092a1e4 returned 0 (success)
+c09caabc:  p0 = cmpb.eq(r0,#0x0)              ; 00 40 00 dd
+c09caac0:  if (!p0.new) jump:nt 0xc09cab74     ; 5c 48 20 5c  ← error path
+
+; Patched: NOP the conditional jump (keep parse bits = 01 for mid-packet)
+c09caabc:  p0 = cmpb.eq(r0,#0x0)              ; 00 40 00 dd  (unchanged)
+c09caac0:  nop                                  ; 00 40 00 7f  ← NOP, parse=01
+```
+
+This always falls through to the success path, bypassing the state
+machine's access denied result. The state machine still runs (LPA
+callback fires for ISD-R AID and returns -2), but we ignore the result.
+The session status bytes at +0x194/+0x19c get cleared, and the async
+handler returns success.
+
+**Risk**: the state machine didn't actually open a channel to the card
+(the LPA callback intercepts and never sends MANAGE CHANNEL to the SIM).
+The QMI response would say "success" but the channel doesn't exist —
+subsequent send_apdu commands would fail. Need to test on device.
+
+**Patch approach (a) detail** — b12 offset **0xE40F18** (VA 0xC1735F18):
+
+The state machine (FUN_c092a1e4 → thunk → 0xC1735ED4) always returns -2
+after calling any registered callback (offset +0x20 in request structure):
+```hexagon
+c1735ef8:  r4 = memw(r0+#0x20)    ; load callback from request
+c1735f18:  r16 = #0xfe            ; d0 5f 00 78 — pre-set return = -2
+c1735f1c:  callr r4               ; call callback (LPA handler)
+c1735f4c:  r0 = sxtb(r16)         ; return sxtb(0xfe) = -2
+```
+Patch `r16 = #0xfe` → `r16 = #0x0` (change bytes `d0 5f` → `10 40`).
+Makes ALL callback-dispatched requests return success. Broader than (b)
+but cleaner — the callback still runs, the LPA still fires, but the
+state machine reports success to the caller. Same risk as (b): the LPA
+callback might not actually open a channel to the card.
+
+See `tools/decompile-modem.py` for reproducible decompilation passes.
 
 ### 2. Alternative: DIAG MMGSDI raw APDU
 
@@ -100,8 +227,10 @@ after SPC unlock. This eliminates DIAG EFS as a viable path.
 | Build date | Sep 27 2024 |
 | Entry point | 0x88000000 |
 | Segments | 26 program headers, ~47MB total |
+| OS/utility seg | **modem.b09** — seg 9, VA 0xC0700000, 200KB, PF_R\|PF_W\|PF_X |
 | Code segment | **modem.b12** — seg 12, VA 0xC08F5000, 17MB, PF_R\|PF_X |
 | Data segment | **modem.b14** — seg 14, VA 0xC1A00000, 6.3MB, PF_R (no execute) |
+| RW data seg | **modem.b15** — seg 15, VA 0xC2056000, 1.7MB, PF_R\|PF_W |
 | Hash segment | **modem.b01** — 7272 bytes (40-byte header + 26×32 hashes + 256 sig + 6144 certs) |
 | Signing | SHA256 + RSA-2048 PKCS#1 v1.5 (custom padding — raw hash, no DigestInfo) |
 | Cert chain | **QPSA F4 TEST** (Qualcomm development keys) — 3 certs |

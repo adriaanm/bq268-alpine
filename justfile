@@ -136,6 +136,20 @@ flash-rootfs:
     echo "Flashing $img ($(ls -lh "$img" | awk '{print $5}')) → userdata"
     fastboot flash userdata "$img"
 
+# patch modem firmware for eSIM (APDU restriction + LPA ISD-R disable)
+patch-modem:
+    python3 tools/patch-modem-b12.py firmware/modem
+
+# check modem patch status without modifying
+check-modem:
+    python3 tools/patch-modem-b12.py firmware/modem --check
+
+# deploy patched modem firmware to device (must be reachable via ssh)
+flash-modem:
+    scp firmware/modem/modem.b12 firmware/modem/modem.b01 firmware/modem/modem.mdt bq268:/lib/firmware/
+    ssh bq268 'sync'
+    @echo "Firmware deployed. Reboot device to apply."
+
 # reboot device from fastboot
 reboot:
     fastboot reboot
