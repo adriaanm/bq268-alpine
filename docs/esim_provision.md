@@ -1,10 +1,14 @@
 # eSIM Provisioning — BQ268
 
-## Status (2026-03-31)
+## Status (2026-04-02)
 
-**Tooling ready, blocked on hardware.** lpac cross-compiled and verified on
-device. QMI APDU wrapper tested (connect succeeds, open_channel correctly
-returns AccessDenied with empty SIM slot). Waiting for easyuicc eSIM adapter.
+**Blocked on modem APDU access control.** easyuicc adapter inserted and
+detected (card present, USIM ready, PIN disabled). All APDU paths to the
+eUICC's ISD-R are blocked by the modem firmware's security restrictions
+(NV item 67312). See "APDU Access Attempts" below for full details.
+
+Next: either provision on Android first, or fix the kernel DIAG SMD
+channels to write the NV item directly.
 
 ## Overview
 
@@ -166,13 +170,147 @@ eUICC Secure Element
     └── Root certificates for profile verification
 ```
 
-## Test Plan (when adapter arrives)
+## APDU Access Attempts (2026-04-02)
 
-1. **Card detection**: `qmicli -d msmipc://0 --uim-get-card-status` should show `Card state: 'present'`
-2. **eUICC info**: `lpac-qmi-wrapper chip info` — returns EID, firmware version
-3. **Channel test**: wrapper opens logical channel to ISD-R AID
-4. **Test profile**: use a test SM-DP+ (e.g., `rsp.truphone.com` or GSMA test server at `testrootsmds.gsma.com`) to download a trial profile
-5. **Full provision**: `esim-provision` end-to-end with a real carrier code
+The modem firmware (CAF/Android stock) enforces APDU security restrictions
+controlled by **NV item 67312** at EFS path
+`/nv/item_files/modem/qmi/uim/apdu_security_restrictions`. Setting this
+to `0x00` disables the restrictions. Every approach to either bypass the
+restriction or write this NV item was blocked:
+
+### 1. QMI UIM logical channel — AccessDenied
+
+```
+qmicli -d msmipc://0 --uim-open-logical-channel=1,a0000005591010ffffffff8900000100
+→ QMI protocol error (82): 'AccessDenied'
+```
+
+The modem checks NV 67312 before allowing logical channel operations.
+This is the restriction we need to disable.
+
+`--uim-send-apdu=1,0,0070000001` (raw MANAGE CHANNEL APDU) also failed
+with `InvalidArgument` — the modem rejects channel 0 for this command.
+
+### 2. AT+CSIM — not implemented
+
+AT commands work on `/dev/smd7` (DATA1 channel). `AT+CLAC` returned a
+full command list. However:
+
+- `AT+CSIM` — returns `+CME ERROR: operation not supported` for all APDUs
+  (including basic GET RESPONSE). The command is advertised but not
+  functional on this firmware.
+- `AT+CCHO` / `AT+CGLA` — not in the AT command list at all.
+- `AT$QCDGEN` (DIAG-over-AT passthrough) — returns `ERROR`.
+
+The modem's AT+CUAD command works and shows the USIM application:
+```
++CUAD: "61184F10A0000000871002FFFFFFFF890305000150045553494D..."
+```
+ISD-R doesn't appear in CUAD (normal — it's a GlobalPlatform security
+domain, not a telecom app).
+
+### 3. DIAG EFS write — kernel SMD channels not open
+
+Tool written: `tools/diag-efs-write.c` (cross-compiled for ARM/musl).
+Uses DIAG EFS2 subsystem (0x4B 0x13) to write files to modem EFS via
+`/dev/diag`.
+
+The DIAG session initializes correctly:
+- `open("/dev/diag")` → OK
+- `ioctl(DIAG_IOCTL_SWITCH_LOGGING, MEMORY_DEVICE_MODE)` → OK
+- `ioctl(DIAG_IOCTL_HDLC_TOGGLE, disable=1)` → OK
+
+But EFS2 commands are silently dropped (`write()` returns 0). Root cause:
+
+The kernel DIAG driver uses **glink** transport (which fails on MSM8909 —
+it only supports SMD). The SMD fallback requires **platform device
+registrations** with names `"DIAG"`, `"DIAG_CNTL"`, `"DIAG_CMD"` and
+`id=SMD_APPS_MODEM`. These are missing from the MSM8909 board code/DTS.
+
+dmesg confirms:
+```
+diag: In __diag_glink_init, unable to register for glink channel DIAG_CMD
+diag: In diag_send_feature_mask_update, control channel is not open, p: 0
+```
+
+Without the SMD DIAG control channel, the modem never registers its DIAG
+commands with the kernel, so `diag_process_apps_pkt()` finds no match in
+the command table and drops EFS2 packets.
+
+**Fix**: add platform device entries to the kernel DTS/board code. ~10 lines.
+This also enables DIAG F3 logging (`tools/diag_read.c`) for the BAM DMUX
+debug task.
+
+Relevant source:
+- `drivers/char/diag/diagfwd_smd.c:352-413` — platform driver registration
+- `drivers/char/diag/diagfwd_smd.c:240-308` — `smd_channel_probe()` opens channels
+- `drivers/char/diag/diagfwd_peripheral.c:479-482` — transport init order
+
+### 4. QMI PDC (modem config MBN) — firmware rejects EFS-NV items
+
+Tool written: `tools/gen-mcfg-mbn.py` — generates MCFG MBN files with
+custom NV items, wrapped in ELF32 with SHA256 hash segment.
+
+Fixed a **segfault bug in qmicli** `--pdc-load-config`: `qmicli-pdc.c`
+called `g_free()` on a `g_mapped_file_get_contents()` pointer (mmapped
+memory, not glib-allocated). The `g_free()` read a heap header at
+`ptr - 4`, hitting unmapped memory before the mmap region.
+
+After fixing, PDC loading works — reference MBN files from the modem
+firmware load successfully:
+```
+qmicli --pdc-load-config=/tmp/ref_mcfg.mbn → "Finished loading"
+qmicli --pdc-list-configs=software → Brazil_Commercial (inactive)
+```
+
+However, **the modem's MCFG parser crashes on NV_FILE (type=2) and FILE
+(type=4) items** — the item types needed for EFS-path-based NV items like
+67312 (which is > 65535 and can't use type=1 uint16 NV IDs). Adding any
+path-based item to a working MBN causes the modem's PDC service to
+disconnect.
+
+The modem firmware only supports type=1 NV items in MCFG. Dead end for
+NV 67312 via this path.
+
+### 5. Card detection (working)
+
+```
+qmicli -d msmipc://0 --uim-get-card-status
+→ Card state: 'present'
+→ Application type: 'usim (2)', state: 'ready'
+→ AID: A0:00:00:00:87:10:02:FF:FF:FF:FF:89:03:05:00:01
+→ PIN1: disabled, PIN2: enabled-not-verified
+```
+
+## Unblocking — Two Paths
+
+### Path A: Provision on Android first (immediate)
+
+1. Install OpenEUICC (F-Droid) on any Android phone
+2. Insert easyuicc adapter, download carrier profile
+3. Move adapter back to BQ268
+4. `rc-service modem restart` → modem uses provisioned USIM for data
+
+This works because normal USIM operation (auth, registration, data) does
+not require logical channel access — only profile management does.
+
+### Path B: Fix kernel DIAG SMD channels (permanent)
+
+Add platform device registrations for DIAG SMD channels to the MSM8909
+kernel. This enables:
+- `diag-efs-write` to set NV 67312 = 0 (disables APDU restrictions)
+- DIAG F3 logging for BAM DMUX debugging
+- Full on-device eSIM provisioning via lpac
+
+After the NV item is set, the existing lpac + lpac-qmi-wrapper pipeline
+works end-to-end.
+
+## Test Plan (after APDU access is unblocked)
+
+1. **eUICC info**: `lpac-qmi-wrapper chip info` — returns EID, firmware version
+2. **Channel test**: wrapper opens logical channel to ISD-R AID
+3. **Test profile**: use a test SM-DP+ to download a trial profile
+4. **Full provision**: `esim-provision` end-to-end with a real carrier code
 
 ## Repos
 
