@@ -7,7 +7,7 @@
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — Track voltage, capacity, charge status over time. The kernel reports `current_now=0` because the charger driver has no USB PSY to enable current tracking (known kernel limitation). A userspace daemon can poll `voltage_now`, `capacity`, `status` from `/sys/class/power_supply/battery/` and log to a file or SQLite for charge/discharge curve analysis. Could also estimate current from dV/dt. Consider integrating with `battmon` if it already runs.
-- [ ] eSIM provisioning — Adapter inserted, card detected. Blocked on modem APDU access control (NV 67312). QMI, AT+CSIM, PDC/MBN paths all exhausted. Fix: add DIAG SMD platform devices to kernel, then `diag-efs-write` sets NV=0. See `docs/esim_provision.md`.
+- [ ] eSIM provisioning — Adapter detected. APDU blocked by NV 67312. Kernel DIAG fix committed (`034ada814c88`), awaiting boot. Then: create NV file via DIAG or decompile modem firmware to patch the check. See `docs/esim_provision.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog

@@ -237,14 +237,14 @@ Without the SMD DIAG control channel, the modem never registers its DIAG
 commands with the kernel, so `diag_process_apps_pkt()` finds no match in
 the command table and drops EFS2 packets.
 
-**Fix**: add platform device entries to the kernel DTS/board code. ~10 lines.
-This also enables DIAG F3 logging (`tools/diag_read.c`) for the BAM DMUX
-debug task.
+**Fix committed**: `034ada814c88` in `~/bq268-caf-4.4` pre-registers all
+DIAG SMD channels during init and adds `.poll` support. The root cause was
+a transport negotiation system that assumes multiple transports compete —
+on SMD-only MSM8909, negotiation never fires, leaving all non-CNTL channels
+unregistered (fwd_ctxt=NULL). The fix calls `smd_late_init()` for all
+channel types during `diag_smd_init()`.
 
-Relevant source:
-- `drivers/char/diag/diagfwd_smd.c:352-413` — platform driver registration
-- `drivers/char/diag/diagfwd_smd.c:240-308` — `smd_channel_probe()` opens channels
-- `drivers/char/diag/diagfwd_peripheral.c:479-482` — transport init order
+**Status**: committed, awaiting kernel build + flash to boot partition.
 
 ### 4. QMI PDC (modem config MBN) — firmware rejects EFS-NV items
 
@@ -272,7 +272,57 @@ disconnect.
 The modem firmware only supports type=1 NV items in MCFG. Dead end for
 NV 67312 via this path.
 
-### 5. Card detection (working)
+### 5. DIAG EFS write — file creation blocked
+
+With the kernel DIAG fix (tested before reboot), DIAG EFS2 commands reach
+the modem. Verified:
+- **MKDIR**: works (creates directories, returns EEXIST for existing)
+- **OPEN (read)**: works (returns fd for existing files)
+- **READ**: works (read `lte_bandpref` = 8 bytes)
+- **WRITE to existing file**: works (after SPC unlock, cmd 0x41 "000000")
+- **OPEN with O_CREAT**: **blocked** — returns DIAG_CMD_ERROR (0x13) for
+  any flags including O_CREAT. File creation is disabled in firmware.
+- **PUT (cmd 0x1A)**: returns ENOENT for non-existent files, even with
+  O_CREAT flag. Modem's DIAG EFS blocks all file creation.
+- **SPC unlock**: accepted (cmd 0x41, SPC "000000"), but does not enable
+  file creation.
+
+The NV file `/nv/item_files/modem/qmi/uim/apdu_security_restrictions`
+does not exist in the factory EFS. It needs to be created, but DIAG can't
+create files on this firmware.
+
+### 6. rmt_storage file-backed overrides
+
+Modified `rmt_storage` to serve from files in `/lib/firmware/` instead of
+eMMC block devices. If `/lib/firmware/modemst1.bin` (etc.) exists,
+rmt_storage opens it; otherwise falls through to `/dev/mmcblk0pN`.
+
+Override files deployed:
+- `modemst1.bin` — empty (0xFF), triggers modem to init fresh EFS
+- `modemst2.bin` — empty (backup copy, must also be empty)
+- `fsg.bin` — modified FSG with our NV file added to the tar archive
+- `fsc.bin` — empty (absorbs filesystem cookie writes)
+
+**Result**: modem creates fresh EFS in modemst1.bin (IMGEFS1 header
+written), but **ignores the modified FSG**. Even with a zeroed FSG, the
+modem creates a valid EFS from firmware defaults. The modem's EFS init
+is self-contained — it does not need FSG to create a working filesystem.
+
+The FSG golden copy may only be used during factory provisioning or via a
+specific modem command, not automatically on empty modemst1.
+
+### 7. EFS encryption
+
+modemst1/modemst2 are **encrypted** (AES, Shannon entropy = 8.000 bits/byte).
+The modem encrypts EFS data inside the Hexagon DSP before writing through
+rmt_storage. We cannot parse, modify, or inject files at the sector level.
+
+The FSG golden copy is **not encrypted** — it's a gzip tar at offset 0x228,
+but it's signed (`SIGNED_IMAGE` with Qualcomm development certificates).
+The modem may validate the signature during restore, which would explain
+why our modified FSG was ignored.
+
+### 8. Card detection (working)
 
 ```
 qmicli -d msmipc://0 --uim-get-card-status
@@ -282,28 +332,29 @@ qmicli -d msmipc://0 --uim-get-card-status
 → PIN1: disabled, PIN2: enabled-not-verified
 ```
 
-## Unblocking — Two Paths
+## Current Plan
 
-### Path A: Provision on Android first (immediate)
+### Step 1: Boot the fixed kernel
 
-1. Install OpenEUICC (F-Droid) on any Android phone
-2. Insert easyuicc adapter, download carrier profile
-3. Move adapter back to BQ268
-4. `rc-service modem restart` → modem uses provisioned USIM for data
+Kernel commit `034ada814c88` fixes DIAG SMD channels permanently.
+Awaiting build + flash to boot partition.
 
-This works because normal USIM operation (auth, registration, data) does
-not require logical channel access — only profile management does.
+### Step 2: Create the NV file via DIAG
 
-### Path B: Fix kernel DIAG SMD channels (permanent)
+The modem's fresh EFS (in `/lib/firmware/modemst1.bin`) doesn't have
+`apdu_security_restrictions`. DIAG can't create files directly, but
+the modem's own EFS init creates the directory structure. Two options:
 
-Add platform device registrations for DIAG SMD channels to the MSM8909
-kernel. This enables:
-- `diag-efs-write` to set NV 67312 = 0 (disables APDU restrictions)
-- DIAG F3 logging for BAM DMUX debugging
-- Full on-device eSIM provisioning via lpac
+**Option A**: If the modem creates this file with a default value during
+normal operation (e.g., after first QMI UIM access), we can overwrite it
+with `diag-efs-write` (write-to-existing works).
 
-After the NV item is set, the existing lpac + lpac-qmi-wrapper pipeline
-works end-to-end.
+**Option B**: Decompile modem firmware (`~/bq268-edl/dump/modem.bin`,
+Hexagon QDSP6) to understand the NV 67312 check. Could binary-patch the
+firmware to skip the APDU restriction entirely — no NV file needed.
+
+**Option C**: Provision on Android (OpenEUICC) as a workaround that
+bypasses the NV restriction entirely.
 
 ## Test Plan (after APDU access is unblocked)
 
