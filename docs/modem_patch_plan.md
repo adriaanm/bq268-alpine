@@ -5,17 +5,23 @@
 Bypass the modem's QMI UIM APDU security restriction (NV 67312) to allow
 logical channel operations for eSIM provisioning.
 
-## Status: PATCH WORKING
+## Status: general APDU restriction lifted, ISD-R AID still blocked
 
-The restriction check function has been patched and tested. APDU security
-restrictions are lifted — logical channel opens succeed (SimFileNotFound
-for non-existent AIDs instead of AccessDenied).
+**What works**: The restriction bitmask patch lifts general APDU security.
+Logical channel opens to non-ISD-R AIDs succeed (return SimFileNotFound
+from the card instead of AccessDenied from the modem). Basic logical
+channel opens work.
 
-The signing chain was solved: QFPROM root hash fuses are not programmed,
-so any self-signed cert chain is accepted. The hash segment must be
-embedded in modem.mdt (not just modem.b01). The signature does not need
-to be valid — MBA only checks that the hash segment hashes match actual
-segment data, not the RSA signature over the hash data.
+**What's blocked**: Opening a logical channel to the ISD-R AID
+(`A0000005591010...`) still returns QMI error 82 (AccessDenied). This is
+a SEPARATE AID-specific filter in the modem, distinct from the bitmask
+restriction. The modem has a built-in LPA (eSIM stack) that intercepts
+ISD-R access. Same result via `AT+CCHO` and `AT+CGLA`. DIAG EFS writes
+to `apdu_security_aid_list` are silently discarded (same as restrictions).
+
+**Signing chain solved**: QFPROM root hash fuses are not programmed, so
+any cert chain is accepted. MBA only checks SHA-256 hashes, not the RSA
+signature. Just update hash[12] in modem.mdt — no re-signing needed.
 
 **To apply the patch**, deploy three files to `/lib/firmware/` and reboot:
 ```
@@ -28,6 +34,34 @@ Patched files on buildbox:
 - `/tmp/modem_b12_patched.bin`
 - `/tmp/modem_b01_hashonly.bin`
 - `/tmp/modem_mdt_hashonly.bin`
+
+## Next steps
+
+### 1. Bypass ISD-R AID filter (second firmware patch)
+
+The ISD-R AID (`A0000005591010`) is referenced at VA 0xC1CD0679 in b14.
+Code at VA 0xC0F115E8, 0xC0F116B4, 0xC0F11758 (in b12) references this
+via immext — this is the modem's LPA subsystem. The QMI UIM handler at
+0xC0A15234 calls 0xC0985CC4 which performs AID-specific checks. Need to
+trace the exact comparison and patch it.
+
+### 2. Alternative: DIAG MMGSDI raw APDU
+
+DIAG subsystems now respond (kernel #52 fix). MMGSDI (subsystem 0x19)
+may support raw APDU passthrough commands that bypass QMI UIM entirely.
+The MMGSDI DIAG interface is typically:
+- Command 0x02: Send APDU
+- Command 0x03: Get ATR
+
+Need to probe subsystem 0x19 with specific command codes. The diag-apdu
+tool's `probe-ss` command can enumerate available commands.
+
+### 3. Alternative: modem's built-in LPA
+
+The modem contains an LPA at VA 0xC1CD0600+ (strings like
+"cancelSessionResponse", "/lpa/store_data_resp_from_card"). If the modem
+exposes its LPA via a QMI service, we might use it directly instead of
+lpac. Needs investigation of available QMI services.
 
 ## AP-side approaches — all exhausted
 
