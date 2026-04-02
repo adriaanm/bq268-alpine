@@ -7,7 +7,7 @@
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — Track voltage, capacity, charge status over time. The kernel reports `current_now=0` because the charger driver has no USB PSY to enable current tracking (known kernel limitation). A userspace daemon can poll `voltage_now`, `capacity`, `status` from `/sys/class/power_supply/battery/` and log to a file or SQLite for charge/discharge curve analysis. Could also estimate current from dV/dt. Consider integrating with `battmon` if it already runs.
-- [ ] eSIM provisioning — APDU blocked by NV 67312. All AP-side write paths exhausted (DIAG EFS, MCFG/PDC, AT, rmt_storage). Firmware decompiled: restriction check at VA 0xC0A16DCC in modem.b12 returns bitmask from struct+0x7B8, bit 2 = APDU restricted. Patch identified (4 bytes) but **MBA enforces hash verification** (error -19, debug 0x12). Next: check QFPROM fuses, extract cert chain from b01, attempt re-signing. See `docs/modem_patch_plan.md`.
+- [ ] eSIM provisioning — APDU restriction patched and verified. Firmware patch (4 bytes in modem.b12) lifts QMI UIM security restrictions. Logical channels open successfully. Need to deploy patch, connect eUICC, and test full eSIM provisioning flow with lpac. See `docs/modem_patch_plan.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog
