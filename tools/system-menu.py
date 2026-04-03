@@ -157,34 +157,78 @@ def status_bar():
 # -- Key input via evtest --
 
 class KeyReader:
+    """Reads key events via evtest. Detects chords (e.g. F3+F6).
+
+    Emits synthetic 'CHORD_F3_F6' when both are held simultaneously.
+    Regular key presses are emitted on key-down as before.
+    """
+
+    # F3 = KEY_F3 (single-dot button), F6 = KEY_F6 (double-dot button)
+    CHORD_KEYS = {'KEY_F3', 'KEY_F6'}
+
     def __init__(self):
         self._fifo_path = tempfile.mktemp(prefix='keys-')
         os.mkfifo(self._fifo_path)
-        # Start evtest for all input devices, pipe through awk
+        # Emit "KEY press" and "KEY release" for all key events
         cmd = (
             '('
             'for dev in /dev/input/event*; do '
             '[ -e "$dev" ] && evtest "$dev" 2>/dev/null & '
             'done; wait'
-            ') | awk \'/EV_KEY.*value 1$/{'
+            ') | awk \'/EV_KEY/{'
             'match($0, /KEY_[A-Z0-9_]+/);'
-            'if (RSTART) { print substr($0, RSTART, RLENGTH); fflush() }'
-            '}\''
+            'if (RSTART) {'
+            '  k=substr($0, RSTART, RLENGTH);'
+            '  if (/value 1/) print k " press";'
+            '  else if (/value 0/) print k " release";'
+            '  fflush()'
+            '}}\''
         )
         self._proc = subprocess.Popen(
             cmd, shell=True, stdout=open(self._fifo_path, 'w'),
             stderr=subprocess.DEVNULL
         )
         self._fifo = open(self._fifo_path, 'r')
+        self._held = set()
 
     def read(self, timeout=None):
-        """Read a key name. Returns None on timeout."""
-        if timeout is not None:
-            r, _, _ = select.select([self._fifo], [], [], timeout)
-            if not r:
+        """Read a key name. Returns None on timeout.
+
+        Returns 'CHORD_F3_F6' when both are held, otherwise returns
+        the key name on press (ignores releases for non-chord keys).
+        """
+        while True:
+            if timeout is not None:
+                r, _, _ = select.select([self._fifo], [], [], timeout)
+                if not r:
+                    return None
+            line = self._fifo.readline().strip()
+            if not line:
                 return None
-        line = self._fifo.readline().strip()
-        return line if line else None
+
+            parts = line.split()
+            if len(parts) != 2:
+                continue
+            key, action = parts
+
+            if action == 'press':
+                self._held.add(key)
+                # Check for chord
+                if self.CHORD_KEYS.issubset(self._held):
+                    self._held.clear()
+                    return 'CHORD_F3_F6'
+                # For chord keys, don't emit immediately — wait to see
+                # if the other chord key arrives within a short window
+                if key in self.CHORD_KEYS:
+                    r, _, _ = select.select([self._fifo], [], [], 0.15)
+                    if r:
+                        continue  # more input available, loop to process it
+                    # Timeout — no chord, emit as regular key
+                    return key
+                return key
+            elif action == 'release':
+                self._held.discard(key)
+            # Releases are silently consumed; loop for next event
 
     def close(self):
         self._proc.terminate()
@@ -197,6 +241,18 @@ class KeyReader:
 
 
 # -- Menus --
+
+_on_dmesg_vt = False
+
+def toggle_dmesg_vt():
+    """Switch between VT1 (menu) and VT2 (dmesg). F3+F6 chord."""
+    global _on_dmesg_vt
+    if _on_dmesg_vt:
+        os.system('chvt 1')
+        _on_dmesg_vt = False
+    else:
+        os.system('chvt 2')
+        _on_dmesg_vt = True
 
 def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5):
     """Generic menu loop. items = list of labels.
@@ -211,6 +267,9 @@ def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5)
         if key is None:
             if screen_on():
                 draw_fn(sel, items)
+            continue
+        if key == 'CHORD_F3_F6':
+            toggle_dmesg_vt()
             continue
         if key == 'KEY_UP':
             sel = (sel - 1) % n
@@ -264,6 +323,9 @@ def show_sysinfo(keys):
     # Wait for any key, refresh while screen is on
     while True:
         k = keys.read(timeout=5)
+        if k == 'CHORD_F3_F6':
+            toggle_dmesg_vt()
+            continue
         if k:
             break
         if not screen_on():
@@ -497,8 +559,18 @@ def show_cellular(keys):
 
 # -- Main --
 
+def setup_dmesg_vt():
+    """Start dmesg -w on VT2 so F3+F6 can toggle to it."""
+    # Launch dmesg follow on tty2 in background
+    subprocess.Popen(
+        'dmesg -w > /dev/tty2 2>&1',
+        shell=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+
 def main():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    setup_dmesg_vt()
 
     keys = KeyReader()
     try:
