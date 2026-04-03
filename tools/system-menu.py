@@ -32,6 +32,14 @@ def draw_lines(lines):
 
 # -- Status helpers --
 
+def screen_on():
+    """Check if the display backlight is on."""
+    bl = read_file('/sys/class/leds/lcd-bl/brightness', '0')
+    try:
+        return int(bl) > 0
+    except ValueError:
+        return True
+
 def read_file(path, default=''):
     try:
         with open(path) as f:
@@ -201,7 +209,8 @@ def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5)
     while True:
         key = keys.read(timeout=refresh_interval)
         if key is None:
-            draw_fn(sel, items)
+            if screen_on():
+                draw_fn(sel, items)
             continue
         if key == 'KEY_UP':
             sel = (sel - 1) % n
@@ -252,12 +261,13 @@ def show_sysinfo(keys):
         ' BACK to close',
     ]
     draw_lines(lines)
-    # Wait for any key
+    # Wait for any key, refresh while screen is on
     while True:
         k = keys.read(timeout=5)
         if k:
             break
-        # Refresh
+        if not screen_on():
+            continue
         mdm = modem_info(force=True)
         pct, ico, status, mv = battery_info()
         bst = {'Charging': 'Chrg', 'Discharging': 'Dchg', 'Full': 'Full'}.get(status, 'Idle')
