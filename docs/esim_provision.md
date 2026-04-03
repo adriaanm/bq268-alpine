@@ -334,27 +334,45 @@ qmicli -d msmipc://0 --uim-get-card-status
 
 ## Current Plan
 
-### Step 1: Boot the fixed kernel
+### DIAG kernel status
 
-Kernel commit `034ada814c88` fixes DIAG SMD channels permanently.
-Awaiting build + flash to boot partition.
+Kernel #55 has three fixes for DIAG on MSM8909 (see
+`docs/modem_patch_plan.md` "DIAG kernel fixes" section):
+1. SMD channel pre-registration (commit `034ada814c88`)
+2. Direct feature mask send (workqueue bypass)
+3. Modem command fallback forwarding
 
-### Step 2: Create the NV file via DIAG
+**DIAG is fully functional.** Subsystem commands reach the modem and
+get responses. EFS2 works (MKDIR, OPEN, READ, WRITE, PUT). PEEKD/POKED
+disabled in firmware. MMGSDI/UIM subsystems respond (need correct cmds).
 
-The modem's fresh EFS (in `/lib/firmware/modemst1.bin`) doesn't have
-`apdu_security_restrictions`. DIAG can't create files directly, but
-the modem's own EFS init creates the directory structure. Two options:
+### NV file approach — blocked
 
-**Option A**: If the modem creates this file with a default value during
-normal operation (e.g., after first QMI UIM access), we can overwrite it
-with `diag-efs-write` (write-to-existing works).
+EFS PUT to protected NV paths still silently discards (confirmed twice
+with kernel #52 and #55). The modem's EFS security policy cannot be
+bypassed from the AP, even with SPC unlock.
 
-**Option B**: Decompile modem firmware (`~/bq268-edl/dump/modem.bin`,
-Hexagon QDSP6) to understand the NV 67312 check. Could binary-patch the
-firmware to skip the APDU restriction entirely — no NV file needed.
+### Firmware patch approach — Patch 1 works, ISD-R still blocked
 
-**Option C**: Provision on Android (OpenEUICC) as a workaround that
-bypasses the NV restriction entirely.
+Patch 1 (APDU restriction bypass) lifts the bitmask check. Non-ISD-R
+AIDs reach the card. ISD-R AID is still blocked by the LPA subsystem
+intercepting it in the MMGSDI dispatch chain.
+
+Patches 2 and 3 (LPA registration NOP / ISD-R AID corruption) did not
+unblock ISD-R.
+
+### Next steps
+
+1. **DIAG MMGSDI raw APDU** — probe MMGSDI subsystem (0x19) commands
+   0x01-0x40 to find raw APDU passthrough that bypasses QMI UIM entirely.
+   Use `diag-apdu probe-ss 0x19`.
+
+2. **Modem's built-in LPA** — investigate if the modem exposes its LPA
+   via QMI or DIAG. The LPA exists at VA 0xC1CD0600+ in the firmware.
+
+3. **Decompilation** — Ghidra pass7 covers DIAG task init and master
+   table registration. Extend to cover MMGSDI DIAG commands and LPA
+   QMI interface.
 
 ## Test Plan (after APDU access is unblocked)
 

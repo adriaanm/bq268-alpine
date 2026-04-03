@@ -160,14 +160,12 @@ See `tools/decompile-modem.py` (passes 1-5) for reproducible decompilation.
 
 ### 2. Alternative: DIAG MMGSDI raw APDU
 
-DIAG subsystems now respond (kernel #52 fix). MMGSDI (subsystem 0x19)
-may support raw APDU passthrough commands that bypass QMI UIM entirely.
-The MMGSDI DIAG interface is typically:
+DIAG subsystems now respond (kernel #55 fixes). MMGSDI (subsystem 0x19)
+returns 0x13 (bad mode) for command 0x00, meaning it exists but needs
+the right command code. Probe with `diag-apdu probe-ss 0x19` to
+enumerate. Typical MMGSDI DIAG interface:
 - Command 0x02: Send APDU
 - Command 0x03: Get ATR
-
-Need to probe subsystem 0x19 with specific command codes. The diag-apdu
-tool's `probe-ss` command can enumerate available commands.
 
 ### 3. Alternative: modem's built-in LPA
 
@@ -183,13 +181,14 @@ has been tried and failed:
 
 | Approach | Result | Notes |
 |----------|--------|-------|
-| DIAG EFS PUT | **Returns success, silently discards** | Confirmed with fixed DIAG driver (kernel #52). PUT returns error code 0 but file does not exist on read-back. Modem EFS security policy accepts the command but blocks creation on protected `/nv/item_files/modem/qmi/uim/` paths. SPC unlock does not help. |
+| DIAG EFS PUT | **Returns success, silently discards** | Confirmed twice (kernel #52 and #55). PUT returns error code 0 but file does not exist on read-back. Modem EFS security policy accepts the command but blocks creation on protected `/nv/item_files/modem/qmi/uim/` paths. SPC unlock does not help. |
 | DIAG EFS OPEN+O_CREAT | fd=-1 errno=2 | OPEN with O_CREAT returns ENOENT — same security policy. |
 | QMI PDC (MBN config) | NV items not applied | Config loads and activates, but SW configs only apply NV items when SIM PLMN matches the carrier profile. No SIM → no NV writes. Activating Reliance config + reboot **crashed the modem** (incompatible NVs for BQ268 hardware — caused bootloop, required EFS wipe). |
 | QMI UIM | AccessDenied | This is the restriction we're trying to bypass. |
 | AT+CSIM | "operation not supported" | Firmware advertises AT+CSIM but doesn't implement it. |
 | rmt_storage overrides | No effect | Serving empty modemst1/modemst2 creates fresh EFS, but the NV file doesn't exist in factory state. FSG golden copy is ignored. |
-| DIAG MMGSDI/UIM (0x19, 0x44, 0x48) | No response | Subsystems don't register DIAG commands on this firmware. |
+| DIAG MMGSDI/UIM (0x19, 0x44, 0x48) | **Respond with 0x13** (bad mode) | Subsystems are alive but command 0x00 isn't valid in current mode. Need correct command codes. |
+| DIAG PEEKD/POKED (0x36/0x39) | **No response** | Legacy memory peek/poke disabled in firmware. Commands reach modem (confirmed via write counter) but modem ignores them. |
 | Legacy NV_WRITE (cmd 0x27) | N/A | Item ID 0x106F0 exceeds 16-bit NV ID range. |
 | Factory EFS (EDL modemst dumps) | File not found | `apdu_security_restrictions` doesn't exist in factory EFS. |
 | Factory MCFG MBNs | None contain item | Checked all 60+ carrier configs on modem partition. |
@@ -199,11 +198,82 @@ has been tried and failed:
 custom NV_FILE items" from earlier docs was wrong — the crash came from
 activating a full carrier config with NVs incompatible with BQ268 hardware.
 
-**Key finding on DIAG**: The kernel DIAG driver fix (commit 034ada814c88,
-kernel #52) restored bidirectional DIAG communication. With working responses,
-we confirmed that EFS PUT **returns success but silently discards** — the
-modem's EFS security policy blocks file creation on protected NV paths even
-after SPC unlock. This eliminates DIAG EFS as a viable path.
+**Key finding on DIAG**: The kernel DIAG driver required THREE fixes to work
+on MSM8909 (see "DIAG kernel fixes" section below). With all fixes applied
+(kernel #55), subsystem commands reach the modem and get responses. However:
+- EFS PUT still silently discards writes to protected NV paths
+- PEEKD/POKED (memory read/write) disabled in firmware — no response
+- MMGSDI/UIM/GSTK subsystems respond with "bad mode" for cmd 0x00
+  (need correct command codes to use them)
+
+**Key finding on modemst partitions**: Previous experiments (MCFG PDC
+activation with Reliance config) corrupted modemst1/modemst2 EFS. This
+caused the modem to crash ~25s after boot, triggering system reboot via
+RELATED subsystem restart. Fixed by restoring factory EFS from EDL dumps.
+The rootfs `/lib/firmware/*.bin` override files (if present) take priority
+over the eMMC partitions via rmt_storage — ensure no stale override files
+exist.
+
+## DIAG kernel fixes (MSM8909)
+
+Three kernel fixes are required for DIAG to work on MSM8909. All are in
+`~/bq268-caf-4.4`:
+
+### Fix 1: SMD channel pre-registration (commit 034ada814c88, kernel #52)
+
+The DIAG driver's transport negotiation (SMD vs glink vs socket) never
+fires on MSM8909 because only SMD exists. This leaves DATA/CMD/DCI
+channels unregistered and the CNTL `peripheral_info` unpopulated.
+
+Fix: pre-register all channels during `diag_smd_init()` and copy
+`early_init_info` to `peripheral_info` for CNTL.
+
+### Fix 2: Direct feature mask send (kernel #55)
+
+`diag_cntl_channel_open` queues `mask_update_work` via the `cntl_wq`
+workqueue. The work is queued successfully (`queue_work` returns true)
+but the worker thread never executes it — the kworker pool doesn't
+pick it up (cause unknown, possibly related to singlethread WQ
+scheduling on this kernel).
+
+Fix: call `diag_send_updates_peripheral()` directly from
+`diag_cntl_channel_open` instead of via workqueue. This sends the
+AP's feature mask synchronously when the CNTL channel opens.
+
+### Fix 3: Modem command fallback forwarding (kernel #55)
+
+After feature mask exchange, the modem is expected to send
+`DIAG_CTRL_MSG_REG` messages on the CNTL channel to register its
+command handlers. This firmware (MPSS.JO.3.1) never sends these
+registrations. Without them, `diag_cmd_search()` returns NULL and
+`diag_process_apps_pkt()` drops all modem-bound commands.
+
+Additionally, `process_incoming_feature_mask()` calls
+`diag_cmd_remove_reg_by_proc()` which wipes any pre-registered
+entries when the modem's feature mask arrives — so adding
+registrations in `diag_cntl_channel_open` doesn't work either.
+
+Fix: add fallback in `diag_process_apps_pkt()` after `diag_cmd_search`
+returns NULL — if the modem's feature mask was received, forward the
+command directly via `diagfwd_write(PERIPHERAL_MODEM, TYPE_CMD, ...)`.
+
+### DIAG probe results (kernel #55)
+
+```
+SS 0x03 WCDMA     error (0x13)   # bad mode — subsystem exists
+SS 0x04 GSM       no response    # not present on this firmware
+SS 0x06 CM        error (0x13)
+SS 0x08 GPS       ALIVE (10 bytes)
+SS 0x0A NAS       error (0x14)   # bad parameter
+SS 0x0C UIM       error (0x13)
+SS 0x13 EFS2      error (0x15)   # bad length (cmd 0x00 needs more data)
+SS 0x19 MMGSDI    error (0x13)
+SS 0x2D QMI       ALIVE (5 bytes)
+SS 0x48 QMI_UIM   error (0x13)
+```
+
+EFS2 commands work with correct formatting (MKDIR, OPEN, READ, WRITE,
+PUT all functional after SPC unlock). PEEKD/POKED disabled.
 
 ## Firmware details
 
