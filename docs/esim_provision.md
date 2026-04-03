@@ -7,13 +7,15 @@ through the full pipeline: lpac → lpac-qmi-wrapper → qmi-send-apdu →
 QMI UIM → eUICC. The modem's APDU restrictions are bypassed using a
 **short AID prefix** (`A00000055910`, 6 bytes) for open_logical_channel.
 
-**Truphone Speedtest profile downloaded and enabled** using activation code
-`LPA:1$rsp.truphone.com$QRF-SPEEDTEST` (no signup required, production PKI).
-This profile validates the full provisioning chain but has no active MNO
-subscription — it won't attach to a real network.
+**Eskimo eSIM provisioned and modem registered on live network.**
+Profile downloaded from `sin.prod.ondemandconnectivity.com`, enabled, and
+after UIM power cycle + modem restart, the modem attached to Orange France
+(208/01) on UMTS with CS+PS. IMSI is 525/01 (SingTel Singapore), roaming.
 
-Next: get a paid data-only eSIM (Airalo, LycaMobile, etc.) to test PS-attach
-and the cellular data path.
+**Data path blocked on BAM DMUX** — `CONFIG_MSM_BAM_DMUX` and
+`CONFIG_MSM_RMNET_BAM` are not enabled in the kernel defconfig. No rmnet
+interfaces exist. WDS start-network fails with InvalidOperation. Next step
+is enabling these kernel configs and testing the data path.
 
 ## eUICC Info (from `lpac chip info`)
 
@@ -543,23 +545,49 @@ they won't register on any network.
 sysmocom (`smdpp.test.rsp.sysmocom.de`) uses SGP.26 test PKI and is
 rejected by this eUICC (only has production GSMA CI certificates).
 
+### UIM power cycle for profile switching
+
+After enabling a new eSIM profile, the modem must re-read the card.
+A modem restart alone is not sufficient — the eUICC presents the old
+profile's USIM until a card power cycle occurs:
+
+```
+qmicli -d msmipc://0 --uim-sim-power-off=1
+sleep 2
+qmicli -d msmipc://0 --uim-sim-power-on=1
+```
+
+Then restart the modem (`rc-service modem restart`) to re-initialize
+the radio with the new USIM credentials.
+
+### Network registration (2026-04-03)
+
+With the Eskimo eSIM (IMSI 525/01 SingTel), the modem successfully
+registered on Orange France (208/01) UMTS, roaming. CS+PS attached,
+signal -88 dBm. The modem cycles through available PLMNs (Swisscom
+228/1, SFR 208/10, Orange 208/1) before finding one that accepts the
+roaming IMSI.
+
 ### Next steps
 
-1. **Paid data eSIM** — get a cheap data-only eSIM (Airalo ~$5/1GB,
-   LycaMobile, etc.) to test actual cellular data. The provisioning
-   pipeline is proven; this just needs a real MNO subscription.
+1. **Enable BAM DMUX** — add `CONFIG_MSM_BAM_DMUX=y` and
+   `CONFIG_MSM_RMNET_BAM=y` to the kernel defconfig. This creates
+   rmnet network interfaces for the modem data path.
 
-2. **Modem attach** — after installing a real profile, test PS-attach
-   and data transfer (this also unblocks the BAM DMUX / A2 data path task).
+2. **WDS data call** — once rmnet interfaces exist, use
+   `qmicli --wds-start-network` to establish a PS data session and
+   get an IP address. Then test with ping/curl.
 
 ## Test Plan
 
 1. **eUICC APDU access**: `qmi-send-apdu test` ✓
 2. **Logical channel to ISD-R**: short AID bypass ✓
 3. **lpac chip info**: full eUICC data returned ✓
-4. **Profile download**: Truphone Speedtest via `lpac-qmi-wrapper` ✓
+4. **Profile download**: Truphone Speedtest + Eskimo (real eSIM) via `lpac-qmi-wrapper` ✓
 5. **Profile enable**: `lpac-qmi-wrapper profile enable ICCID` ✓
-6. **Data transfer**: modem PS-attach + ping / speed test (needs paid eSIM)
+6. **UIM power cycle**: `qmicli --uim-sim-power-off/on` to reload profile ✓
+7. **Network registration**: CS+PS attached on Orange France (208/01) UMTS, roaming ✓
+8. **Data transfer**: blocked — BAM DMUX not in kernel (CONFIG_MSM_BAM_DMUX)
 
 ## Repos
 

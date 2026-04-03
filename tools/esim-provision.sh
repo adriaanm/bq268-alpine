@@ -233,7 +233,16 @@ echo ""
 echo "Processing pending notifications..."
 $WRAPPER notification process 2>&1 || echo "  (notification processing skipped)"
 
+# --- Power cycle UIM to load new profile ---
+
+echo ""
+echo "Power cycling UIM to load new profile..."
+qmicli -d msmipc://0 --uim-sim-power-off=1 2>/dev/null
+sleep 2
+qmicli -d msmipc://0 --uim-sim-power-on=1 2>/dev/null
+echo "  UIM power cycled."
+
 echo ""
 echo "=== Done ==="
-echo "eSIM profile provisioned. You may need to restart the modem:"
+echo "eSIM profile provisioned. Restart the modem to register on the network:"
 echo "  rc-service modem restart"

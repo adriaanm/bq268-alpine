@@ -2,12 +2,12 @@
 
 ## Active
 
-- [ ] Modem data path — Test with SIM card inserted. BAM DMUX ported, RF online, but A2_POWER_CONTROL handshake never triggered by modem. SIM may be required for PS-attach → A2 activation.
+- [ ] Modem data path — **Modem registered on live network** (Orange France 208/01, UMTS, CS+PS attached) with Eskimo eSIM. Data path blocked: `CONFIG_MSM_BAM_DMUX` and `CONFIG_MSM_RMNET_BAM` not enabled in kernel defconfig. No rmnet interfaces. Next: enable configs, rebuild kernel, test WDS data call.
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — Track voltage, capacity, charge status over time. The kernel reports `current_now=0` because the charger driver has no USB PSY to enable current tracking (known kernel limitation). A userspace daemon can poll `voltage_now`, `capacity`, `status` from `/sys/class/power_supply/battery/` and log to a file or SQLite for charge/discharge curve analysis. Could also estimate current from dV/dt. Consider integrating with `battmon` if it already runs.
-- [ ] eSIM provisioning — **ISD-R APDU access working** via short AID bypass (`A00000055910`). eUICC responds to SGP.22 STORE DATA commands. Next: integrate with lpac for full profile download. Tool: `tools/qmi-send-apdu`. See `docs/esim_provision.md`.
+- [x] eSIM provisioning — **Complete.** Full pipeline working: lpac → lpac-qmi-wrapper → qmi-send-apdu → QMI UIM → eUICC. Eskimo eSIM provisioned, modem registered on Orange France. UIM power cycle needed after profile switch. See `docs/esim_provision.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog
