@@ -21,7 +21,8 @@ apk add \
     chrony \
     kbd \
     alsa-utils \
-    sox
+    sox \
+    ppp
 '
 
 # Fix /run — ensure it's a real directory so tmpfs mount works at boot
