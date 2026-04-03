@@ -169,6 +169,10 @@ class KeyReader:
     def __init__(self):
         self._fifo_path = tempfile.mktemp(prefix='keys-')
         os.mkfifo(self._fifo_path)
+        # Open read end non-blocking to avoid deadlock (FIFO blocks until
+        # both ends are open; we need to open read before the writer starts)
+        fd = os.open(self._fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+        self._fifo = os.fdopen(fd, 'r')
         # Emit "KEY press" and "KEY release" for all key events
         cmd = (
             '('
@@ -184,11 +188,11 @@ class KeyReader:
             '  fflush()'
             '}}\''
         )
+        self._fifo_wr = open(self._fifo_path, 'w')
         self._proc = subprocess.Popen(
-            cmd, shell=True, stdout=open(self._fifo_path, 'w'),
+            cmd, shell=True, stdout=self._fifo_wr,
             stderr=subprocess.DEVNULL
         )
-        self._fifo = open(self._fifo_path, 'r')
         self._held = set()
 
     def read(self, timeout=None):
@@ -234,6 +238,7 @@ class KeyReader:
         self._proc.terminate()
         self._proc.wait()
         self._fifo.close()
+        self._fifo_wr.close()
         try:
             os.unlink(self._fifo_path)
         except OSError:
@@ -569,17 +574,12 @@ def setup_dmesg_vt():
     )
 
 def claim_vt():
-    """Ensure we own VT1 and it's the foreground console."""
-    try:
-        # Redirect stdout/stderr to /dev/tty1 explicitly
-        tty = open('/dev/tty1', 'w')
-        os.dup2(tty.fileno(), 1)
-        os.dup2(tty.fileno(), 2)
-        tty.close()
-    except OSError:
-        pass  # fall back to inherited tty0
-    # Switch to VT1
+    """Ensure VT1 is foreground and clear boot residue."""
     os.system('chvt 1')
+    # Force stdout unbuffered so draws appear immediately
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stdout.write('\033[H\033[2J')
+    sys.stdout.flush()
 
 def main():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
