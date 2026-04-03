@@ -1,14 +1,17 @@
 # eSIM Provisioning — BQ268
 
-## Status (2026-04-02)
+## Status (2026-04-03)
 
-**Blocked on modem APDU access control.** easyuicc adapter inserted and
-detected (card present, USIM ready, PIN disabled). All APDU paths to the
-eUICC's ISD-R are blocked by the modem firmware's security restrictions
-(NV item 67312). See "APDU Access Attempts" below for full details.
+**ISD-R APDU access WORKING.** easyuicc adapter communicates via SGP.22
+STORE DATA commands. The modem's APDU restrictions are bypassed using a
+**short AID prefix** (`A00000055910`, 6 bytes) for open_logical_channel.
+The card does partial AID matching and selects the ISD-R. Subsequent
+APDUs via QMI UIM Send APDU work within the same QMI session.
 
-Next: either provision on Android first, or fix the kernel DIAG SMD
-channels to write the NV item directly.
+Verified: GetEuiccInfo1, GetEuiccChallenge, GetEuiccInfo2 all return
+valid SGP.22 BER-TLV responses with SW=9000.
+
+Next: integrate with lpac for full profile download.
 
 ## Overview
 
@@ -322,6 +325,33 @@ but it's signed (`SIGNED_IMAGE` with Qualcomm development certificates).
 The modem may validate the signature during restore, which would explain
 why our modified FSG was ignored.
 
+### 9. Short AID bypass — WORKING (2026-04-03)
+
+The modem's second ISD-R filter matches the 7-byte prefix
+`A0000005591010`. A 6-byte AID `A00000055910` passes the filter.
+
+```
+qmicli --uim-open-logical-channel=1,A00000055910
+→ Open Logical Channel operation successfully completed: 1
+→ FCI: 84 10 A0000005591010FFFFFFFF8900000100 (ISD-R!)
+→ SW: 9000
+```
+
+The card does ISO 7816-4 partial AID matching — the ISD-R is the only
+applet whose AID starts with `A00000055910`, so it gets selected.
+
+Subsequent APDUs via `qmi-send-apdu` (direct AF_MSM_IPC connection)
+work within the same QMI session:
+
+```
+STORE DATA (BF20 GetEuiccInfo1)  → 61 38 → GET RESPONSE → eUICC info
+STORE DATA (BF2E GetEuiccChallenge) → 61 15 → 16-byte challenge
+STORE DATA (BF22 GetEuiccInfo2)  → 61 7D → firmware version, GP version
+```
+
+**Requirements**: Patch 1 (APDU restriction bypass in modem.b12) must
+be applied. Patches 2 and 3 are not needed for this bypass.
+
 ### 8. Card detection (working)
 
 ```
@@ -352,34 +382,65 @@ EFS PUT to protected NV paths still silently discards (confirmed twice
 with kernel #52 and #55). The modem's EFS security policy cannot be
 bypassed from the AP, even with SPC unlock.
 
-### Firmware patch approach — Patch 1 works, ISD-R still blocked
+### Firmware patch approach — Patch 1 + short AID bypass = WORKING
 
-Patch 1 (APDU restriction bypass) lifts the bitmask check. Non-ISD-R
-AIDs reach the card. ISD-R AID is still blocked by the LPA subsystem
-intercepting it in the MMGSDI dispatch chain.
+Patch 1 (APDU restriction bypass) lifts the global bitmask check.
+Non-ISD-R AIDs reach the card. The ISD-R AID is blocked by a **second
+7-byte prefix filter** that matches `A0000005591010` (the GSMA ISD-R
+AID prefix). This filter is hardcoded in the firmware code (not in the
+data segment we patched with Patch 3).
 
-Patches 2 and 3 (LPA registration NOP / ISD-R AID corruption) did not
-unblock ISD-R.
+**Bypass**: Use a **6-byte truncated AID** `A00000055910` for
+`open_logical_channel`. The modem's filter requires 7+ bytes to trigger.
+The card does ISO 7816-4 partial AID matching and selects the ISD-R
+applet. FCI response confirms the full ISD-R AID
+`A0000005591010FFFFFFFF8900000100`.
+
+Patches 2 and 3 were tested but are not needed — the short AID bypass
+is sufficient. Patch 1 is still required (without it, all AIDs are
+blocked).
+
+### QMI UIM Send APDU — works within same session
+
+`qmicli --uim-send-apdu` returns InvalidArgument because each qmicli
+invocation creates a new QMI client (channels are per-client). The
+`qmi-send-apdu` tool (`tools/qmi-send-apdu.c`) connects directly to
+the UIM service via AF_MSM_IPC and keeps a persistent session.
+
+Verified APDU exchange:
+- STORE DATA (GetEuiccInfo1, BF20) → 61 38 → GET RESPONSE → full TLV
+- STORE DATA (GetEuiccChallenge, BF2E) → 61 15 → 16-byte challenge
+- STORE DATA (GetEuiccInfo2, BF22) → 61 7D → firmware/GP versions
+
+### MMGSDI DIAG — dead end
+
+All MMGSDI subsystem (0x19) commands return 0x13 (bad mode). The NV item
+`/nv/item_files/modem/uim/mmgsdi/mmgsdi_diag_support` exists (value
+0x02) and can be written via EFS OPEN+WRITE, but changing it to 0x01
+did not enable DIAG commands. The mode gate is something else.
+
+### EFS OPEN+WRITE to existing NV files — works
+
+DIAG EFS `OPEN(O_WRONLY)` + `WRITE` works for existing files (after SPC
+unlock), even on protected NV paths. Only file CREATION (O_CREAT, PUT)
+is blocked. The `mmgsdi_diag_support` file was successfully modified.
 
 ### Next steps
 
-1. **DIAG MMGSDI raw APDU** — probe MMGSDI subsystem (0x19) commands
-   0x01-0x40 to find raw APDU passthrough that bypasses QMI UIM entirely.
-   Use `diag-apdu probe-ss 0x19`.
+1. **lpac integration** — build an APDU backend using `qmi-send-apdu`
+   that maintains a persistent QMI session. Either modify the
+   `lpac-qmi-wrapper.sh` to use it, or write a new wrapper.
 
-2. **Modem's built-in LPA** — investigate if the modem exposes its LPA
-   via QMI or DIAG. The LPA exists at VA 0xC1CD0600+ in the firmware.
+2. **Test full provisioning** — use lpac end-to-end with a test
+   SM-DP+ server.
 
-3. **Decompilation** — Ghidra pass7 covers DIAG task init and master
-   table registration. Extend to cover MMGSDI DIAG commands and LPA
-   QMI interface.
+## Test Plan
 
-## Test Plan (after APDU access is unblocked)
-
-1. **eUICC info**: `lpac-qmi-wrapper chip info` — returns EID, firmware version
-2. **Channel test**: wrapper opens logical channel to ISD-R AID
-3. **Test profile**: use a test SM-DP+ to download a trial profile
-4. **Full provision**: `esim-provision` end-to-end with a real carrier code
+1. **eUICC info**: `qmi-send-apdu test` — returns EID, firmware version ✓
+2. **Channel test**: opens logical channel to ISD-R via short AID ✓
+3. **lpac integration**: lpac chip info via new APDU backend
+4. **Test profile**: use a test SM-DP+ to download a trial profile
+5. **Full provision**: `esim-provision` end-to-end with a real carrier code
 
 ## Repos
 

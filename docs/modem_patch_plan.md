@@ -44,7 +44,7 @@ through a path we haven't identified yet.
 
 See `docs/modem_apdu_path.md` for the full APDU routing architecture.
 
-### Patch 3: ISD-R AID corruption (b14 offset 0x2D0679) — NEW, UNTESTED
+### Patch 3: ISD-R AID corruption (b14 offset 0x2D0679) — TESTED, NOT SUFFICIENT
 
 Corrupts the single copy of the ISD-R AID in the firmware's data segment.
 LPA uses this byte string as its reference when registering for the ISD-R

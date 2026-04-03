@@ -7,7 +7,7 @@
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — Track voltage, capacity, charge status over time. The kernel reports `current_now=0` because the charger driver has no USB PSY to enable current tracking (known kernel limitation). A userspace daemon can poll `voltage_now`, `capacity`, `status` from `/sys/class/power_supply/battery/` and log to a file or SQLite for charge/discharge curve analysis. Could also estimate current from dV/dt. Consider integrating with `battmon` if it already runs.
-- [ ] eSIM provisioning — Patches 1+2 in modem.b12 (APDU restriction + LPA registration NOP). **Patch 3 ready to test**: corrupts ISD-R AID in modem.b14 (A0→00) so LPA registers for wrong AID. Full MMGSDI dispatch chain decompiled — AID routing is set at boot registration, not at dispatch time. Run `python3 tools/patch-modem-b12.py firmware/modem && just flash-modem` to apply+test. See `docs/modem_patch_plan.md`.
+- [ ] eSIM provisioning — **ISD-R APDU access working** via short AID bypass (`A00000055910`). eUICC responds to SGP.22 STORE DATA commands. Next: integrate with lpac for full profile download. Tool: `tools/qmi-send-apdu`. See `docs/esim_provision.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog

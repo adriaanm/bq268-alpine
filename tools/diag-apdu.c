@@ -426,6 +426,38 @@ static void cmd_raw(int argc, char **argv)
 	}
 }
 
+/*
+ * Send direct (non-subsystem) DIAG command — raw hex bytes.
+ */
+static void cmd_direct(int argc, char **argv)
+{
+	if (argc < 3) {
+		fprintf(stderr, "Usage: diag-apdu direct <hex_bytes>\n"
+				"  Send raw DIAG bytes (no subsystem wrapper)\n"
+				"  Example: diag-apdu direct 00   (version info)\n");
+		return;
+	}
+
+	uint8_t cmd[4096];
+	int total = 0;
+	for (int i = 2; i < argc && total < (int)sizeof(cmd); i++)
+		total += hex_to_bytes(argv[i], cmd + total, sizeof(cmd) - total);
+
+	printf("Sending direct (%d bytes):\n", total);
+	hex_dump("  TX", cmd, total);
+
+	diag_send(cmd, total);
+
+	uint8_t rsp[4096];
+	int rsp_len = diag_recv_any(rsp, sizeof(rsp), 5000);
+	if (rsp_len < 0) {
+		printf("  No response\n");
+	} else {
+		printf("  Response (%d bytes):\n", rsp_len);
+		hex_dump("  RX", rsp, rsp_len);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	setbuf(stdout, NULL);
@@ -438,14 +470,17 @@ int main(int argc, char *argv[])
 			"  %s peek ADDR [COUNT]      Read modem memory (32-bit words)\n"
 			"  %s poke ADDR VALUE        Write modem memory (32-bit)\n"
 			"  %s raw SS CMD [HEX]       Send raw subsystem command\n"
+			"  %s direct HEX             Send direct DIAG command (no subsys wrapper)\n"
 			"\n"
 			"ADDR/VALUE/SS/CMD are hex values.\n"
 			"Examples:\n"
 			"  %s peek 0xC2149DB0 4      # Dump 4 words at result struct\n"
 			"  %s poke 0xC2149DB4 0      # Clear result to 0\n"
-			"  %s raw 0x19 0x00          # MMGSDI version query\n",
+			"  %s raw 0x19 0x00          # MMGSDI version query\n"
+			"  %s direct 00              # DIAG version info\n"
+			"  %s direct 4100000000      # SPC unlock (000000)\n",
 			argv[0], argv[0], argv[0], argv[0],
-			argv[0], argv[0], argv[0]);
+			argv[0], argv[0], argv[0], argv[0]);
 		return 0;
 	}
 
@@ -479,14 +514,19 @@ int main(int argc, char *argv[])
 			diag_send(pkt, 8);
 			uint8_t rsp[512];
 			int rsp_len = diag_recv_any(rsp, sizeof(rsp), 500);
-			if (rsp_len >= 4 && rsp[0] == DIAG_SUBSYS_CMD && rsp[1] == ss) {
-				uint16_t rcmd = *(uint16_t *)(rsp + 2);
+			if (rsp_len < 0) {
+				/* no response — skip silently */
+			} else if (rsp_len >= 4 && rsp[0] == DIAG_SUBSYS_CMD &&
+				   rsp[1] == ss) {
 				printf("  cmd 0x%04x: ALIVE (%d bytes)", cmd, rsp_len);
 				if (rsp_len > 4)
 					hex_dump("", rsp + 4,
 						 rsp_len - 4 > 24 ? 24 : rsp_len - 4);
 				else
 					printf("\n");
+			} else {
+				printf("  cmd 0x%04x: error (0x%02x, %d bytes)\n",
+				       cmd, rsp[0], rsp_len);
 			}
 		}
 		printf("\nDone.\n");
@@ -496,6 +536,8 @@ int main(int argc, char *argv[])
 		cmd_poke(argc, argv);
 	} else if (strcmp(argv[1], "raw") == 0) {
 		cmd_raw(argc, argv);
+	} else if (strcmp(argv[1], "direct") == 0) {
+		cmd_direct(argc, argv);
 	} else {
 		fprintf(stderr, "Unknown command: %s\n", argv[1]);
 	}
