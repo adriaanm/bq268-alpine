@@ -29,14 +29,14 @@ connect "/usr/sbin/chat -v -f /etc/ppp/cellular-chat"
 disconnect "/usr/sbin/chat -v -f /etc/ppp/cellular-disconnect"
 EOF
 
-# Chat script: reset modem, set APN, dial
+# Chat script: reset modem, set PDP context (empty APN = network default), dial
 cat > "$ROOTFS/etc/ppp/cellular-chat" << 'EOF'
 ABORT "ERROR"
 ABORT "NO CARRIER"
 ABORT "NO DIALTONE"
 TIMEOUT 30
 "" ATZ
-OK AT+CGDCONT=1,"IP","globaldata"
+OK AT+CGDCONT=1,"IP",""
 OK ATD*99***1#
 CONNECT ""
 EOF
