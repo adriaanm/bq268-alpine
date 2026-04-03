@@ -765,7 +765,7 @@ def main():
 
     keys = KeyReader()
     try:
-        main_items = ['Wata', 'System Info', 'Net Test', 'Cellular', 'Settings', 'Reboot']
+        main_items = ['Wata', 'System Info', 'Net Test', 'Cellular', 'Settings', 'Reboot', 'Power Off']
 
         def on_select(sel):
             if sel == 0:
@@ -784,6 +784,12 @@ def main():
                 sys.stdout.flush()
                 time.sleep(1)
                 os.system('reboot')
+            elif sel == 6:
+                clear()
+                sys.stdout.write('Shutting down...\n')
+                sys.stdout.flush()
+                time.sleep(1)
+                os.system('poweroff')
             return False
 
         menu_loop(keys, main_items, draw_main, on_select,
