@@ -2,7 +2,7 @@
 
 ## Active
 
-- [ ] Modem data path — **Modem registered on live network** (Orange France 208/01, UMTS, CS+PS attached) with Eskimo eSIM. BAM DMUX driver loaded and probed, but modem never sets SMSM A2_POWER_CONTROL (bit 1). No rmnet interfaces. Kernel agent investigating DTS address (0x4044000 not in iomem). Stock Android netmgr_config.xml confirms legacy BAM DMUX mode for MSM targets (no WDA, no MAP, no DPM). Once rmnet0 exists, `qmicli --wds-start-network` should work directly — no netmgrd needed.
+- [ ] Modem data path — **PPP over SMD confirmed working.** AT+CGACT gets IP (10.156.46.161), AT+CGDATA="PPP" returns CONNECT on /dev/smd7. BAM DMUX is a dead end on this firmware. Need kernel PPP support (CONFIG_PPP, CONFIG_PPP_ASYNC) + pppd. See `docs/modem_data.md`.
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
