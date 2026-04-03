@@ -199,45 +199,99 @@ class KeyReader:
             stderr=subprocess.DEVNULL
         )
         self._held = set()
+        self._repeat_key = None    # key currently held for repeat
+        self._repeat_time = 0      # when next repeat fires
+        self._REPEAT_DELAY = 0.4   # initial delay before repeat (seconds)
+        self._REPEAT_RATE = 0.08   # interval between repeats (seconds)
 
-    def read(self, timeout=None):
-        """Read a key name. Returns None on timeout.
-
-        Returns 'CHORD_F3_F6' when both are held, otherwise returns
-        the key name on press (ignores releases for non-chord keys).
-        """
+    def _drain_events(self):
+        """Process all pending FIFO events, updating held state.
+        Returns the last key pressed (or None)."""
+        last_press = None
         while True:
-            if timeout is not None:
-                r, _, _ = select.select([self._fifo], [], [], timeout)
-                if not r:
-                    return None
+            r, _, _ = select.select([self._fifo], [], [], 0)
+            if not r:
+                break
             line = self._fifo.readline().strip()
             if not line:
-                return None
-
+                break
             parts = line.split()
             if len(parts) != 2:
                 continue
             key, action = parts
-
             if action == 'press':
                 self._held.add(key)
-                # Check for chord
-                if self.CHORD_KEYS.issubset(self._held):
-                    self._held.clear()
-                    return 'CHORD_F3_F6'
-                # For chord keys, don't emit immediately — wait to see
-                # if the other chord key arrives within a short window
-                if key in self.CHORD_KEYS:
-                    r, _, _ = select.select([self._fifo], [], [], 0.15)
-                    if r:
-                        continue  # more input available, loop to process it
-                    # Timeout — no chord, emit as regular key
-                    return key
-                return key
+                last_press = key
             elif action == 'release':
                 self._held.discard(key)
-            # Releases are silently consumed; loop for next event
+                if self._repeat_key == key:
+                    self._repeat_key = None
+        return last_press
+
+    def read(self, timeout=None):
+        """Read a key name. Returns None on timeout.
+
+        Implements software key repeat: if a key is held down,
+        re-emits it at _REPEAT_RATE after _REPEAT_DELAY.
+        Returns 'CHORD_F3_F4' when both chord keys are held.
+        """
+        deadline = time.time() + timeout if timeout is not None else None
+
+        while True:
+            # Calculate wait time
+            now = time.time()
+            if deadline is not None:
+                remaining = deadline - now
+                if remaining <= 0:
+                    return None
+            else:
+                remaining = 5.0  # default poll
+
+            # If repeating, use shorter timeout
+            if self._repeat_key and self._repeat_key in self._held:
+                wait = max(0, self._repeat_time - now)
+                wait = min(wait, remaining)
+            else:
+                wait = remaining
+
+            r, _, _ = select.select([self._fifo], [], [], wait)
+
+            if r:
+                # Process all pending events
+                last_press = self._drain_events()
+
+                # Check chord
+                if self.CHORD_KEYS.issubset(self._held):
+                    self._held.clear()
+                    self._repeat_key = None
+                    return 'CHORD_F3_F4'
+
+                if last_press:
+                    # Chord key delay
+                    if last_press in self.CHORD_KEYS:
+                        r2, _, _ = select.select([self._fifo], [], [], 0.15)
+                        if r2:
+                            self._drain_events()
+                            if self.CHORD_KEYS.issubset(self._held):
+                                self._held.clear()
+                                self._repeat_key = None
+                                return 'CHORD_F3_F4'
+
+                    # Start repeat tracking for this key
+                    self._repeat_key = last_press
+                    self._repeat_time = time.time() + self._REPEAT_DELAY
+                    return last_press
+            else:
+                # Timeout — check if we should emit a repeat
+                now = time.time()
+                if (self._repeat_key and self._repeat_key in self._held
+                        and now >= self._repeat_time):
+                    self._repeat_time = now + self._REPEAT_RATE
+                    return self._repeat_key
+
+                # Check overall deadline
+                if deadline is not None and now >= deadline:
+                    return None
 
     def close(self):
         self._proc.terminate()
