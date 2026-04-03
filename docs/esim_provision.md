@@ -2,16 +2,42 @@
 
 ## Status (2026-04-03)
 
-**ISD-R APDU access WORKING.** easyuicc adapter communicates via SGP.22
-STORE DATA commands. The modem's APDU restrictions are bypassed using a
+**lpac fully working.** `lpac chip info` returns complete eUICC data
+through the full pipeline: lpac → lpac-qmi-wrapper → qmi-send-apdu →
+QMI UIM → eUICC. The modem's APDU restrictions are bypassed using a
 **short AID prefix** (`A00000055910`, 6 bytes) for open_logical_channel.
-The card does partial AID matching and selects the ISD-R. Subsequent
-APDUs via QMI UIM Send APDU work within the same QMI session.
 
-Verified: GetEuiccInfo1, GetEuiccChallenge, GetEuiccInfo2 all return
-valid SGP.22 BER-TLV responses with SW=9000.
+Next: get a speed-test eSIM, provision a profile, and transfer data.
 
-Next: integrate with lpac for full profile download.
+## eUICC Info (from `lpac chip info`)
+
+| Property | Value |
+|----------|-------|
+| EID | `89086030202200000026000048925914` |
+| Firmware | 4.2.0 |
+| SGP.22 version (svn) | 2.2.2 |
+| Profile version | 2.3.1 |
+| GlobalPlatform version | 2.3.0 |
+| TS 102.241 version | 9.2.0 |
+| PP version | 1.0.0 |
+| SAS accreditation | ED-ZI-UP-0826 |
+| Root SM-DS | `testrootsmds.gsma.com` |
+| Default SM-DP+ | (none) |
+| Installed profiles | 0 |
+| Free NVM | 444,350 bytes (~434 KB) |
+| Free volatile memory | 9,878 bytes |
+
+**UICC capabilities**: usimSupport, isimSupport, csimSupport,
+akaMilenage, akaCave, akaTuak128, akaTuak256, gbaAuthenUsim,
+gbaAuthenISim, mbmsAuthenUsim, eapClient, javacard,
+berTlvFileSupport, dfLinkSupport, catTp, getIdentity,
+profile-a-x25519, profile-b-p256
+
+**RSP capabilities**: additionalProfile, testProfileSupport
+
+**CI PKI (verification + signing)**:
+`81370f5125d0b1d408d4c3b232e6d25e795bebfb`
+(GSMA CI root — standard production PKI)
 
 ## Overview
 
@@ -26,17 +52,19 @@ Single-profile use case — one eSIM, one carrier, no profile switching.
 ```
 esim-provision (user script)
       |
-lpac-qmi-wrapper (stdio JSON <-> qmicli translation)
+lpac-qmi-wrapper.sh (stdio JSON <-> daemon line protocol)
+      |                                          |
+lpac (LPA, SGP.22 v2.2.2)  <-- HTTPS/TLS -->  SM-DP+ server
       |
-lpac (LPA, SGP.22 v2.2.2)   <--- HTTPS/TLS --->  SM-DP+ server
+LPAC_APDU=stdio driver (JSON on stdin/stdout)
       |
-LPAC_APDU=stdio driver
+qmi-send-apdu daemon (persistent AF_MSM_IPC session)
       |
-qmicli --uim-{open-logical-channel,send-apdu,close-logical-channel}
+      |  open_logical_channel — uses short AID A00000055910
+      |  send_apdu — raw APDU on open channel
+      |  close_logical_channel
       |
-libqmi (AF_MSM_IPC backend)
-      |
-IPC Router kernel driver --> Modem Q6 DSP --> eUICC chip
+AF_MSM_IPC socket (family 27) → IPC Router → Modem Q6 DSP → eUICC
 ```
 
 ## Provisioning Flow
@@ -88,8 +116,9 @@ APDU functions: `connect`, `disconnect`, `logic_channel_open`, `logic_channel_cl
 
 ### lpac-qmi-wrapper
 
-Pure POSIX shell script translating lpac's stdio JSON protocol to qmicli UIM
-commands. Uses named pipes for bidirectional communication.
+POSIX shell script bridging lpac's stdio JSON protocol to the
+`qmi-send-apdu` daemon's line-based protocol. Uses named pipes for
+bidirectional communication with both lpac and the daemon.
 
 - **Reference**: https://github.com/z3ntu/lpac-libqmi-wrapper (Python, used as design reference)
 - **Our implementation**: `tools/lpac-qmi-wrapper.sh` (shell, no Python dependency)
@@ -97,18 +126,35 @@ commands. Uses named pipes for bidirectional communication.
 
 Translation table:
 
-| lpac func              | qmicli command                                  |
-|------------------------|-------------------------------------------------|
-| `connect`              | (no-op, returns success)                        |
-| `disconnect`           | (no-op, returns success)                        |
-| `logic_channel_open`   | `qmicli --uim-open-logical-channel=SLOT,AID`   |
-| `logic_channel_close`  | `qmicli --uim-close-logical-channel=SLOT,CID`  |
-| `transmit`             | `qmicli --uim-send-apdu=SLOT,CID,APDU`         |
+| lpac func              | daemon command                          |
+|------------------------|-----------------------------------------|
+| `connect`              | (no-op, returns success)                |
+| `disconnect`           | (no-op, returns success)                |
+| `logic_channel_open`   | `OPEN AID` (auto-truncates ISD-R AIDs)  |
+| `logic_channel_close`  | `CLOSE channel_id`                      |
+| `transmit`             | `APDU channel_id apdu_hex`              |
 
 Environment variables:
-- `LPAC_QMI_DEVICE` — QMI device path (default: `msmipc://0`)
-- `LPAC_QMI_SLOT` — UIM slot number (default: `1`)
 - `DEBUG=1` — verbose logging to stderr
+
+### qmi-send-apdu
+
+Minimal QMI UIM client that connects directly to the modem's UIM service
+via AF_MSM_IPC. Maintains a **persistent session** (required because QMI
+logical channels are per-client — separate qmicli invocations can't
+share channels).
+
+- **Source**: `tools/qmi-send-apdu.c` (static ARM/musl binary, ~52KB)
+- **Installed at**: `/usr/bin/qmi-send-apdu`
+
+**ISD-R AID auto-truncation**: when the requested AID starts with
+`A0000005591010` (the ISD-R prefix), the daemon truncates it to
+`A00000055910` (6 bytes) to bypass the modem's 7-byte filter.
+
+Modes:
+- `qmi-send-apdu test` — open ISD-R, send eUICC commands, print results
+- `qmi-send-apdu daemon` — persistent stdin/stdout mode for the wrapper
+- `qmi-send-apdu open/apdu/close` — one-shot commands (separate sessions)
 
 ### esim-provision
 
@@ -327,26 +373,70 @@ why our modified FSG was ignored.
 
 ### 9. Short AID bypass — WORKING (2026-04-03)
 
-The modem's second ISD-R filter matches the 7-byte prefix
-`A0000005591010`. A 6-byte AID `A00000055910` passes the filter.
+#### Discovery process
+
+After Patch 1 (bitmask bypass) made non-ISD-R AIDs work, the ISD-R
+AID specifically still returned AccessDenied. Patch 3 (corrupting the
+ISD-R AID in the b14 data segment from A0→00) was applied and tested:
+
+```
+qmicli --uim-open-logical-channel=1,00000005591010FFFFFFFF8900000100
+→ SimFileNotFound  (reached card — Patch 3 worked, LPA registered for wrong AID)
+
+qmicli --uim-open-logical-channel=1,A0000005591010FFFFFFFF8900000100
+→ AccessDenied     (STILL blocked — a second filter exists)
+```
+
+Patch 3 successfully corrupted the LPA's registration, but ISD-R was
+still blocked. There was a **second filter** somewhere. Searching all
+25 firmware segments found no other copy of the AID bytes — so the
+filter had to be hardcoded in Hexagon instruction immediates.
+
+To find the filter boundary, progressively longer AIDs were tested:
+
+```
+A000000559       (5 bytes) → channel opens (card selects something)
+A00000055910     (6 bytes) → channel opens
+A0000005591010   (7 bytes) → AccessDenied ← filter triggers here
+A0000005591010FF (8 bytes) → AccessDenied
+```
+
+The filter matches the 7-byte prefix `A0000005591010` (GSMA RID +
+first 2 bytes of ISD-R PIX). Below 7 bytes, the request passes.
+
+#### The bypass
+
+ISO 7816-4 allows partial AID selection — the card matches the longest
+AID prefix. Since the ISD-R is the only applet on the easyuicc adapter
+whose AID starts with `A00000055910`, the 6-byte AID selects it:
 
 ```
 qmicli --uim-open-logical-channel=1,A00000055910
 → Open Logical Channel operation successfully completed: 1
-→ FCI: 84 10 A0000005591010FFFFFFFF8900000100 (ISD-R!)
+→ FCI: 84 10 A0000005591010FFFFFFFF8900000100 (full ISD-R AID!)
 → SW: 9000
 ```
 
-The card does ISO 7816-4 partial AID matching — the ISD-R is the only
-applet whose AID starts with `A00000055910`, so it gets selected.
+#### Persistent QMI session
 
-Subsequent APDUs via `qmi-send-apdu` (direct AF_MSM_IPC connection)
-work within the same QMI session:
+`qmicli --uim-send-apdu` returned InvalidArgument even after opening a
+channel. Root cause: each qmicli invocation creates a new QMI client,
+and logical channels are per-client. The modem rejects send-apdu from
+a different client than the one that opened the channel.
+
+Solution: `qmi-send-apdu` (`tools/qmi-send-apdu.c`) opens an
+AF_MSM_IPC socket directly to the UIM service (node=0, port=39),
+skipping the QMUX framing layer (msmipc sends raw QMI service headers,
+not QMUX-framed messages — discovered by reading libqmi's
+`qmi-endpoint-msmipc.c`). All operations share the same socket.
+
+#### Verified APDU exchange
 
 ```
-STORE DATA (BF20 GetEuiccInfo1)  → 61 38 → GET RESPONSE → eUICC info
+STORE DATA (BF20 GetEuiccInfo1)     → 61 38 → GET RESPONSE → eUICC info
 STORE DATA (BF2E GetEuiccChallenge) → 61 15 → 16-byte challenge
-STORE DATA (BF22 GetEuiccInfo2)  → 61 7D → firmware version, GP version
+STORE DATA (BF22 GetEuiccInfo2)     → 61 7D → firmware/GP versions
+lpac chip info                      → full JSON with EID, capabilities, NVM
 ```
 
 **Requirements**: Patch 1 (APDU restriction bypass in modem.b12) must
@@ -427,20 +517,26 @@ is blocked. The `mmgsdi_diag_support` file was successfully modified.
 
 ### Next steps
 
-1. **lpac integration** — build an APDU backend using `qmi-send-apdu`
-   that maintains a persistent QMI session. Either modify the
-   `lpac-qmi-wrapper.sh` to use it, or write a new wrapper.
+1. **Speed-test eSIM** — get a disposable data-only eSIM for testing.
+   Candidates: eSIM.me test profile, Airalo speed-test, or any provider
+   that gives an activation code for a small data plan.
 
-2. **Test full provisioning** — use lpac end-to-end with a test
-   SM-DP+ server.
+2. **Profile download** — `lpac-qmi-wrapper profile download` with the
+   activation code. This exercises the full SM-DP+ authentication and
+   BPP installation flow.
+
+3. **Modem attach** — after profile install + enable, the modem should
+   see a USIM with IMSI/Ki. Test PS-attach and data transfer (this also
+   unblocks the BAM DMUX / A2 data path task).
 
 ## Test Plan
 
-1. **eUICC info**: `qmi-send-apdu test` — returns EID, firmware version ✓
-2. **Channel test**: opens logical channel to ISD-R via short AID ✓
-3. **lpac integration**: lpac chip info via new APDU backend
-4. **Test profile**: use a test SM-DP+ to download a trial profile
-5. **Full provision**: `esim-provision` end-to-end with a real carrier code
+1. **eUICC APDU access**: `qmi-send-apdu test` ✓
+2. **Logical channel to ISD-R**: short AID bypass ✓
+3. **lpac chip info**: full eUICC data returned ✓
+4. **Profile download**: `lpac-qmi-wrapper profile download -a CODE`
+5. **Profile enable**: `lpac-qmi-wrapper profile enable ICCID`
+6. **Data transfer**: modem PS-attach + ping / speed test
 
 ## Repos
 
