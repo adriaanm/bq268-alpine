@@ -124,13 +124,18 @@ else
     echo "  WiFi: up"
 fi
 
-# Check DNS/connectivity
-if ! ping -c1 -W3 "$SMDP" >/dev/null 2>&1; then
-    echo "WARNING: Cannot reach $SMDP" >&2
-    echo "  Check WiFi and DNS configuration" >&2
-    printf 'Continue anyway? [y/N] '
-    read -r yn
-    case "$yn" in [yY]*) ;; *) exit 1 ;; esac
+# Check DNS/connectivity (use TCP connect — SM-DP+ servers often block ICMP)
+if ! wget -q --spider -T5 "https://$SMDP" >/dev/null 2>&1; then
+    # BusyBox wget may fail on TLS — try a plain DNS lookup as fallback
+    if ! nslookup "$SMDP" >/dev/null 2>&1; then
+        echo "WARNING: Cannot resolve $SMDP" >&2
+        echo "  Check WiFi and DNS configuration" >&2
+        printf 'Continue anyway? [y/N] '
+        read -r yn
+        case "$yn" in [yY]*) ;; *) exit 1 ;; esac
+    else
+        echo "  Network: $SMDP resolves (HTTPS check skipped)"
+    fi
 else
     echo "  Network: $SMDP reachable"
 fi

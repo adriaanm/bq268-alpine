@@ -13,6 +13,14 @@
 # Environment:
 #   DEBUG - set to 1 for verbose logging to stderr
 
+# Work around c-ares DNS resolver timeout on musl/Alpine: c-ares doesn't
+# reliably read /etc/resolv.conf, so extract nameservers and pass them
+# explicitly via the CURL_DNS_SERVERS environment variable.
+if [ -z "$CURL_DNS_SERVERS" ] && [ -f /etc/resolv.conf ]; then
+    _dns=$(sed -n 's/^nameserver[[:space:]]*//p' /etc/resolv.conf | tr '\n' ',' | sed 's/,$//')
+    [ -n "$_dns" ] && export CURL_DNS_SERVERS="$_dns"
+fi
+
 DEBUG="${DEBUG:-0}"
 
 TMPDIR="${TMPDIR:-/tmp}"

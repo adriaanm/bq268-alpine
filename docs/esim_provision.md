@@ -7,7 +7,13 @@ through the full pipeline: lpac → lpac-qmi-wrapper → qmi-send-apdu →
 QMI UIM → eUICC. The modem's APDU restrictions are bypassed using a
 **short AID prefix** (`A00000055910`, 6 bytes) for open_logical_channel.
 
-Next: get a speed-test eSIM, provision a profile, and transfer data.
+**Truphone Speedtest profile downloaded and enabled** using activation code
+`LPA:1$rsp.truphone.com$QRF-SPEEDTEST` (no signup required, production PKI).
+This profile validates the full provisioning chain but has no active MNO
+subscription — it won't attach to a real network.
+
+Next: get a paid data-only eSIM (Airalo, LycaMobile, etc.) to test PS-attach
+and the cellular data path.
 
 ## eUICC Info (from `lpac chip info`)
 
@@ -515,28 +521,45 @@ DIAG EFS `OPEN(O_WRONLY)` + `WRITE` works for existing files (after SPC
 unlock), even on protected NV paths. Only file CREATION (O_CREAT, PUT)
 is blocked. The `mmgsdi_diag_support` file was successfully modified.
 
+### c-ares DNS workaround
+
+Alpine's libcurl is built with c-ares (async DNS resolver). c-ares
+doesn't reliably read `/etc/resolv.conf` on musl, causing DNS resolution
+timeouts during SM-DP+ HTTP calls. `lpac-qmi-wrapper` works around this
+by extracting nameservers from `/etc/resolv.conf` and setting
+`CURL_DNS_SERVERS` for libcurl.
+
+### Free test profiles (no signup)
+
+| Code | Provider | Notes |
+|------|----------|-------|
+| `LPA:1$rsp.truphone.com$QRF-SPEEDTEST` | Truphone/1Global | Production PKI, no data |
+| `LPA:1$rsp.truphone.com$QRF-BETTERROAMING-PMRDGIR2EARDEIT5` | BetterRoaming | Production PKI, no data |
+
+These profiles exercise the full provisioning pipeline (SM-DP+ auth, BPP
+download, install, enable) but are not backed by an MNO subscription —
+they won't register on any network.
+
+sysmocom (`smdpp.test.rsp.sysmocom.de`) uses SGP.26 test PKI and is
+rejected by this eUICC (only has production GSMA CI certificates).
+
 ### Next steps
 
-1. **Speed-test eSIM** — get a disposable data-only eSIM for testing.
-   Candidates: eSIM.me test profile, Airalo speed-test, or any provider
-   that gives an activation code for a small data plan.
+1. **Paid data eSIM** — get a cheap data-only eSIM (Airalo ~$5/1GB,
+   LycaMobile, etc.) to test actual cellular data. The provisioning
+   pipeline is proven; this just needs a real MNO subscription.
 
-2. **Profile download** — `lpac-qmi-wrapper profile download` with the
-   activation code. This exercises the full SM-DP+ authentication and
-   BPP installation flow.
-
-3. **Modem attach** — after profile install + enable, the modem should
-   see a USIM with IMSI/Ki. Test PS-attach and data transfer (this also
-   unblocks the BAM DMUX / A2 data path task).
+2. **Modem attach** — after installing a real profile, test PS-attach
+   and data transfer (this also unblocks the BAM DMUX / A2 data path task).
 
 ## Test Plan
 
 1. **eUICC APDU access**: `qmi-send-apdu test` ✓
 2. **Logical channel to ISD-R**: short AID bypass ✓
 3. **lpac chip info**: full eUICC data returned ✓
-4. **Profile download**: `lpac-qmi-wrapper profile download -a CODE`
-5. **Profile enable**: `lpac-qmi-wrapper profile enable ICCID`
-6. **Data transfer**: modem PS-attach + ping / speed test
+4. **Profile download**: Truphone Speedtest via `lpac-qmi-wrapper` ✓
+5. **Profile enable**: `lpac-qmi-wrapper profile enable ICCID` ✓
+6. **Data transfer**: modem PS-attach + ping / speed test (needs paid eSIM)
 
 ## Repos
 
