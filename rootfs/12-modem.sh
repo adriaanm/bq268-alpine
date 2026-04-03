@@ -85,9 +85,16 @@ stop() {
 MODEM
 chmod 755 "$ROOTFS/etc/init.d/modem"
 
-# Enable at boot runlevel (start early so modem init overlaps with wifi)
+# Add to default runlevel but DON'T auto-start.
+# This lets you bring up the modem manually:
+#   rc-service rmt-storage start && rc-service modem start
+# To re-enable auto-start:
+#   rc-update add rmt-storage default && rc-update add modem default
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
-rc-update add rmt-storage boot
-rc-update add modem boot
+rc-update del rmt-storage boot 2>/dev/null; true
+rc-update del modem boot 2>/dev/null; true
+rc-update del rmt-storage default 2>/dev/null; true
+rc-update del modem default 2>/dev/null; true
 '
-echo "  rmt-storage + modem services enabled (boot runlevel)"
+echo "  rmt-storage + modem services installed (manual start)"
+echo "  Start with: rc-service rmt-storage start && rc-service modem start"
