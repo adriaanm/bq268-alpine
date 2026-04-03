@@ -90,7 +90,8 @@ build-lpac:
     ls -lhR tools/lpac-esim/
 
 # build Alpine rootfs image (requires sudo)
-build-rootfs:
+# Ensures firmware is extracted and modem patch applied before building.
+build-rootfs: extract-firmware patch-modem build-tools
     sudo bash build-rootfs.sh
 
 # ── QEMU testing ──────────────────────────────────────────────────────────
