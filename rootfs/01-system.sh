@@ -160,4 +160,5 @@ proc        /proc    proc    defaults        0      0
 sysfs       /sys     sysfs   defaults        0      0
 devtmpfs    /dev     devtmpfs defaults       0      0
 tmpfs       /var/log tmpfs   size=2M,nosuid,nodev 0 0
+pstore      /sys/fs/pstore pstore  defaults        0      0
 FSTAB
