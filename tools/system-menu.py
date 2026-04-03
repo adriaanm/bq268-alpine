@@ -565,12 +565,86 @@ def show_cellular(keys):
 # -- Main --
 
 def setup_dmesg_vt():
-    """Start dmesg -w on VT2 so F3+F6 can toggle to it."""
-    # Launch dmesg follow on tty2 in background
+    """Start a scrollable dmesg viewer on VT2.
+
+    UP/DOWN scroll through the kernel log buffer. New messages from
+    dmesg -w are appended and auto-scrolled to bottom.
+    """
+    viewer = r'''
+import os, sys, subprocess, select, tempfile
+
+ROWS, COLS = 8, 20
+tty = open("/dev/tty2", "w", buffering=1)
+lines = []
+scroll_pos = None  # None = follow tail
+hscroll = 0        # horizontal scroll offset
+
+def load_dmesg():
+    global lines
+    r = subprocess.run("dmesg", capture_output=True, text=True)
+    lines = r.stdout.splitlines()
+
+def draw():
+    tty.write("\033[H\033[2J")
+    end = scroll_pos if scroll_pos is not None else len(lines)
+    start = max(0, end - ROWS)
+    for line in lines[start:end]:
+        tty.write(line[hscroll:hscroll+COLS] + "\n")
+    tty.flush()
+
+load_dmesg()
+draw()
+
+fifo_path = tempfile.mktemp(prefix="dmesg-keys-")
+os.mkfifo(fifo_path)
+fd = os.open(fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+fifo_r = os.fdopen(fd, "r")
+fifo_w = open(fifo_path, "w")
+cmd = ("(for dev in /dev/input/event*; do [ -e \"$dev\" ] && "
+       "evtest \"$dev\" 2>/dev/null & done; wait) | "
+       "awk '/EV_KEY.*value 1$/{match($0,/KEY_[A-Z0-9_]+/);"
+       "if(RSTART){print substr($0,RSTART,RLENGTH);fflush()}}'")
+kproc = subprocess.Popen(cmd, shell=True, stdout=fifo_w,
+                         stderr=subprocess.DEVNULL)
+dproc = subprocess.Popen(["dmesg", "-w"], stdout=subprocess.PIPE,
+                         stderr=subprocess.DEVNULL, text=True)
+
+while True:
+    rlist, _, _ = select.select([fifo_r, dproc.stdout], [], [], 2)
+    if dproc.stdout in rlist:
+        line = dproc.stdout.readline().rstrip()
+        if line:
+            lines.append(line)
+            if scroll_pos is None:
+                draw()
+    if fifo_r in rlist:
+        key = fifo_r.readline().strip()
+        if key == "KEY_UP":
+            if scroll_pos is None:
+                scroll_pos = len(lines)
+            scroll_pos = max(ROWS, scroll_pos - 1)
+            draw()
+        elif key == "KEY_DOWN":
+            if scroll_pos is not None:
+                scroll_pos += 1
+                if scroll_pos >= len(lines):
+                    scroll_pos = None
+            draw()
+        elif key == "KEY_RIGHT":
+            hscroll += 10
+            draw()
+        elif key == "KEY_LEFT":
+            hscroll = max(0, hscroll - 10)
+            draw()
+    if not rlist:
+        if scroll_pos is None:
+            draw()
+'''
     subprocess.Popen(
-        'dmesg -w > /dev/tty2 2>&1',
-        shell=True, stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        ['python3', '-u', '-c', viewer],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 def claim_vt():
