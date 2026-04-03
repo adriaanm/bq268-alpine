@@ -22,7 +22,8 @@ apk add \
     kbd \
     alsa-utils \
     sox \
-    ppp
+    ppp \
+    python3
 '
 
 # Fix /run — ensure it's a real directory so tmpfs mount works at boot

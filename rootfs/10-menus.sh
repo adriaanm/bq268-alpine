@@ -23,11 +23,8 @@ start() {
 KMAPINIT
 chmod 755 "$ROOTFS/etc/init.d/console-keymap"
 
-# Status library (sourced by menus)
-install -D -m 644 "$SCRIPT_DIR/tools/bq268-status.sh" "$ROOTFS/usr/local/lib/bq268-status.sh"
-
-# System menu (main UI on tty0)
-install -m 755 "$SCRIPT_DIR/tools/system-menu.sh" "$ROOTFS/usr/local/bin/system-menu.sh"
+# System menu (main UI on tty0, Python)
+install -m 755 "$SCRIPT_DIR/tools/system-menu.py" "$ROOTFS/usr/local/bin/system-menu"
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add console-keymap default
