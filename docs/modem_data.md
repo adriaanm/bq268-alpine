@@ -142,6 +142,34 @@ channel rates show max 42.2 Mbps DL. Modem clearly has data capability.
 | 15 | `qmicli --wds-get-default-settings=3gpp` | empty APN, ipv4-or-ipv6 |
 | 16 | `qmicli --wds-get-autoconnect-settings` | InvalidOperation |
 
+## Discovery process
+
+After exhausting the QMI WDS path (every `start-network` variant
+returned `InvalidOperation`), the key insight was to bypass QMI
+entirely and try the AT command interface on `/dev/smd7` (the DATA1
+SMD channel, which acts as an AT port on this firmware).
+
+The standard 3GPP AT command sequence for PDP activation worked on the
+first try: `AT+CGDCONT` to define the context, `AT+CGACT` to activate
+it (the modem returned OK and the network assigned IP 10.156.46.161
+via `AT+CGPADDR`). This proved the modem's data stack was functional —
+the problem was entirely in how we were trying to talk to it.
+
+With the PDP context active, `AT+CGDATA="PPP",1` returned
+`CONNECT 150000000`, switching the serial channel into PPP data mode.
+This is classic dial-up style: the modem presents raw PPP frames on
+the serial device, and the host runs `pppd` to negotiate IPCP and
+create a `ppp0` network interface. The modem never needed BAM DMUX,
+A2_POWER_CONTROL, or rmnet — it's a serial PPP device, not a hardware
+DMA engine.
+
+In retrospect, the clues were there: the SMD channel table showed
+DATA1-4 as simple serial/packet channels with no hardware backing, the
+A2 BAM address (`0x4044000`) wasn't in `/proc/iomem`, and the modem's
+WDS/WDA services rejected all data format configuration. The modem
+firmware was designed for PPP-over-AT on a low-end MSM8909 walkie-talkie
+platform, not for the high-throughput BAM DMA path used on smartphones.
+
 ## BREAKTHROUGH: PPP over SMD works (2026-04-03)
 
 The data path is **PPP over SMD**, not BAM DMUX.
