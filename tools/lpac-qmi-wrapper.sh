@@ -1,30 +1,34 @@
 #!/bin/sh
-# lpac-qmi-wrapper: APDU backend for lpac using qmicli over msmipc://
+# lpac-qmi-wrapper: APDU backend for lpac using qmi-send-apdu daemon
 #
-# Launches lpac with the stdio APDU driver, reads JSON requests from lpac's
-# stdout, translates them into qmicli UIM commands, and writes JSON responses
-# back to lpac's stdin via a named pipe.
+# Launches a persistent qmi-send-apdu process (which maintains a single
+# QMI UIM session over AF_MSM_IPC), then runs lpac with the stdio APDU
+# driver and translates between lpac's JSON protocol and the daemon's
+# line-based protocol.
+#
+# The daemon automatically truncates ISD-R AIDs to bypass the modem's
+# 7-byte AID filter (see docs/esim_provision.md).
 #
 # Usage: lpac-qmi-wrapper [lpac args...]
 # Environment:
-#   LPAC_QMI_DEVICE  - QMI device (default: msmipc://0)
-#   LPAC_QMI_SLOT    - UIM slot number (default: 1)
-#   DEBUG            - set to 1 for verbose logging to stderr
+#   DEBUG - set to 1 for verbose logging to stderr
 
-QMI_DEVICE="${LPAC_QMI_DEVICE:-msmipc://0}"
-SLOT="${LPAC_QMI_SLOT:-1}"
 DEBUG="${DEBUG:-0}"
 
 TMPDIR="${TMPDIR:-/tmp}"
 FIFO_IN="$TMPDIR/lpac-in.$$"
+DAEMON_IN="$TMPDIR/daemon-in.$$"
+DAEMON_OUT="$TMPDIR/daemon-out.$$"
 CHANNEL_ID=""
 LPAC_PID=""
 SENTINEL_PID=""
+DAEMON_PID=""
 
 cleanup() {
     [ -n "$LPAC_PID" ] && kill "$LPAC_PID" 2>/dev/null || true
     [ -n "$SENTINEL_PID" ] && kill "$SENTINEL_PID" 2>/dev/null || true
-    rm -f "$FIFO_IN"
+    [ -n "$DAEMON_PID" ] && kill "$DAEMON_PID" 2>/dev/null || true
+    rm -f "$FIFO_IN" "$DAEMON_IN" "$DAEMON_OUT"
 }
 trap cleanup EXIT INT TERM
 
@@ -36,33 +40,54 @@ info() {
     printf '%s\n' "$*" >&2
 }
 
-# --- QMI helpers ---
-
-send_apdu() {
-    local out
-    out=$(qmicli -d "$QMI_DEVICE" "--uim-send-apdu=$SLOT,$CHANNEL_ID,$1" 2>&1) || {
-        info "qmicli send-apdu error: $out"
-        return 1
-    }
-    printf '%s' "$out" | sed 's/.*completed: //' | tr -d ':' | tr -d '\n'
-}
-
-open_channel() {
-    local out
-    out=$(qmicli -d "$QMI_DEVICE" "--uim-open-logical-channel=$SLOT,$1" 2>&1) || {
-        info "qmicli open-channel error: $out"
-        return 1
-    }
-    printf '%s' "$out" | sed 's/.*completed: //' | tr -d ' \n'
-}
-
-close_channel() {
-    qmicli -d "$QMI_DEVICE" "--uim-close-logical-channel=$SLOT,$1" >/dev/null 2>&1 || true
-}
-
 # Extract a JSON string value by key (simple sed, no jq needed)
 jval() {
     sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
+}
+
+# --- Daemon communication ---
+
+# Send command to daemon and read response
+daemon_cmd() {
+    debug "DAEMON << $1"
+    printf '%s\n' "$1" >&4
+    IFS= read -r resp <&5
+    debug "DAEMON >> $resp"
+    printf '%s' "$resp"
+}
+
+open_channel() {
+    local resp
+    resp=$(daemon_cmd "OPEN $1")
+    case "$resp" in
+        OK\ *)
+            # "OK channel_id [FCI_hex]"
+            printf '%s' "$resp" | cut -d' ' -f2
+            ;;
+        *)
+            info "open_channel error: $resp"
+            return 1
+            ;;
+    esac
+}
+
+send_apdu() {
+    local resp
+    resp=$(daemon_cmd "APDU $CHANNEL_ID $1")
+    case "$resp" in
+        OK\ *)
+            # "OK response_hex"
+            printf '%s' "$resp" | cut -d' ' -f2-
+            ;;
+        *)
+            info "send_apdu error: $resp"
+            return 1
+            ;;
+    esac
+}
+
+close_channel() {
+    daemon_cmd "CLOSE $1" >/dev/null
 }
 
 # --- Main ---
@@ -70,17 +95,23 @@ jval() {
 export LPAC_APDU=stdio
 export LPAC_HTTP=curl
 
-mkfifo "$FIFO_IN"
+# Start the qmi-send-apdu daemon
+mkfifo "$DAEMON_IN" "$DAEMON_OUT" "$FIFO_IN"
 
-# Keep the FIFO write-end open with a sleeping sentinel process.
-# This prevents lpac from seeing EOF if the main loop hasn't opened fd 3 yet,
-# and critically, it unblocks lpac's open() on the FIFO read-end.
+qmi-send-apdu daemon < "$DAEMON_IN" > "$DAEMON_OUT" &
+DAEMON_PID=$!
+
+# Open daemon FIFOs as fd 4 (write) and fd 5 (read)
+exec 4>"$DAEMON_IN"
+exec 5<"$DAEMON_OUT"
+
+# Keep the lpac FIFO write-end open with a sleeping sentinel process.
 sleep 86400 > "$FIFO_IN" &
 SENTINEL_PID=$!
 
 # Launch lpac: stdin from FIFO, stdout piped to our while-loop
 lpac "$@" < "$FIFO_IN" 2>/dev/null | {
-    # Open write end of FIFO as fd 3 (sentinel already keeps it open)
+    # Open write end of FIFO as fd 3
     exec 3>"$FIFO_IN"
 
     while IFS= read -r line; do
@@ -103,7 +134,7 @@ lpac "$@" < "$FIFO_IN" 2>/dev/null | {
 
                 case "$func" in
                     connect)
-                        info "eUICC: connect (slot $SLOT via $QMI_DEVICE)"
+                        info "eUICC: connect"
                         printf '{"type":"apdu","payload":{"ecode":0}}\n' >&3
                         ;;
                     disconnect)
@@ -150,7 +181,10 @@ lpac "$@" < "$FIFO_IN" 2>/dev/null | {
 }
 
 RC=$?
-# Clean up sentinel
+# Clean up
+exec 4>&- 5<&-
 kill "$SENTINEL_PID" 2>/dev/null || true
+kill "$DAEMON_PID" 2>/dev/null || true
 SENTINEL_PID=""
+DAEMON_PID=""
 exit $RC

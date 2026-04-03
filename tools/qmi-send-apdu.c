@@ -98,11 +98,11 @@ static int hex_to_bytes(const char *hex, uint8_t *out, int max_len)
 
 static void hex_dump(const char *label, const uint8_t *data, int len)
 {
-    printf("%s (%d bytes):", label, len);
+    fprintf(stderr, "%s (%d bytes):", label, len);
     for (int i = 0; i < len && i < 64; i++)
-        printf(" %02x", data[i]);
-    if (len > 64) printf(" ...");
-    printf("\n");
+        fprintf(stderr, " %02x", data[i]);
+    if (len > 64) fprintf(stderr, " ...");
+    fprintf(stderr, "\n");
 }
 
 static int msmipc_connect(void)
@@ -126,7 +126,7 @@ static int msmipc_connect(void)
         return -1;
     }
 
-    printf("Connected to UIM service (node=%u, port=%u)\n", uim_node, uim_port);
+    fprintf(stderr, "Connected to UIM service (node=%u, port=%u)\n", uim_node, uim_port);
     return 0;
 }
 
@@ -179,14 +179,14 @@ static int qmi_check_result(const uint8_t *buf, int len, const char *op)
             uint16_t result = *(uint16_t *)(buf + off + 3);
             uint16_t error = *(uint16_t *)(buf + off + 5);
             if (result != 0) {
-                printf("%s: FAILED (QMI error=%d)\n", op, error);
+                fprintf(stderr, "%s: FAILED (QMI error=%d)\n", op, error);
                 return -1;
             }
             return 0;
         }
         off += 3 + tlv_len;
     }
-    printf("%s: no result TLV in %d bytes\n", op, len);
+    fprintf(stderr, "%s: no result TLV in %d bytes\n", op, len);
     return -1;
 }
 
@@ -378,9 +378,155 @@ static int cmd_close(int channel)
     return qmi_check_result(rsp, rsp_len, "close channel");
 }
 
+/* ISD-R AID prefix: if the requested AID starts with this, truncate to
+ * 6 bytes to bypass the modem's 7-byte filter */
+static const char *ISDR_PREFIX = "A0000005591010";
+
+static const char *maybe_truncate_aid(const char *aid)
+{
+    static char short_aid[13]; /* "A00000055910" + NUL */
+    if (aid && strlen(aid) >= 14 &&
+        strncasecmp(aid, ISDR_PREFIX, 14) == 0) {
+        memcpy(short_aid, aid, 12);
+        short_aid[12] = '\0';
+        return short_aid;
+    }
+    return aid;
+}
+
+/*
+ * Daemon mode: read commands from stdin, write responses to stdout.
+ * Protocol (line-based, for use by lpac-qmi-wrapper):
+ *   OPEN [AID_HEX]        → OK channel_id [FCI_HEX] | ERR msg
+ *   APDU channel APDU_HEX → OK response_hex | ERR msg
+ *   CLOSE channel          → OK | ERR msg
+ *
+ * Automatically truncates ISD-R AIDs to bypass modem filter.
+ */
+static int cmd_daemon(void)
+{
+    char line[8192];
+
+    fprintf(stderr, "qmi-send-apdu: daemon mode ready\n");
+
+    while (fgets(line, sizeof(line), stdin)) {
+        /* Strip newline */
+        int len = strlen(line);
+        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
+            line[--len] = '\0';
+        if (len == 0) continue;
+
+        fprintf(stderr, "qmi-send-apdu: << %s\n", line);
+
+        if (strncmp(line, "OPEN", 4) == 0) {
+            const char *aid = (line[4] == ' ') ? line + 5 : NULL;
+            aid = maybe_truncate_aid(aid);
+
+            /* Build open request */
+            uint8_t tlvs[256];
+            int toff = 0;
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
+            if (aid && *aid) {
+                uint8_t aid_bytes[32];
+                int aid_len = hex_to_bytes(aid, aid_bytes, sizeof(aid_bytes));
+                tlvs[toff++] = 0x10;
+                *(uint16_t *)(tlvs + toff) = 1 + aid_len; toff += 2;
+                tlvs[toff++] = (uint8_t)aid_len;
+                memcpy(tlvs + toff, aid_bytes, aid_len); toff += aid_len;
+            }
+
+            if (qmi_send(QMI_UIM_OPEN_LOGICAL_CHANNEL, tlvs, toff) < 0) {
+                printf("ERR send failed\n");
+                continue;
+            }
+            uint8_t rsp[512];
+            int rsp_len = qmi_recv(rsp, sizeof(rsp), 10000);
+            if (rsp_len < 0 || qmi_check_result(rsp, rsp_len, "open") < 0) {
+                printf("ERR open failed\n");
+                continue;
+            }
+            int tlen;
+            const uint8_t *tv = qmi_find_tlv(rsp, rsp_len, 0x10, &tlen);
+            int ch = (tv && tlen >= 1) ? tv[0] : -1;
+
+            /* Build response: OK channel_id [FCI_hex] */
+            printf("OK %d", ch);
+            tv = qmi_find_tlv(rsp, rsp_len, 0x12, &tlen);
+            if (tv && tlen > 1) {
+                printf(" ");
+                for (int i = 1; i < tlen; i++)
+                    printf("%02X", tv[i]);
+            }
+            printf("\n");
+
+        } else if (strncmp(line, "APDU ", 5) == 0) {
+            int ch = 0;
+            char apdu_hex[4096];
+            if (sscanf(line + 5, "%d %s", &ch, apdu_hex) < 2) {
+                printf("ERR bad format\n");
+                continue;
+            }
+
+            uint8_t apdu[512];
+            int apdu_len = hex_to_bytes(apdu_hex, apdu, sizeof(apdu));
+
+            uint8_t tlvs[1024];
+            int toff = 0;
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
+            tlvs[toff++] = 0x02;
+            *(uint16_t *)(tlvs + toff) = 2 + apdu_len; toff += 2;
+            *(uint16_t *)(tlvs + toff) = apdu_len; toff += 2;
+            memcpy(tlvs + toff, apdu, apdu_len); toff += apdu_len;
+            tlvs[toff++] = 0x10; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00;
+            tlvs[toff++] = (uint8_t)ch;
+
+            if (qmi_send(QMI_UIM_SEND_APDU, tlvs, toff) < 0) {
+                printf("ERR send failed\n");
+                continue;
+            }
+            uint8_t rsp[4096];
+            int rsp_len = qmi_recv(rsp, sizeof(rsp), 10000);
+            if (rsp_len < 0 || qmi_check_result(rsp, rsp_len, "apdu") < 0) {
+                printf("ERR apdu failed\n");
+                continue;
+            }
+
+            /* APDU response TLV (0x10): uint16 len + data */
+            int tlen;
+            const uint8_t *tv = qmi_find_tlv(rsp, rsp_len, 0x10, &tlen);
+            if (tv && tlen > 2) {
+                printf("OK ");
+                for (int i = 2; i < tlen; i++)
+                    printf("%02X", tv[i]);
+                printf("\n");
+            } else {
+                printf("ERR no apdu response\n");
+            }
+
+        } else if (strncmp(line, "CLOSE ", 6) == 0) {
+            int ch = atoi(line + 6);
+            uint8_t tlvs[16];
+            int toff = 0;
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
+            tlvs[toff++] = 0x10; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = (uint8_t)ch;
+
+            qmi_send(QMI_UIM_CLOSE_LOGICAL_CHANNEL, tlvs, toff);
+            uint8_t rsp[256];
+            qmi_recv(rsp, sizeof(rsp), 5000);
+            printf("OK\n");
+
+        } else {
+            printf("ERR unknown command\n");
+        }
+        fflush(stdout);
+    }
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
 
     if (argc < 2) {
         fprintf(stderr,
@@ -390,13 +536,15 @@ int main(int argc, char *argv[])
             "  %s apdu0 CH APDU_HEX    Send APDU on channel (WITHOUT channel_id TLV)\n"
             "  %s close CH             Close logical channel\n"
             "  %s test                 Open ISD-R + send GET DATA for EID\n"
+            "  %s daemon               Persistent mode, reads commands from stdin\n"
             "\n"
             "Examples:\n"
             "  %s open A00000055910                  # Open to ISD-R via short AID\n"
             "  %s apdu 1 81CA006F00                  # GET DATA on channel 1\n"
-            "  %s test                               # Full ISD-R test sequence\n",
-            argv[0], argv[0], argv[0], argv[0],
-            argv[0], argv[0], argv[0], argv[0]);
+            "  %s test                               # Full ISD-R test sequence\n"
+            "  %s daemon                             # Used by lpac-qmi-wrapper\n",
+            argv[0], argv[0], argv[0], argv[0], argv[0],
+            argv[0], argv[0], argv[0], argv[0], argv[0]);
         return 1;
     }
 
@@ -404,7 +552,9 @@ int main(int argc, char *argv[])
 
     int ret = 0;
 
-    if (strcmp(argv[1], "open") == 0) {
+    if (strcmp(argv[1], "daemon") == 0) {
+        ret = cmd_daemon();
+    } else if (strcmp(argv[1], "open") == 0) {
         ret = cmd_open(argc > 2 ? argv[2] : NULL);
     } else if (strcmp(argv[1], "apdu") == 0 && argc >= 4) {
         int ch = atoi(argv[2]);
