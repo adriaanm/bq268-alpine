@@ -2,24 +2,19 @@
 """
 Patch modem firmware for eSIM provisioning and update hashes in b01/mdt.
 
-Patches applied:
+Patch applied:
   1. APDU restriction bypass (b12 offset 0x121DCC)
      r0 = memw(r1+#0x7B8) → r0 = #0x0
      Disables the QMI UIM APDU security restriction bitmask.
 
-  2. LPA ISD-R disable (b12 offset 0x619014)
-     call lpa_register → r0 = #0x1
-     Prevents the modem's built-in LPA from registering as the handler
-     for the ISD-R AID (A0000005591010...).
+This is the only patch needed. The modem's 7-byte ISD-R AID filter
+is bypassed by using a short 6-byte AID prefix (A00000055910) for
+open_logical_channel — see docs/esim_provision.md "Short AID bypass".
+Patches 2 (LPA ISD-R disable) and 3 (AID corruption) were experiments
+that proved unnecessary and have been removed.
 
-  3. ISD-R AID corruption (b14 offset 0x2D0679)
-     A0 → 00 (first byte of ISD-R AID in data segment)
-     LPA's hardcoded ISD-R AID reference becomes 00000005591010...,
-     so it registers for a non-existent AID. Real ISD-R requests
-     (A0000005591010...) flow through the generic UICC path to the card.
-
-After patching, updates the corresponding SHA-256 hashes in modem.b01
-and modem.mdt. MBA only checks hashes, not the RSA signature, so no
+After patching, updates the SHA-256 hash for b12 in modem.b01 and
+modem.mdt. MBA only checks hashes, not the RSA signature, so no
 re-signing is needed. See docs/modem_patch_plan.md for full analysis.
 
 Usage:
@@ -43,29 +38,13 @@ PATCHES_B12 = [
         "patched": bytes.fromhex("00400078"),
         "desc": "r0 = memw(r1+#0x7B8) → r0 = #0x0",
     },
-    {
-        "name": "LPA ISD-R disable",
-        "offset": 0x619014,
-        "original": bytes.fromhex("b879ff5b"),
-        "patched": bytes.fromhex("20400078"),
-        "desc": "call lpa_register → r0 = #0x1 (skip ISD-R AID registration)",
-    },
 ]
 
-PATCHES_B14 = [
-    {
-        "name": "ISD-R AID corruption",
-        "offset": 0x2D0679,
-        "original": bytes.fromhex("a0"),
-        "patched": bytes.fromhex("00"),
-        "desc": "AID first byte A0 → 00 (LPA registers for non-existent AID)",
-    },
-]
+# Only b12 is patched. Patches 2 (LPA ISD-R disable in b12) and 3 (AID
+# corruption in b14) were experiments superseded by the short AID bypass.
 
-# Collect all patches grouped by segment file
 SEGMENT_PATCHES = {
     "modem.b12": {"patches": PATCHES_B12, "hash_index": 12},
-    "modem.b14": {"patches": PATCHES_B14, "hash_index": 14},
 }
 
 HASH_HEADER_SIZE = 40   # hash segment header
