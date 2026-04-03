@@ -106,6 +106,9 @@ fs.protected_hardlinks = 1
 fs.protected_symlinks = 1
 SYSCTL
 
+# Silence kernel console — only panics reach tty0 (menu runs there)
+echo "kernel.printk = 1 4 1 7" >> "$ROOTFS/etc/sysctl.conf"
+
 # Enable services
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add devfs sysinit
