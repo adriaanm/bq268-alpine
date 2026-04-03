@@ -2,12 +2,12 @@
 
 ## Active
 
-- [ ] Modem data path — **PPP over SMD confirmed working.** AT+CGACT gets IP (10.156.46.161), AT+CGDATA="PPP" returns CONNECT on /dev/smd7. BAM DMUX is a dead end on this firmware. Need kernel PPP support (CONFIG_PPP, CONFIG_PPP_ASYNC) + pppd. See `docs/modem_data.md`.
+- [x] Modem data path — **PPP over SMD working.** `pppd call cellular` establishes data over UMTS. Ping 8.8.8.8 verified. BAM DMUX is unused on this firmware. See `docs/modem_data.md`.
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — Track voltage, capacity, charge status over time. The kernel reports `current_now=0` because the charger driver has no USB PSY to enable current tracking (known kernel limitation). A userspace daemon can poll `voltage_now`, `capacity`, `status` from `/sys/class/power_supply/battery/` and log to a file or SQLite for charge/discharge curve analysis. Could also estimate current from dV/dt. Consider integrating with `battmon` if it already runs.
-- [x] eSIM provisioning — **Complete.** Full pipeline working: lpac → lpac-qmi-wrapper → qmi-send-apdu → QMI UIM → eUICC. Eskimo eSIM provisioned, modem registered on Orange France. UIM power cycle needed after profile switch. See `docs/esim_provision.md`.
+- [x] eSIM provisioning — **Complete.** Full pipeline: lpac → lpac-qmi-wrapper → qmi-send-apdu → QMI UIM → eUICC. Eskimo eSIM provisioned, modem registered. All 3 firmware patches required (`tools/patch-modem-b12.py`). See `docs/esim_provision.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
 ## Backlog
@@ -19,4 +19,4 @@
 - [ ] Graceful shutdown on long-press — Power button long-press currently hard-resets. Should trigger clean unmount + poweroff.
 - [ ] Kernel module trimming — Strip unused modules from rootfs to save space and boot time. Only load what's needed.
 - [ ] Security hardening — Drop to non-root for the app. Disable root login over cellular. Firewall (nftables) to restrict outbound to app traffic only.
-- [ ] Modem DIAG logging — If SIM test doesn't unblock BAM DMUX, need to capture modem DIAG logs to identify A2 precondition. Requires DIAG port over USB or SMD.
+- [ ] Modem DIAG logging — DIAG fully functional (SMD channels open). Useful for debugging modem issues.

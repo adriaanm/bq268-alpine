@@ -225,20 +225,25 @@ CONNECT ""
 
 ### Impact on architecture
 
-- **BAM DMUX is not needed** — can be disabled in defconfig
+- **BAM DMUX is unused** — the modem never sets A2_POWER_CONTROL. Data
+  goes through PPP over SMD, not hardware DMA.
 - **rmnet interfaces won't exist** — data goes through `ppp0`
-- **cell-data script** needs updating: use `pppd call cellular` instead
-  of `qmicli --wds-start-network`
-- **Failover** still works: ppp0 gets a default route with high metric
-- **APN**: need to determine correct APN for Eskimo (tried "globaldata",
-  got IP — might be correct or might be a default)
+- **Failover** works: ppp0 gets a default route with high metric
+- **APN**: "globaldata" works for Eskimo eSIM
+
+### Status (2026-04-03)
+
+**Working.** `pppd call cellular` establishes PPP over UMTS on
+/dev/smd7. Verified: ping 8.8.8.8 succeeds (439-1240ms, roaming).
+PPP config at `/etc/ppp/peers/cellular`, chat script at
+`/etc/ppp/cellular-chat`. CHAP auth required (dummy user "guest").
+
+Kernel requirements: CONFIG_PPP, CONFIG_PPP_ASYNC (added in kernel #66).
 
 ## Next Steps
 
-1. **Add PPP to kernel defconfig** — CONFIG_PPP, CONFIG_PPP_ASYNC,
-   CONFIG_PPP_DEFLATE, CONFIG_PPP_MPPE (for encrypted PPP if needed)
-2. **Rebuild kernel and flash**
-3. **Test pppd** — run the chat script + pppd, verify ppp0 interface
-4. **Test connectivity** — ping, DNS, curl over ppp0
-5. **Update cell-data script** — replace WDS/rmnet with pppd/ppp0
-6. **Determine correct APN** — check Eskimo's APN settings
+1. **Update cell-data script** — replace WDS/rmnet references with
+   pppd/ppp0 for the failover system
+2. **WiFi/cellular failover testing** — test net-watchdog with actual
+   WiFi drops and cellular PPP failover
+3. **Suspend integration** — modem low-power mode when idle

@@ -10,14 +10,19 @@ Patches applied:
   2. LPA ISD-R disable (b12 offset 0x619014)
      call lpa_register → r0 = #0x1
      Prevents the modem's built-in LPA from registering as the handler
-     for the ISD-R AID. Without this, the LPA intercepts open_logical_channel
-     requests for ISD-R AIDs via raw QMI (qmi-send-apdu) and returns
-     AccessDenied, even though the global restriction is bypassed.
+     for the ISD-R AID.
 
-The modem's 7-byte ISD-R AID filter is then bypassed by using a short
-6-byte AID prefix (A00000055910) for open_logical_channel — see
-docs/esim_provision.md "Short AID bypass". Patch 3 (AID corruption in
-b14) was an experiment that is not needed.
+  3. ISD-R AID corruption (b14 offset 0x2D0679)
+     A0 → 00 (first byte of ISD-R AID in data segment)
+     Corrupts the LPA's hardcoded AID reference so it registers for a
+     non-existent AID. Prevents interception of ISD-R channel opens
+     via raw QMI (qmi-send-apdu over AF_MSM_IPC).
+
+All three patches are required. The modem's LPA has multiple interception
+points: a global bitmask (Patch 1), a registration callback (Patch 2),
+and a data-segment AID reference (Patch 3). The modem's separate 7-byte
+prefix filter is then bypassed by using a short 6-byte AID prefix
+(A00000055910) for open_logical_channel — see docs/esim_provision.md.
 
 After patching, updates the SHA-256 hash for b12 in modem.b01 and
 modem.mdt. MBA only checks hashes, not the RSA signature, so no

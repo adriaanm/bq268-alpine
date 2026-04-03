@@ -447,8 +447,9 @@ STORE DATA (BF22 GetEuiccInfo2)     → 61 7D → firmware/GP versions
 lpac chip info                      → full JSON with EID, capabilities, NVM
 ```
 
-**Requirements**: Patch 1 (APDU restriction bypass in modem.b12) must
-be applied. Patches 2 and 3 are not needed for this bypass.
+**Requirements**: All three firmware patches must be applied
+(`tools/patch-modem-b12.py`). Patches 1+2 in modem.b12, Patch 3 in
+modem.b14. See "Firmware patch approach" section above.
 
 ### 8. Card detection (working)
 
@@ -480,23 +481,30 @@ EFS PUT to protected NV paths still silently discards (confirmed twice
 with kernel #52 and #55). The modem's EFS security policy cannot be
 bypassed from the AP, even with SPC unlock.
 
-### Firmware patch approach — Patch 1 + short AID bypass = WORKING
+### Firmware patch approach — all 3 patches + short AID = WORKING
 
-Patch 1 (APDU restriction bypass) lifts the global bitmask check.
-Non-ISD-R AIDs reach the card. The ISD-R AID is blocked by a **second
-7-byte prefix filter** that matches `A0000005591010` (the GSMA ISD-R
-AID prefix). This filter is hardcoded in the firmware code (not in the
-data segment we patched with Patch 3).
+All three modem firmware patches are required:
 
-**Bypass**: Use a **6-byte truncated AID** `A00000055910` for
-`open_logical_channel`. The modem's filter requires 7+ bytes to trigger.
-The card does ISO 7816-4 partial AID matching and selects the ISD-R
-applet. FCI response confirms the full ISD-R AID
-`A0000005591010FFFFFFFF8900000100`.
+1. **Patch 1** (b12 0x121DCC): APDU restriction bypass — lifts the
+   global bitmask check. Without this, all AIDs are blocked.
+2. **Patch 2** (b12 0x619014): LPA ISD-R disable — nops the
+   `lpa_register` call so the modem's built-in LPA doesn't register
+   as the ISD-R handler.
+3. **Patch 3** (b14 0x2D0679): AID corruption — corrupts the LPA's
+   hardcoded ISD-R AID from `A0→00` in the data segment, preventing
+   interception of ISD-R channel opens via raw QMI.
 
-Patches 2 and 3 were tested but are not needed — the short AID bypass
-is sufficient. Patch 1 is still required (without it, all AIDs are
-blocked).
+Initially Patches 2+3 appeared unnecessary (qmicli could open channels
+with only Patch 1). After a kernel update, `qmi-send-apdu` (raw
+AF_MSM_IPC) started getting AccessDenied without all three patches.
+The modem's LPA has multiple interception points that all need to be
+disabled.
+
+**Short AID bypass**: The modem also has a **7-byte prefix filter**
+hardcoded in Hexagon instructions that matches `A0000005591010`. This
+is bypassed by using a **6-byte truncated AID** `A00000055910` for
+`open_logical_channel`. The card does ISO 7816-4 partial AID matching
+and selects the ISD-R applet.
 
 ### QMI UIM Send APDU — works within same session
 
