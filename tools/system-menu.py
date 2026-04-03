@@ -25,9 +25,13 @@ def clear():
 
 def draw_lines(lines):
     """Draw up to ROWS lines, truncated to COLS chars."""
-    clear()
+    sys.stdout.write('\033[?25l')  # hide cursor
+    sys.stdout.write('\033[H\033[2J')
     for i, line in enumerate(lines[:ROWS]):
-        sys.stdout.write(line[:COLS] + '\n')
+        if i < ROWS - 1:
+            sys.stdout.write(line[:COLS] + '\n')
+        else:
+            sys.stdout.write(line[:COLS])  # no newline on last row
     sys.stdout.flush()
 
 
@@ -184,7 +188,7 @@ class KeyReader:
             'match($0, /KEY_[A-Z0-9_]+/);'
             'if (RSTART) {'
             '  k=substr($0, RSTART, RLENGTH);'
-            '  if (/value 1/) print k " press";'
+            '  if (/value [12]/) print k " press";'
             '  else if (/value 0/) print k " release";'
             '  fflush()'
             '}}\''
@@ -586,11 +590,16 @@ def load_dmesg():
     lines = r.stdout.splitlines()
 
 def draw():
-    tty.write("\033[H\033[2J")
+    tty.write("\033[?25l\033[H\033[2J")
     end = scroll_pos if scroll_pos is not None else len(lines)
     start = max(0, end - ROWS)
-    for line in lines[start:end]:
-        tty.write(line[hscroll:hscroll+COLS] + "\n")
+    visible = lines[start:end]
+    for i, line in enumerate(visible):
+        chunk = line[hscroll:hscroll+COLS]
+        if i < len(visible) - 1:
+            tty.write(chunk + "\n")
+        else:
+            tty.write(chunk)
     tty.flush()
 
 load_dmesg()
@@ -603,7 +612,7 @@ fifo_r = os.fdopen(fd, "r")
 fifo_w = open(fifo_path, "w")
 cmd = ("(for dev in /dev/input/event*; do [ -e \"$dev\" ] && "
        "evtest \"$dev\" 2>/dev/null & done; wait) | "
-       "awk '/EV_KEY.*value 1$/{match($0,/KEY_[A-Z0-9_]+/);"
+       "awk '/EV_KEY.*value [12]$/{match($0,/KEY_[A-Z0-9_]+/);"
        "if(RSTART){print substr($0,RSTART,RLENGTH);fflush()}}'")
 kproc = subprocess.Popen(cmd, shell=True, stdout=fifo_w,
                          stderr=subprocess.DEVNULL)
