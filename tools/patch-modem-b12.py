@@ -2,16 +2,22 @@
 """
 Patch modem firmware for eSIM provisioning and update hashes in b01/mdt.
 
-Patch applied:
+Patches applied:
   1. APDU restriction bypass (b12 offset 0x121DCC)
      r0 = memw(r1+#0x7B8) → r0 = #0x0
      Disables the QMI UIM APDU security restriction bitmask.
 
-This is the only patch needed. The modem's 7-byte ISD-R AID filter
-is bypassed by using a short 6-byte AID prefix (A00000055910) for
-open_logical_channel — see docs/esim_provision.md "Short AID bypass".
-Patches 2 (LPA ISD-R disable) and 3 (AID corruption) were experiments
-that proved unnecessary and have been removed.
+  2. LPA ISD-R disable (b12 offset 0x619014)
+     call lpa_register → r0 = #0x1
+     Prevents the modem's built-in LPA from registering as the handler
+     for the ISD-R AID. Without this, the LPA intercepts open_logical_channel
+     requests for ISD-R AIDs via raw QMI (qmi-send-apdu) and returns
+     AccessDenied, even though the global restriction is bypassed.
+
+The modem's 7-byte ISD-R AID filter is then bypassed by using a short
+6-byte AID prefix (A00000055910) for open_logical_channel — see
+docs/esim_provision.md "Short AID bypass". Patch 3 (AID corruption in
+b14) was an experiment that is not needed.
 
 After patching, updates the SHA-256 hash for b12 in modem.b01 and
 modem.mdt. MBA only checks hashes, not the RSA signature, so no
@@ -38,10 +44,17 @@ PATCHES_B12 = [
         "patched": bytes.fromhex("00400078"),
         "desc": "r0 = memw(r1+#0x7B8) → r0 = #0x0",
     },
+    {
+        "name": "LPA ISD-R disable",
+        "offset": 0x619014,
+        "original": bytes.fromhex("b879ff5b"),
+        "patched": bytes.fromhex("20400078"),
+        "desc": "call lpa_register → r0 = #0x1 (skip ISD-R AID registration)",
+    },
 ]
 
-# Only b12 is patched. Patches 2 (LPA ISD-R disable in b12) and 3 (AID
-# corruption in b14) were experiments superseded by the short AID bypass.
+# Only b12 is patched. Patch 3 (AID corruption in b14) was an experiment
+# superseded by the short AID bypass.
 
 SEGMENT_PATCHES = {
     "modem.b12": {"patches": PATCHES_B12, "hash_index": 12},
