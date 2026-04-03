@@ -30,8 +30,8 @@ cat > "$ROOTFS/etc/inittab" << 'INITTAB'
 ::sysinit:/sbin/openrc boot
 ::once:/sbin/openrc default
 
-# System menu on framebuffer (launches wata, settings, sysinfo)
-tty0::respawn:/usr/local/bin/system-menu
+# System menu on VT1 (claims /dev/tty1 explicitly, chvt 1 at startup)
+tty1::respawn:/usr/local/bin/system-menu
 ttyGS0::respawn:/bin/sh -c 'while [ ! -e /dev/ttyGS0 ]; do sleep 1; done; exec /sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100'
 
 # Shutdown

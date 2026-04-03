@@ -568,8 +568,22 @@ def setup_dmesg_vt():
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
 
+def claim_vt():
+    """Ensure we own VT1 and it's the foreground console."""
+    try:
+        # Redirect stdout/stderr to /dev/tty1 explicitly
+        tty = open('/dev/tty1', 'w')
+        os.dup2(tty.fileno(), 1)
+        os.dup2(tty.fileno(), 2)
+        tty.close()
+    except OSError:
+        pass  # fall back to inherited tty0
+    # Switch to VT1
+    os.system('chvt 1')
+
 def main():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    claim_vt()
     setup_dmesg_vt()
 
     keys = KeyReader()
