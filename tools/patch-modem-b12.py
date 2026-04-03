@@ -53,11 +53,19 @@ PATCHES_B12 = [
     },
 ]
 
-# Only b12 is patched. Patch 3 (AID corruption in b14) was an experiment
-# superseded by the short AID bypass.
+PATCHES_B14 = [
+    {
+        "name": "ISD-R AID corruption",
+        "offset": 0x2D0679,
+        "original": bytes.fromhex("a0"),
+        "patched": bytes.fromhex("00"),
+        "desc": "AID first byte A0 → 00 (LPA registers for non-existent AID)",
+    },
+]
 
 SEGMENT_PATCHES = {
     "modem.b12": {"patches": PATCHES_B12, "hash_index": 12},
+    "modem.b14": {"patches": PATCHES_B14, "hash_index": 14},
 }
 
 HASH_HEADER_SIZE = 40   # hash segment header
