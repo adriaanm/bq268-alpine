@@ -9,28 +9,33 @@ cat > "$ROOTFS/etc/ppp/peers/cellular" << 'EOF'
 # Cellular data over SMD (PPP over AT on /dev/smd7)
 /dev/smd7
 115200
-noauth
+user "guest"
+password "guest"
+noipdefault
 defaultroute
 replacedefaultroute
 usepeerdns
-nodetach
-noipdefault
 novj
 novjccomp
 noccp
+noipv6
 ipcp-accept-local
 ipcp-accept-remote
+mtu 1400
+mru 1400
+lcp-echo-failure 0
+lcp-echo-interval 0
 connect "/usr/sbin/chat -v -f /etc/ppp/cellular-chat"
 disconnect "/usr/sbin/chat -v -f /etc/ppp/cellular-disconnect"
 EOF
 
-# Chat script: set APN, dial
+# Chat script: reset modem, set APN, dial
 cat > "$ROOTFS/etc/ppp/cellular-chat" << 'EOF'
 ABORT "ERROR"
 ABORT "NO CARRIER"
 ABORT "NO DIALTONE"
 TIMEOUT 30
-"" AT
+"" ATZ
 OK AT+CGDCONT=1,"IP","globaldata"
 OK ATD*99***1#
 CONNECT ""
