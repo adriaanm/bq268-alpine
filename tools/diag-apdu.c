@@ -46,7 +46,6 @@
 struct __attribute__((packed)) diag_logging_mode_param_t {
 	uint32_t req_mode;
 	uint32_t peripheral_mask;
-	uint32_t pd_mask;
 	uint8_t  mode_param;
 };
 
@@ -167,6 +166,7 @@ static int diag_init(void)
 	struct diag_logging_mode_param_t param = {
 		.req_mode = MEMORY_DEVICE_MODE,
 		.peripheral_mask = DIAG_CON_MPSS,
+		.mode_param = 0,
 	};
 	if (ioctl(diag_fd, DIAG_IOCTL_SWITCH_LOGGING, &param) < 0) {
 		perror("ioctl SWITCH_LOGGING");
