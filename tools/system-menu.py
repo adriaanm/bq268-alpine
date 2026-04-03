@@ -164,7 +164,7 @@ def status_bar():
 class KeyReader:
     """Reads key events via evtest. Detects chords (e.g. F3+F6).
 
-    Emits synthetic 'CHORD_F3_F6' when both are held simultaneously.
+    Emits synthetic 'CHORD_F3_F4' when both are held simultaneously.
     Regular key presses are emitted on key-down as before.
     """
 
@@ -332,7 +332,7 @@ def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5)
             if screen_on():
                 draw_fn(sel, items)
             continue
-        if key == 'CHORD_F3_F6':
+        if key == 'CHORD_F3_F4':
             toggle_dmesg_vt()
             continue
         if key == 'KEY_UP':
@@ -387,7 +387,7 @@ def show_sysinfo(keys):
     # Wait for any key, refresh while screen is on
     while True:
         k = keys.read(timeout=5)
-        if k == 'CHORD_F3_F6':
+        if k == 'CHORD_F3_F4':
             toggle_dmesg_vt()
             continue
         if k:
