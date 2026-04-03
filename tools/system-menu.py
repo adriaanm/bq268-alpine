@@ -14,18 +14,19 @@ import select
 import signal
 import tempfile
 
-# -- Display (20 cols × 8 rows) --
+# -- Display (26 cols × 11 rows, 6×12 font on 160×128 fb) --
 
-COLS = 20
+COLS = 26
+ROWS = 11
 
 def clear():
     sys.stdout.write('\033[H\033[2J')
     sys.stdout.flush()
 
 def draw_lines(lines):
-    """Draw up to 8 lines, padded/truncated to 20 chars."""
+    """Draw up to ROWS lines, truncated to COLS chars."""
     clear()
-    for i, line in enumerate(lines[:8]):
+    for i, line in enumerate(lines[:ROWS]):
         sys.stdout.write(line[:COLS] + '\n')
     sys.stdout.flush()
 
@@ -573,7 +574,7 @@ def setup_dmesg_vt():
     viewer = r'''
 import os, sys, subprocess, select, tempfile
 
-ROWS, COLS = 8, 20
+ROWS, COLS = 11, 26
 tty = open("/dev/tty2", "w", buffering=1)
 lines = []
 scroll_pos = None  # None = follow tail
