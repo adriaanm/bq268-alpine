@@ -2,7 +2,7 @@
 
 ## Active
 
-- [ ] Modem data path — **Modem registered on live network** (Orange France 208/01, UMTS, CS+PS attached) with Eskimo eSIM. Data path blocked: `CONFIG_MSM_BAM_DMUX` and `CONFIG_MSM_RMNET_BAM` not enabled in kernel defconfig. No rmnet interfaces. Next: enable configs, rebuild kernel, test WDS data call.
+- [ ] Modem data path — **Modem registered on live network** (Orange France 208/01, UMTS, CS+PS attached) with Eskimo eSIM. BAM DMUX driver loaded and probed, but modem never sets SMSM A2_POWER_CONTROL (bit 1). No rmnet interfaces. Kernel agent investigating DTS address (0x4044000 not in iomem). Stock Android netmgr_config.xml confirms legacy BAM DMUX mode for MSM targets (no WDA, no MAP, no DPM). Once rmnet0 exists, `qmicli --wds-start-network` should work directly — no netmgrd needed.
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] Suspend-to-RAM — CONFIG_SUSPEND=y, completely untested. Needed for battery life.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
