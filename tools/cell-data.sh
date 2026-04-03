@@ -1,13 +1,18 @@
 #!/bin/sh
-# cell-data: bring up / tear down cellular data session
+# cell-data: manage cellular data session and modem power state
 #
 # Usage:
-#   cell-data up    — start WDS data call, configure rmnet0 via DHCP
-#   cell-data down  — stop WDS data call, flush rmnet0
-#   cell-data status — show current state
+#   cell-data up      — wake modem, PS attach, start WDS, configure rmnet0
+#   cell-data down    — stop WDS, flush rmnet0 (modem stays online)
+#   cell-data status  — show current state
+#   cell-data sleep   — put modem in low-power mode (RF off, ~5-10mA)
+#   cell-data wake    — bring modem back online from low-power
+#   cell-data force   — force both WiFi+cellular on, disable watchdog failover
+#   cell-data auto    — re-enable normal failover (undo force)
 #
-# The modem must be registered (CS+PS attached) before calling 'up'.
-# This script only manages the IP data session, not modem registration.
+# Force mode is for debugging: keeps both interfaces up and prevents
+# the watchdog/wpa_cli hooks from tearing down cellular. Touch
+# /run/cell-data.force to enable, remove to disable.
 
 set -e
 
@@ -15,6 +20,7 @@ QMI_DEV="msmipc://0"
 RMNET="rmnet0"
 STATE_FILE="/run/cell-data.state"
 WDS_HANDLE_FILE="/run/cell-data.wds-handle"
+FORCE_FILE="/run/cell-data.force"
 METRIC=700  # higher than WiFi (default ~300), so WiFi is always preferred
 
 log() {
@@ -22,11 +28,68 @@ log() {
     echo "cell-data: $*"
 }
 
+# Get current modem operating mode
+modem_mode() {
+    qmicli -d "$QMI_DEV" --dms-get-operating-mode 2>&1 | \
+        sed -n "s/.*Mode: '\([^']*\)'.*/\1/p"
+}
+
+do_wake() {
+    local mode
+    mode=$(modem_mode)
+    case "$mode" in
+        online)
+            log "modem already online"
+            return 0 ;;
+        low-power|persistent-low-power)
+            log "waking modem from $mode..."
+            qmicli -d "$QMI_DEV" --dms-set-operating-mode=online 2>&1 | logger -t cell-data
+            # Wait for PS attach (up to 30s)
+            local w=0
+            while [ $w -lt 60 ]; do
+                if qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
+                    log "modem online, PS attached"
+                    return 0
+                fi
+                sleep 0.5
+                w=$((w + 1))
+            done
+            log "warning: modem online but PS not attached after 30s"
+            return 0 ;;
+        *)
+            log "modem in unexpected mode: $mode"
+            qmicli -d "$QMI_DEV" --dms-set-operating-mode=online 2>&1 | logger -t cell-data
+            return 0 ;;
+    esac
+}
+
+do_sleep() {
+    # Don't sleep if data session is active
+    if [ -f "$STATE_FILE" ]; then
+        log "data session active, not sleeping (call 'down' first)"
+        return 1
+    fi
+
+    local mode
+    mode=$(modem_mode)
+    if [ "$mode" = "low-power" ] || [ "$mode" = "persistent-low-power" ]; then
+        log "modem already in $mode"
+        return 0
+    fi
+
+    log "putting modem to low-power mode..."
+    qmicli -d "$QMI_DEV" --dms-set-operating-mode=low-power 2>&1 | logger -t cell-data
+    log "modem sleeping (RF off)"
+}
+
 do_up() {
     if [ -f "$STATE_FILE" ]; then
         log "already up (handle $(cat "$WDS_HANDLE_FILE" 2>/dev/null))"
         return 0
     fi
+
+    # Wake modem if sleeping
+    do_wake
 
     # Check modem is registered
     if ! qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
@@ -42,7 +105,7 @@ do_up() {
 
     log "starting data call..."
 
-    # Start WDS network — try common APNs
+    # Start WDS network
     local result
     result=$(qmicli -d "$QMI_DEV" --wds-start-network="apn=internet,ip-type=4" \
         --client-no-release-cid 2>&1) || true
@@ -100,6 +163,12 @@ do_up() {
 }
 
 do_down() {
+    # In force mode, refuse to tear down
+    if [ -f "$FORCE_FILE" ]; then
+        log "force mode active, ignoring down (use 'cell-data auto' to disable)"
+        return 0
+    fi
+
     if [ ! -f "$STATE_FILE" ]; then
         log "already down"
         return 0
@@ -132,24 +201,52 @@ do_down() {
     log "data path down"
 }
 
+do_force() {
+    touch "$FORCE_FILE"
+    log "force mode ON — both interfaces stay up, failover disabled"
+    log "  use 'cell-data auto' to re-enable failover"
+    # Bring up cellular if not already
+    if [ ! -f "$STATE_FILE" ]; then
+        do_up
+    fi
+}
+
+do_auto() {
+    rm -f "$FORCE_FILE"
+    log "force mode OFF — normal failover resumed"
+}
+
 do_status() {
-    if [ -f "$STATE_FILE" ]; then
-        echo "cell-data: up"
-        echo "  WDS handle: $(cat "$WDS_HANDLE_FILE" 2>/dev/null || echo unknown)"
-        ip addr show "$RMNET" 2>/dev/null | grep inet
-        ip route show dev "$RMNET" 2>/dev/null
+    echo "=== cell-data status ==="
+    if [ -f "$FORCE_FILE" ]; then
+        echo "  mode: FORCE (both interfaces pinned on)"
     else
-        echo "cell-data: down"
+        echo "  mode: auto (WiFi primary, cellular failover)"
     fi
 
-    # Modem registration
+    if [ -f "$STATE_FILE" ]; then
+        echo "  data: up"
+        echo "  WDS handle: $(cat "$WDS_HANDLE_FILE" 2>/dev/null || echo unknown)"
+        ip addr show "$RMNET" 2>/dev/null | grep -w inet | sed 's/^/  /'
+        ip route show dev "$RMNET" 2>/dev/null | sed 's/^/  route: /'
+    else
+        echo "  data: down"
+    fi
+
+    echo "  modem: $(modem_mode)"
+
+    # Registration
     qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | \
-        grep -E "Registration|CS:|PS:|Current PLMN"
+        grep -E "Registration|CS:|PS:|Current PLMN" | sed 's/^[[:space:]]*/  /'
 }
 
 case "${1:-status}" in
     up)     do_up ;;
     down)   do_down ;;
+    sleep)  do_sleep ;;
+    wake)   do_wake ;;
+    force)  do_force ;;
+    auto)   do_auto ;;
     status) do_status ;;
-    *)      echo "Usage: cell-data {up|down|status}" >&2; exit 1 ;;
+    *)      echo "Usage: cell-data {up|down|sleep|wake|force|auto|status}" >&2; exit 1 ;;
 esac

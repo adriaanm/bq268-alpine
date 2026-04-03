@@ -18,18 +18,22 @@ case "$EVENT" in
         kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
         udhcpc -i "$IFACE" -b -R -p /run/udhcpc.$IFACE.pid
 
-        # WiFi is back — tear down cellular to save data
-        logger -t wpa-action "$IFACE: WiFi up, tearing down cellular data"
-        cell-data down 2>&1 | logger -t cell-data
+        # WiFi is back — tear down cellular to save data (unless force mode)
+        if [ ! -f /run/cell-data.force ]; then
+            logger -t wpa-action "$IFACE: WiFi up, tearing down cellular data"
+            cell-data down 2>&1 | logger -t cell-data
+        fi
         ;;
     DISCONNECTED)
         logger -t wpa-action "$IFACE: disconnected, releasing DHCP"
         kill $(cat /run/udhcpc.$IFACE.pid 2>/dev/null) 2>/dev/null
         ip addr flush dev "$IFACE" 2>/dev/null
 
-        # WiFi lost — bring up cellular as fallback
-        logger -t wpa-action "$IFACE: WiFi down, activating cellular data"
-        cell-data up 2>&1 | logger -t cell-data
+        # WiFi lost — bring up cellular as fallback (unless force mode)
+        if [ ! -f /run/cell-data.force ]; then
+            logger -t wpa-action "$IFACE: WiFi down, activating cellular data"
+            cell-data up 2>&1 | logger -t cell-data
+        fi
         ;;
 esac
 ACTION
@@ -65,45 +69,46 @@ cat > "$ROOTFS/usr/sbin/net-watchdog" << 'NW'
 #
 # Two-stage check:
 #   1. Quick gateway ping (L2/L3 to router)
-#   2. Internet probe via DNS query to a public resolver
+#   2. Internet probe via ping to public DNS (1.1.1.1 / 8.8.8.8)
 # Both must pass for WiFi to be considered working.
+#
+# Modem power saving: after WiFi is stable for SLEEP_DELAY seconds,
+# the modem is put into low-power mode (RF off, ~5-10mA). It wakes
+# automatically when cellular data is needed (cell-data up calls wake).
+#
+# Force mode: if /run/cell-data.force exists, skip all failover logic.
+# Both interfaces stay as-is. Use 'cell-data force' / 'cell-data auto'.
 
 INTERVAL=30
 FAIL_THRESHOLD=2
-# Public DNS servers for connectivity probes (UDP 53 — fast, low overhead)
+SLEEP_DELAY=120  # seconds of stable WiFi before modem sleeps
+# Public DNS servers for connectivity probes
 PROBE_DNS="1.1.1.1"
 PROBE_DNS2="8.8.8.8"
-# Ping timeout (seconds) — short to detect degraded links quickly
 PING_TIMEOUT=3
 
 fail_count=0
-prev_state="unknown"
+wifi_stable_since=0  # timestamp when WiFi became stable (0 = not stable)
+modem_sleeping=false
 
 log() { logger -t net-watchdog "$@"; }
+now() { date +%s; }
 
-# Test if WiFi can actually reach the internet.
-# Returns 0 if working, 1 if degraded/broken.
 wifi_healthy() {
     local gw
     gw=$(ip route show dev wlan0 2>/dev/null | sed -n 's/default via \([^ ]*\).*/\1/p')
 
-    # No WiFi route at all
     [ -z "$gw" ] && return 1
 
-    # Stage 1: gateway reachable? (fast, tests local link)
     if ! ping -c1 -W"$PING_TIMEOUT" "$gw" >/dev/null 2>&1; then
         log "gateway $gw unreachable"
         return 1
     fi
 
-    # Stage 2: internet reachable? Send a DNS query through WiFi specifically.
-    # Use nslookup with a short timeout, forced through wlan0's route.
-    # We query for a known domain — if we get any answer, internet works.
     if ping -c1 -W"$PING_TIMEOUT" -I wlan0 "$PROBE_DNS" >/dev/null 2>&1; then
         return 0
     fi
 
-    # Try secondary probe in case primary is blocked by this network
     if ping -c1 -W"$PING_TIMEOUT" -I wlan0 "$PROBE_DNS2" >/dev/null 2>&1; then
         return 0
     fi
@@ -115,26 +120,50 @@ wifi_healthy() {
 while true; do
     sleep "$INTERVAL"
 
+    # Force mode: skip all failover logic
+    if [ -f /run/cell-data.force ]; then
+        continue
+    fi
+
     if wifi_healthy; then
         if [ $fail_count -gt 0 ]; then
             log "WiFi recovered after $fail_count failed checks"
         fi
         fail_count=0
 
-        # WiFi is working — tear down cellular if active
+        # WiFi working — tear down cellular if active
         if [ -f /run/cell-data.state ]; then
             log "WiFi healthy, tearing down cellular"
             cell-data down 2>&1 | logger -t cell-data
         fi
-        prev_state="wifi"
+
+        # Track WiFi stability for modem power saving
+        if [ "$wifi_stable_since" -eq 0 ]; then
+            wifi_stable_since=$(now)
+        fi
+
+        # If WiFi has been stable long enough, put modem to sleep
+        if [ "$modem_sleeping" = false ]; then
+            local elapsed=$(( $(now) - wifi_stable_since ))
+            if [ "$elapsed" -ge "$SLEEP_DELAY" ]; then
+                log "WiFi stable for ${elapsed}s, putting modem to sleep"
+                cell-data sleep 2>&1 | logger -t cell-data && modem_sleeping=true
+            fi
+        fi
     else
         fail_count=$((fail_count + 1))
+        wifi_stable_since=0
         log "WiFi check failed ($fail_count/$FAIL_THRESHOLD)"
+
+        # Wake modem if sleeping (cell-data up does this, but log it)
+        if [ "$modem_sleeping" = true ]; then
+            log "waking modem for failover"
+            modem_sleeping=false
+        fi
 
         if [ $fail_count -ge $FAIL_THRESHOLD ] && [ ! -f /run/cell-data.state ]; then
             log "WiFi unusable for $fail_count checks, activating cellular"
             cell-data up 2>&1 | logger -t cell-data
-            prev_state="cell"
         fi
     fi
 done
