@@ -28,7 +28,10 @@ for drv in driver_apdu_stdio.so driver_http_curl.so; do
     install -m 755 "$SCRIPT_DIR/tools/lpac-esim/driver/$drv" "$ROOTFS/usr/lib/lpac/driver/"
 done
 
-# Install QMI APDU wrapper (translates lpac stdio ↔ qmicli)
+# Install QMI APDU daemon (persistent AF_MSM_IPC session, short AID bypass)
+install -m 755 "$SCRIPT_DIR/tools/qmi-send-apdu" "$ROOTFS/usr/bin/qmi-send-apdu"
+
+# Install QMI APDU wrapper (translates lpac stdio ↔ qmi-send-apdu daemon)
 install -m 755 "$SCRIPT_DIR/tools/lpac-qmi-wrapper.sh" "$ROOTFS/usr/bin/lpac-qmi-wrapper"
 
 # Install user-facing provisioning script

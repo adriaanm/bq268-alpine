@@ -69,6 +69,9 @@ build-tools:
     arm-linux-gnueabihf-gcc -static -o tools/reboot-bootloader tools/reboot-bootloader.c
     arm-linux-gnueabihf-gcc -static -o tools/rmt_storage tools/rmt_storage.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -std=c99 -Wall -Wextra -Werror -fPIC -shared -o tools/libqipcrtr4msmipc.so tools/libqipcrtr4msmipc.c -ldl
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/qmi-send-apdu tools/qmi-send-apdu.c
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
 
 # cross-compile libqmi with AF_MSM_IPC support (requires sudo for chroot)
 build-libqmi:

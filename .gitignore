@@ -11,6 +11,9 @@ tools/rmt_storage
 tools/libqipcrtr4msmipc.so
 tools/libqmi/
 tools/lpac-esim/
+tools/diag-apdu
+tools/diag-efs-write
+tools/qmi-send-apdu
 
 # Local WiFi config (contains passwords)
 wifi.conf
