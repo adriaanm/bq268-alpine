@@ -140,6 +140,12 @@ KNOWN_FUNCTIONS = {
     0xC0BDE450: "log_narg",
     0xC13E4C88: "err_fatal",
 
+    # DIAG subsystem
+    0xC0BDC948: "diag_master_tbl_reg",       # references MUTEX_DIAG_MASTER_TBL_REG
+    0xC0BE0710: "diag_task_init_1",          # references "diag_task" string
+    0xC0BE15F0: "diag_task_init_2",          # references "diag_task" string
+    0xC0BE17EC: "diag_task_init_3",          # references "diag_task" string
+
     # LPA AID lookup (in seg21)
     0xC14B4540: "lpa_aid_lookup_1",
     0xC14B408C: "lpa_aid_lookup_2",
@@ -219,6 +225,15 @@ BATCHES = {
             0xC0F11758, 0xC0F108B4, 0xC0F10514,
             0xC0F0D384, 0xC0F11890,
             0xC0F12D5C, 0xC0F11B4C,
+        ],
+    },
+    "pass7": {
+        "desc": "DIAG subsystem — task init, master table registration, ctrl",
+        "targets": [
+            0xC0BDC948,  # diag_master_tbl_reg (MUTEX_DIAG_MASTER_TBL_REG)
+            0xC0BE0710,  # diag_task_init_1
+            0xC0BE15F0,  # diag_task_init_2
+            0xC0BE17EC,  # diag_task_init_3
         ],
     },
 }
