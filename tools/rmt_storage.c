@@ -213,14 +213,23 @@ static const uint8_t *find_tlv(const uint8_t *data, size_t len,
 struct partition {
 	const char *modem_path;  /* path the modem requests */
 	const char *dev_path;    /* block device on eMMC */
+	const char *override;    /* file override (checked first) */
 };
 
+/*
+ * Override files: if /lib/firmware/<name>.bin exists, rmt_storage serves
+ * from the file instead of the block device. pread/pwrite work identically
+ * on regular files. The eMMC partition is not touched.
+ *
+ * Use case: inject NV items by serving a modified FSG golden copy +
+ * empty modemst1. The modem auto-restores EFS from FSG on boot.
+ */
 static const struct partition partitions[] = {
-	{ "/boot/modem_fs1", "/dev/mmcblk0p26" },  /* modemst1 */
-	{ "/boot/modem_fs2", "/dev/mmcblk0p27" },  /* modemst2 */
-	{ "/boot/modem_fsg", "/dev/mmcblk0p3"  },  /* fsg */
-	{ "/boot/modem_fsc", "/dev/mmcblk0p29" },  /* fsc */
-	{ NULL, NULL }
+	{ "/boot/modem_fs1", "/dev/mmcblk0p26", "/lib/firmware/modemst1.bin" },
+	{ "/boot/modem_fs2", "/dev/mmcblk0p27", "/lib/firmware/modemst2.bin" },
+	{ "/boot/modem_fsg", "/dev/mmcblk0p3",  "/lib/firmware/fsg.bin"      },
+	{ "/boot/modem_fsc", "/dev/mmcblk0p29", "/lib/firmware/fsc.bin"      },
+	{ NULL, NULL, NULL }
 };
 
 /* ── Caller (open file) Management ──────────────────────────────────────── */
@@ -281,7 +290,17 @@ static int caller_open(uint32_t node, uint32_t port,
 		return -1;
 	}
 
-	int fd = open(part->dev_path, O_RDWR);
+	/* Try override file first, fall back to block device */
+	const char *actual_path = part->dev_path;
+	int fd = -1;
+
+	if (part->override) {
+		fd = open(part->override, O_RDWR);
+		if (fd >= 0)
+			actual_path = part->override;
+	}
+	if (fd < 0)
+		fd = open(part->dev_path, O_RDWR);
 	if (fd < 0) {
 		fprintf(stderr, "[rmt_storage] open %s: %s\n",
 			part->dev_path, strerror(errno));
@@ -301,7 +320,7 @@ static int caller_open(uint32_t node, uint32_t port,
 	callers[slot].part = part;
 
 	fprintf(stderr, "[rmt_storage] Open %s (%s, %lld bytes) => caller %d\n",
-		part->modem_path, part->dev_path, (long long)dev_size, slot);
+		part->modem_path, actual_path, (long long)dev_size, slot);
 	return slot;
 }
 
