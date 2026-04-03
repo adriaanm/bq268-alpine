@@ -203,30 +203,23 @@ class KeyReader:
         self._repeat_time = 0      # when next repeat fires
         self._REPEAT_DELAY = 0.4   # initial delay before repeat (seconds)
         self._REPEAT_RATE = 0.08   # interval between repeats (seconds)
+        # Make the fd blocking for reliable readline — we use select for timeouts
+        import fcntl
+        flags = fcntl.fcntl(self._fifo, fcntl.F_GETFL)
+        fcntl.fcntl(self._fifo, fcntl.F_SETFL, flags & ~os.O_NONBLOCK)
 
-    def _drain_events(self):
-        """Process all pending FIFO events, updating held state.
-        Returns the last key pressed (or None)."""
-        last_press = None
-        while True:
-            r, _, _ = select.select([self._fifo], [], [], 0)
-            if not r:
-                break
-            line = self._fifo.readline().strip()
-            if not line:
-                break
-            parts = line.split()
-            if len(parts) != 2:
-                continue
-            key, action = parts
-            if action == 'press':
-                self._held.add(key)
-                last_press = key
-            elif action == 'release':
-                self._held.discard(key)
-                if self._repeat_key == key:
-                    self._repeat_key = None
-        return last_press
+    def _read_event(self, wait):
+        """Wait up to `wait` seconds for one event. Returns (key, action) or None."""
+        r, _, _ = select.select([self._fifo], [], [], wait)
+        if not r:
+            return None
+        line = self._fifo.readline().strip()
+        if not line:
+            return None
+        parts = line.split()
+        if len(parts) != 2:
+            return None
+        return parts[0], parts[1]
 
     def read(self, timeout=None):
         """Read a key name. Returns None on timeout.
@@ -238,27 +231,35 @@ class KeyReader:
         deadline = time.time() + timeout if timeout is not None else None
 
         while True:
-            # Calculate wait time
             now = time.time()
-            if deadline is not None:
-                remaining = deadline - now
-                if remaining <= 0:
-                    return None
-            else:
-                remaining = 5.0  # default poll
+            if deadline is not None and now >= deadline:
+                return None
 
-            # If repeating, use shorter timeout
+            # How long to wait for next event
             if self._repeat_key and self._repeat_key in self._held:
                 wait = max(0, self._repeat_time - now)
-                wait = min(wait, remaining)
+            elif deadline is not None:
+                wait = deadline - now
             else:
-                wait = remaining
+                wait = 5.0
 
-            r, _, _ = select.select([self._fifo], [], [], wait)
+            if deadline is not None:
+                wait = min(wait, deadline - now)
 
-            if r:
-                # Process all pending events
-                last_press = self._drain_events()
+            ev = self._read_event(wait)
+
+            if ev is None:
+                # Timeout — emit repeat if key still held
+                if (self._repeat_key and self._repeat_key in self._held
+                        and time.time() >= self._repeat_time):
+                    self._repeat_time = time.time() + self._REPEAT_RATE
+                    return self._repeat_key
+                continue
+
+            key, action = ev
+
+            if action == 'press':
+                self._held.add(key)
 
                 # Check chord
                 if self.CHORD_KEYS.issubset(self._held):
@@ -266,32 +267,29 @@ class KeyReader:
                     self._repeat_key = None
                     return 'CHORD_F3_F4'
 
-                if last_press:
-                    # Chord key delay
-                    if last_press in self.CHORD_KEYS:
-                        r2, _, _ = select.select([self._fifo], [], [], 0.15)
-                        if r2:
-                            self._drain_events()
-                            if self.CHORD_KEYS.issubset(self._held):
-                                self._held.clear()
-                                self._repeat_key = None
-                                return 'CHORD_F3_F4'
+                # Chord key — wait briefly for second key
+                if key in self.CHORD_KEYS:
+                    ev2 = self._read_event(0.15)
+                    if ev2:
+                        k2, a2 = ev2
+                        if a2 == 'press':
+                            self._held.add(k2)
+                        elif a2 == 'release':
+                            self._held.discard(k2)
+                        if self.CHORD_KEYS.issubset(self._held):
+                            self._held.clear()
+                            self._repeat_key = None
+                            return 'CHORD_F3_F4'
 
-                    # Start repeat tracking for this key
-                    self._repeat_key = last_press
-                    self._repeat_time = time.time() + self._REPEAT_DELAY
-                    return last_press
-            else:
-                # Timeout — check if we should emit a repeat
-                now = time.time()
-                if (self._repeat_key and self._repeat_key in self._held
-                        and now >= self._repeat_time):
-                    self._repeat_time = now + self._REPEAT_RATE
-                    return self._repeat_key
+                # Start repeat tracking
+                self._repeat_key = key
+                self._repeat_time = time.time() + self._REPEAT_DELAY
+                return key
 
-                # Check overall deadline
-                if deadline is not None and now >= deadline:
-                    return None
+            elif action == 'release':
+                self._held.discard(key)
+                if self._repeat_key == key:
+                    self._repeat_key = None
 
     def close(self):
         self._proc.terminate()
@@ -659,49 +657,90 @@ def draw():
 load_dmesg()
 draw()
 
+import fcntl, time as _time
+
 fifo_path = tempfile.mktemp(prefix="dmesg-keys-")
 os.mkfifo(fifo_path)
 fd = os.open(fifo_path, os.O_RDONLY | os.O_NONBLOCK)
 fifo_r = os.fdopen(fd, "r")
 fifo_w = open(fifo_path, "w")
+# Set back to blocking for reliable readline
+flags = fcntl.fcntl(fifo_r, fcntl.F_GETFL)
+fcntl.fcntl(fifo_r, fcntl.F_SETFL, flags & ~os.O_NONBLOCK)
+
 cmd = ("(for dev in /dev/input/event*; do [ -e \"$dev\" ] && "
        "evtest \"$dev\" 2>/dev/null & done; wait) | "
-       "awk '/EV_KEY.*value [12]$/{match($0,/KEY_[A-Z0-9_]+/);"
-       "if(RSTART){print substr($0,RSTART,RLENGTH);fflush()}}'")
+       "awk '/EV_KEY/{match($0,/KEY_[A-Z0-9_]+/);"
+       "if(RSTART){k=substr($0,RSTART,RLENGTH);"
+       "if(/value [12]/)print k \" press\";"
+       "else if(/value 0/)print k \" release\";"
+       "fflush()}}'")
 kproc = subprocess.Popen(cmd, shell=True, stdout=fifo_w,
                          stderr=subprocess.DEVNULL)
 dproc = subprocess.Popen(["dmesg", "-w"], stdout=subprocess.PIPE,
                          stderr=subprocess.DEVNULL, text=True)
 
+held = set()
+repeat_key = None
+repeat_time = 0
+REPEAT_DELAY = 0.4
+REPEAT_RATE = 0.08
+
+def handle_key(key):
+    global scroll_pos, hscroll
+    if key == "KEY_UP":
+        if scroll_pos is None:
+            scroll_pos = len(lines)
+        scroll_pos = max(ROWS, scroll_pos - 1)
+        draw()
+    elif key == "KEY_DOWN":
+        if scroll_pos is not None:
+            scroll_pos += 1
+            if scroll_pos >= len(lines):
+                scroll_pos = None
+        draw()
+    elif key == "KEY_RIGHT":
+        hscroll += 10
+        draw()
+    elif key == "KEY_LEFT":
+        hscroll = max(0, hscroll - 10)
+        draw()
+
 while True:
-    rlist, _, _ = select.select([fifo_r, dproc.stdout], [], [], 2)
+    wait = 2.0
+    if repeat_key and repeat_key in held:
+        wait = max(0, repeat_time - _time.time())
+        wait = min(wait, 2.0)
+
+    rlist, _, _ = select.select([fifo_r, dproc.stdout], [], [], wait)
+
     if dproc.stdout in rlist:
         line = dproc.stdout.readline().rstrip()
         if line:
             lines.append(line)
             if scroll_pos is None:
                 draw()
+
     if fifo_r in rlist:
-        key = fifo_r.readline().strip()
-        if key == "KEY_UP":
-            if scroll_pos is None:
-                scroll_pos = len(lines)
-            scroll_pos = max(ROWS, scroll_pos - 1)
-            draw()
-        elif key == "KEY_DOWN":
-            if scroll_pos is not None:
-                scroll_pos += 1
-                if scroll_pos >= len(lines):
-                    scroll_pos = None
-            draw()
-        elif key == "KEY_RIGHT":
-            hscroll += 10
-            draw()
-        elif key == "KEY_LEFT":
-            hscroll = max(0, hscroll - 10)
-            draw()
+        raw = fifo_r.readline().strip()
+        parts = raw.split()
+        if len(parts) == 2:
+            key, action = parts
+            if action == "press":
+                held.add(key)
+                repeat_key = key
+                repeat_time = _time.time() + REPEAT_DELAY
+                handle_key(key)
+            elif action == "release":
+                held.discard(key)
+                if repeat_key == key:
+                    repeat_key = None
+
     if not rlist:
-        if scroll_pos is None:
+        if repeat_key and repeat_key in held and _time.time() >= repeat_time:
+            repeat_time = _time.time() + REPEAT_RATE
+            handle_key(repeat_key)
+        elif scroll_pos is None:
             draw()
 '''
     subprocess.Popen(
