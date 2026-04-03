@@ -163,8 +163,8 @@ class KeyReader:
     Regular key presses are emitted on key-down as before.
     """
 
-    # F3 = KEY_F3 (single-dot button), F6 = KEY_F6 (double-dot button)
-    CHORD_KEYS = {'KEY_F3', 'KEY_F6'}
+    # F3 = KEY_F3 (single-dot button), F10 = KEY_F10 (double-dot button)
+    CHORD_KEYS = {'KEY_F3', 'KEY_F10'}
 
     def __init__(self):
         self._fifo_path = tempfile.mktemp(prefix='keys-')
