@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+description="Console keymap (PTT→space)"
+
+depend() {
+    after devfs
+}
+
+start() {
+    ebegin "Loading console keymap"
+    loadkeys /etc/bq268.kmap 2>/dev/null
+    eend $?
+}
