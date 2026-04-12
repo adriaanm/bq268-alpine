@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+description="Battery monitor"
+command="/usr/local/bin/battmon.sh"
+command_background=true
+pidfile="/run/battmon.pid"
+
+depend() {
+    after modules
+}
