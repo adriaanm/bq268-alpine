@@ -1,0 +1,41 @@
+#!/sbin/openrc-run
+
+description="Modem subsystem (Q6 DSP)"
+pidfile="/run/modem.pid"
+
+depend() {
+    need rmt-storage
+    after modules
+}
+
+start() {
+    if [ ! -c /dev/subsys_modem ]; then
+        ewarn "No /dev/subsys_modem — modem subsystem not available"
+        return 0
+    fi
+
+    ebegin "Booting modem (Q6 DSP)"
+    # Hold subsys_modem fd open to keep the modem running.
+    # When this process dies, the fd closes and subsystem_put() shuts it down.
+    # After boot, wait for Q6 to initialize then set operating mode online.
+    start-stop-daemon --start --background --make-pidfile \
+        --pidfile "$pidfile" \
+        --exec /bin/sh -- -c '
+            exec 3< /dev/subsys_modem
+            # Poll for QMI DMS service ready (timeout 15s)
+            w=0
+            while [ $w -lt 30 ]; do
+                qmicli -d msmipc://0 --dms-set-operating-mode=online 2>&1 | logger -t modem && break
+                sleep 0.5
+                w=$((w + 1))
+            done
+            exec sleep 999999
+        '
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping modem"
+    start-stop-daemon --stop --pidfile "$pidfile" 2>/dev/null
+    eend 0
+}

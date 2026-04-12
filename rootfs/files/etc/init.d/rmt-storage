@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+
+description="Modem EFS storage daemon (rmt_storage)"
+command="/usr/sbin/rmt_storage"
+command_args="-v -w 15"
+command_background=true
+pidfile="/run/rmt-storage.pid"
+
+depend() {
+    after modules
+    before modem
+}
+
+start_pre() {
+    # Ensure block devices exist
+    for dev in /dev/mmcblk0p26 /dev/mmcblk0p27 /dev/mmcblk0p3 /dev/mmcblk0p29; do
+        if [ ! -b "$dev" ]; then
+            ewarn "Missing $dev — rmt_storage may fail"
+        fi
+    done
+}
