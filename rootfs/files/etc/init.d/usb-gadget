@@ -1,0 +1,64 @@
+#!/sbin/openrc-run
+
+description="USB gadget serial (ACM)"
+
+depend() {
+    after devfs
+    before networking
+}
+
+start() {
+    if [ -d /sys/class/android_usb/android0 ]; then
+        # CAF 3.18 android_usb driver
+        ebegin "Configuring USB gadget (ACM serial) via android_usb"
+        A=/sys/class/android_usb/android0
+        echo 0 > $A/enable
+        echo 1d6b > $A/idVendor
+        echo 0104 > $A/idProduct
+        echo UdoTech > $A/iManufacturer
+        echo BQ268 > $A/iProduct
+        echo acm > $A/functions
+        echo 1 > $A/enable
+        eend $?
+    else
+        # configfs gadget (kernel 4.4+ / mainline)
+        ebegin "Configuring USB gadget (ACM serial) via configfs"
+        G=/sys/kernel/config/usb_gadget/g1
+
+        # Load gadget modules (no-op if built-in; needed on some 4.4 configs)
+        modprobe -q libcomposite 2>/dev/null
+        mount -t configfs none /sys/kernel/config 2>/dev/null
+
+        # Wait for a UDC controller to appear (up to 5s)
+        local udc="" i=0
+        while [ $i -lt 50 ] && [ -z "$udc" ]; do
+            udc=$(ls /sys/class/udc/ 2>/dev/null | head -1)
+            [ -z "$udc" ] && sleep 0.1
+            i=$((i + 1))
+        done
+        if [ -z "$udc" ]; then
+            eerror "No UDC found"
+            eend 1
+            return 1
+        fi
+
+        mkdir -p $G
+        echo 0x1d6b > $G/idVendor
+        echo 0x0104 > $G/idProduct
+
+        mkdir -p $G/strings/0x409
+        echo "UdoTech"  > $G/strings/0x409/manufacturer
+        echo "BQ268"    > $G/strings/0x409/product
+        echo "00000000" > $G/strings/0x409/serialnumber
+
+        mkdir -p $G/configs/c.1/strings/0x409
+        echo "Serial" > $G/configs/c.1/strings/0x409/configuration
+
+        modprobe -q usb_f_acm 2>/dev/null
+        mkdir -p $G/functions/acm.usb0
+        ln -sf $G/functions/acm.usb0 $G/configs/c.1/ 2>/dev/null
+
+        echo "$udc" > $G/UDC
+        eend $?
+    fi
+}

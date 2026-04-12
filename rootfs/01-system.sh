@@ -130,10 +130,6 @@ cat > "$ROOTFS/etc/network/interfaces" << 'NET'
 auto lo
 iface lo inet loopback
 
-# USB ECM gadget ethernet (brought up by usb-gadget-ecm service, not auto)
-iface usb0 inet static
-    address 192.168.7.2
-    netmask 255.255.255.0
 
 # WiFi (bring up manually: ifup wlan0)
 iface wlan0 inet dhcp
