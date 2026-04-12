@@ -9,14 +9,6 @@ install -m 644 "$SCRIPT_DIR/rootfs/files/etc/ppp/cellular-chat"        "$ROOTFS/
 install -m 644 "$SCRIPT_DIR/rootfs/files/etc/ppp/cellular-disconnect"  "$ROOTFS/etc/ppp/cellular-disconnect"
 
 # /dev/ppp device node (required by pppd, kernel CONFIG_PPP)
-cat >> "$ROOTFS/etc/conf.d/mdev" 2>/dev/null << 'EOF' || true
-# PPP device node
-EOF
-# Create at boot via init script since devtmpfs won't have it
-sed -i '/^start()/,/^}/{/ebegin/a\    [ -c /dev/ppp ] || mknod /dev/ppp c 108 0' "$ROOTFS/etc/init.d/modem" 2>/dev/null || true
-
-# Simpler: just create it in the rootfs (devtmpfs overlays this, but
-# if CONFIG_DEVTMPFS_MOUNT is not set it persists)
 [ ! -c "$ROOTFS/dev/ppp" ] && mknod "$ROOTFS/dev/ppp" c 108 0 2>/dev/null || true
 
 echo "  pppd peer 'cellular' installed"
