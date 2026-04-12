@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+description="Screen idle blanker"
+command="/usr/local/bin/screen-idle.sh"
+command_background=true
+pidfile="/run/screen-idle.pid"
+
+depend() {
+    after keyd
+}

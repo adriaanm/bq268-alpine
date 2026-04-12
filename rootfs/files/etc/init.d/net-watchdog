@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+description="Network connectivity watchdog (WiFi/cellular failover)"
+command="/usr/sbin/net-watchdog"
+command_background=true
+pidfile="/run/net-watchdog.pid"
+
+depend() {
+    after wifi modem
+}

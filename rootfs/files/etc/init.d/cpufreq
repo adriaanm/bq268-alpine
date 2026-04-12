@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+description="Switch CPU governor from boot (performance) to ondemand"
+
+start() {
+    ebegin "Setting CPU governor to ondemand"
+    # All 4 Cortex-A7 cores share a single clock domain — cpu0 applies to all
+    echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+    eend $?
+}

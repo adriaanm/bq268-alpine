@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+description="Key event daemon (power switch + screen wake)"
+command="/usr/local/bin/keyd.sh"
+command_background=true
+pidfile="/run/keyd.pid"
+
+depend() {
+    after modules
+}
