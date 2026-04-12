@@ -4,50 +4,9 @@ echo "--- Setting up cellular PPP ---"
 
 mkdir -p "$ROOTFS/etc/ppp/peers"
 
-# pppd peer config
-cat > "$ROOTFS/etc/ppp/peers/cellular" << 'EOF'
-# Cellular data over SMD (PPP over AT on /dev/smd7)
-/dev/smd7
-115200
-user "guest"
-password "guest"
-noipdefault
-defaultroute
-replacedefaultroute
-usepeerdns
-novj
-novjccomp
-noccp
-noipv6
-ipcp-accept-local
-ipcp-accept-remote
-mtu 1400
-mru 1400
-lcp-echo-failure 0
-lcp-echo-interval 0
-connect "/usr/sbin/chat -v -f /etc/ppp/cellular-chat"
-disconnect "/usr/sbin/chat -v -f /etc/ppp/cellular-disconnect"
-EOF
-
-# Chat script: reset modem, set PDP context (empty APN = network default), dial
-cat > "$ROOTFS/etc/ppp/cellular-chat" << 'EOF'
-ABORT "ERROR"
-ABORT "NO CARRIER"
-ABORT "NO DIALTONE"
-TIMEOUT 30
-"" ATZ
-OK AT+CGDCONT=1,"IP",""
-OK ATD*99***1#
-CONNECT ""
-EOF
-
-# Disconnect script: escape data mode, hang up, deactivate PDP
-cat > "$ROOTFS/etc/ppp/cellular-disconnect" << 'EOF'
-"" +++
-"" ATH
-OK AT+CGACT=0,1
-OK ""
-EOF
+install -m 644 "$SCRIPT_DIR/rootfs/files/etc/ppp/peers/cellular"      "$ROOTFS/etc/ppp/peers/cellular"
+install -m 644 "$SCRIPT_DIR/rootfs/files/etc/ppp/cellular-chat"        "$ROOTFS/etc/ppp/cellular-chat"
+install -m 644 "$SCRIPT_DIR/rootfs/files/etc/ppp/cellular-disconnect"  "$ROOTFS/etc/ppp/cellular-disconnect"
 
 # /dev/ppp device node (required by pppd, kernel CONFIG_PPP)
 cat >> "$ROOTFS/etc/conf.d/mdev" 2>/dev/null << 'EOF' || true

@@ -1,0 +1,21 @@
+# Cellular data over SMD (PPP over AT on /dev/smd7)
+/dev/smd7
+115200
+user "guest"
+password "guest"
+noipdefault
+defaultroute
+replacedefaultroute
+usepeerdns
+novj
+novjccomp
+noccp
+noipv6
+ipcp-accept-local
+ipcp-accept-remote
+mtu 1400
+mru 1400
+lcp-echo-failure 0
+lcp-echo-interval 0
+connect "/usr/sbin/chat -v -f /etc/ppp/cellular-chat"
+disconnect "/usr/sbin/chat -v -f /etc/ppp/cellular-disconnect"
