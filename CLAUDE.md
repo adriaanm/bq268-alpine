@@ -20,6 +20,7 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 - **WiFi/BT**: WCNSS (Pronto) + WCN3620
 - **Modem**: Hexagon DSP, 4G LTE data-only
 - **Keypad**: 2×3 GPIO matrix (UP/DOWN/LEFT/RIGHT/BACK/SELECT) + 4 GPIO keys (F1=PTT, F2, F3, F6)
+- **Power switch**: Toggle switch (not a button), generates SW_LID on gpio-keys. Handled by keyd.
 - **LEDs**: GPIO1 (button backlight), GPIO68 (red), GPIO69 (green)
 - **USB**: HS device-mode only
 - **Battery**: Linear charger + VM-BMS, 4.2V / 2300mAh, ibatsafe=800mA
@@ -43,6 +44,7 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 - **Firmware from EDL dumps** — extract offline, bake into rootfs. No runtime partition reading.
 - **Data-only modem** — no voice calls, no VoLTE/IMS.
 - **No camera, GPS, sensors, touchscreen** — none fitted.
+- **No CPU hotplug or suspend** — re-onlining CPUs crashes the device (CAF 4.4 SPM/power-collapse bug). Suspend-to-RAM likely broken for the same reason. Power saving is governor-only (powersave when screen off, ondemand when on).
 
 ## Boot Chain
 

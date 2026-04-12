@@ -24,7 +24,7 @@ all working. Userspace infrastructure for a single-app device is being built up.
 - LCD backlight control via qpnp-leds (`/sys/class/leds/lcd-bl/`)
 - eMMC storage (HS200)
 - Battery monitoring (charger + BMS sysfs + battmon daemon)
-- Power button toggles screen on/off (keyd + screen-toggle)
+- Power toggle switch controls screen on/off (SW_LID + keyd + fb0 blank)
 - Screen auto-blank after 30s idle
 - CPU frequency scaling (interactive governor)
 - WiFi (CAF prima wlan.ko) — wlan0 up, IPv4+IPv6, internet confirmed
@@ -58,7 +58,7 @@ all working. Userspace infrastructure for a single-app device is being built up.
 | Modem (MSS PIL + rmt_storage) | Q6 boots, EFS served, RF online, sees networks |
 | Modem data path (BAM DMUX) | Open — A2 handshake not triggered |
 | Audio (WCD codec + Q6 DSP) | Working (speaker playback + volume) |
-| PON keys (pm8909_resin) | Working |
+| Power toggle switch (KEY_F10 on gpio-keys) | Working |
 | Regulators (SPMI + PM8909) | Working |
 | SMP (4× Cortex-A7) | Working |
 
@@ -119,3 +119,4 @@ non-fatal. Mixer path: `RX2 MIX1 INP1=RX1`, `RDAC2 MUX=RX2`, `HPHR=Switch`,
 |------|--------|------------|--------|
 | Modem BAM-DMUX A2 handshake | No cellular data | Test with SIM card; get modem DIAG logs for A2 precondition | **Open** — RF works, BAM HW works, but modem won't activate A2 |
 | Battery OCV table inaccurate | Wrong percentage readings | Tune with real measurements | Open |
+| CPU hotplug crashes on re-online | No suspend, no CPU offlining | Use powersave governor instead; all 4 cores stay online | **Won't fix** — CAF 4.4 SPM/power-collapse bug |

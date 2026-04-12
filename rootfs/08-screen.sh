@@ -1,99 +1,83 @@
-# Power button + screen management (keyd, screen toggle/wake/idle)
-echo "--- Setting up power button and screen management ---"
+# Power toggle switch + screen management (keyd, screen-idle)
+echo "--- Setting up power switch and screen management ---"
 
-cat > "$ROOTFS/usr/local/bin/screen-toggle.sh" << 'SCREENTOGGLE'
+# Screen on/off scripts — use fb0 blank (also sleeps the display controller)
+cat > "$ROOTFS/usr/local/bin/screen-off.sh" << 'SCREENOFF'
 #!/bin/sh
-# Toggle screen on/off. Reads brightness from /etc/bq268.conf.
+echo 1 > /sys/class/graphics/fb0/blank 2>/dev/null
+echo 0 > /sys/class/leds/lcd-bl/brightness 2>/dev/null
+for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+    echo powersave > "$gov" 2>/dev/null
+done
+echo "off" > /run/screen.state
+SCREENOFF
+chmod 755 "$ROOTFS/usr/local/bin/screen-off.sh"
+
+cat > "$ROOTFS/usr/local/bin/screen-on.sh" << 'SCREENON'
+#!/bin/sh
+echo 0 > /sys/class/graphics/fb0/blank 2>/dev/null
 . /etc/bq268.conf 2>/dev/null
-BL="/sys/class/leds/lcd-bl/brightness"
-STATE="/run/screen.state"
-BRIGHTNESS="${BACKLIGHT_BRIGHTNESS:-20}"
-
-if [ "$(cat "$STATE" 2>/dev/null)" = "off" ]; then
-    echo "$BRIGHTNESS" > "$BL" 2>/dev/null
-    echo "on" > "$STATE"
-else
-    echo 0 > "$BL" 2>/dev/null
-    echo "off" > "$STATE"
-fi
-# Reset idle timer on toggle-on
+echo "${BACKLIGHT_BRIGHTNESS:-20}" > /sys/class/leds/lcd-bl/brightness 2>/dev/null
+for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+    echo ondemand > "$gov" 2>/dev/null
+done
+echo "on" > /run/screen.state
 touch /run/screen.activity
-SCREENTOGGLE
-chmod 755 "$ROOTFS/usr/local/bin/screen-toggle.sh"
+SCREENON
+chmod 755 "$ROOTFS/usr/local/bin/screen-on.sh"
 
+# Screen wake on keypress (called by keyd for all key events)
 cat > "$ROOTFS/usr/local/bin/screen-wake.sh" << 'SCREENWAKE'
 #!/bin/sh
-# Wake screen on any keypress. Called by keyd for all key events.
-. /etc/bq268.conf 2>/dev/null
-BL="/sys/class/leds/lcd-bl/brightness"
-STATE="/run/screen.state"
-BRIGHTNESS="${BACKLIGHT_BRIGHTNESS:-20}"
-
 touch /run/screen.activity
-if [ "$(cat "$STATE" 2>/dev/null)" = "off" ]; then
-    echo "$BRIGHTNESS" > "$BL" 2>/dev/null
-    echo "on" > "$STATE"
+if [ "$(cat /run/screen.state 2>/dev/null)" = "off" ]; then
+    /usr/local/bin/screen-on.sh
 fi
 SCREENWAKE
 chmod 755 "$ROOTFS/usr/local/bin/screen-wake.sh"
 
+# Screen idle daemon — blanks screen after SCREEN_TIMEOUT seconds of inactivity
 cat > "$ROOTFS/usr/local/bin/screen-idle.sh" << 'SCREENIDLE'
 #!/bin/sh
-# Screen idle daemon — blanks screen after SCREEN_TIMEOUT seconds of inactivity
-BL="/sys/class/leds/lcd-bl/brightness"
-STATE="/run/screen.state"
-
-# Initialize
-echo "on" > "$STATE"
+echo "on" > /run/screen.state
 touch /run/screen.activity
 
 while true; do
     sleep 5
-    # Re-read config each iteration (settings menu can change it)
     . /etc/bq268.conf 2>/dev/null
     TIMEOUT="${SCREEN_TIMEOUT:-30}"
     [ "$TIMEOUT" -eq 0 ] && continue
-    [ "$(cat "$STATE" 2>/dev/null)" = "off" ] && continue
+    [ "$(cat /run/screen.state 2>/dev/null)" = "off" ] && continue
     now=$(date +%s)
     last=$(stat -c %Y /run/screen.activity 2>/dev/null || echo "$now")
     idle=$((now - last))
     if [ "$idle" -ge "$TIMEOUT" ]; then
-        echo 0 > "$BL" 2>/dev/null
-        echo "off" > "$STATE"
+        /usr/local/bin/screen-off.sh
     fi
 done
 SCREENIDLE
 chmod 755 "$ROOTFS/usr/local/bin/screen-idle.sh"
 
-# Key daemon — monitors all input devices, dispatches power toggle + screen wake
+# Key daemon — monitors input devices for SW_LID (power switch) and key wake
 cat > "$ROOTFS/usr/local/bin/keyd.sh" << 'KEYD'
 #!/bin/sh
 # Key event daemon — uses evtest to monitor input devices.
 #
-# Key map:
-#   POWER     → toggle screen on/off
-#   F1 (PTT)  → spacebar (via console keymap)
-#   All keys  → wake screen from blank
+# SW_LID (power toggle switch): 1 = screen off, 0 = screen on
+# EV_KEY (any keypress): wake screen from blank
 
-handle_key() {
-    case "$1" in
-        KEY_POWER)
-            /usr/local/bin/screen-toggle.sh
-            ;;
-        KEY_*)
-            /usr/local/bin/screen-wake.sh
-            ;;
-    esac
-}
-
-# Monitor all event devices
 for dev in /dev/input/event*; do
     [ -e "$dev" ] || continue
     evtest "$dev" 2>/dev/null | while read -r line; do
         case "$line" in
+            *"(EV_SW)"*"SW_LID"*"value 1")
+                /usr/local/bin/screen-off.sh
+                ;;
+            *"(EV_SW)"*"SW_LID"*"value 0")
+                /usr/local/bin/screen-on.sh
+                ;;
             *"(EV_KEY)"*"value 1")
-                key=$(echo "$line" | sed 's/.*(\(KEY_[^)]*\)).*/\1/')
-                handle_key "$key"
+                /usr/local/bin/screen-wake.sh
                 ;;
         esac
     done &
@@ -107,7 +91,7 @@ chmod 755 "$ROOTFS/usr/local/bin/keyd.sh"
 cat > "$ROOTFS/etc/init.d/keyd" << 'KEYDINIT'
 #!/sbin/openrc-run
 
-description="Key event daemon (power button + screen idle)"
+description="Key event daemon (power switch + screen wake)"
 command="/usr/local/bin/keyd.sh"
 command_background=true
 pidfile="/run/keyd.pid"

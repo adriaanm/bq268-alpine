@@ -14,7 +14,7 @@ the development target.
 - USB gadget serial + ECM ethernet
 - WiFi (CAF prima/WCNSS)
 - Battery monitoring with low-battery shutdown
-- Power button screen toggle, auto-blank on idle
+- Power toggle switch screen on/off, auto-blank on idle
 - TUI settings and system info menus (F3/F6)
 - CPU frequency scaling (interactive governor)
 - NTP time sync (chrony)
