@@ -15,8 +15,9 @@ start() {
         local kver w=0
         kver=$(uname -r)
         while [ $w -lt 100 ]; do
-            if grep -q "online" /sys/bus/msm_subsys/devices/subsys1/state 2>/dev/null; then
-                insmod /lib/modules/$kver/wlan.ko 2>/dev/null && break
+            grep -q "^wlan " /proc/modules && break
+            if grep -qi "online" /sys/bus/msm_subsys/devices/subsys1/state 2>/dev/null; then
+                insmod /lib/modules/$kver/wlan.ko 2>/dev/null
             fi
             sleep 0.1
             w=$((w + 1))
