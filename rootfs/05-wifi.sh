@@ -16,18 +16,7 @@ install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/net-watchdog" "$ROOTFS/etc/i
 
 # wpa_supplicant base config
 mkdir -p "$ROOTFS/etc/wpa_supplicant"
-cat > "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf" << 'WPACFG'
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
-country=US
-
-# Add networks via: wpa_cli -i wlan0
-#   > add_network
-#   > set_network 0 ssid "MySSID"
-#   > set_network 0 psk "MyPassword"
-#   > enable_network 0
-#   > save_config
-WPACFG
+install -m 644 "$SCRIPT_DIR/rootfs/files/etc/wpa_supplicant/wpa_supplicant.conf" "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf"
 
 # Append local WiFi networks from wifi.conf (gitignored, contains passwords)
 if [ -f "$SCRIPT_DIR/wifi.conf" ]; then
