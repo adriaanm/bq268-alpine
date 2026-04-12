@@ -5,8 +5,4 @@
 echo "--- Installing /opt/wata/start.sh ---"
 
 mkdir -p "$ROOTFS/opt/wata"
-cat > "$ROOTFS/opt/wata/start.sh" << 'WATA_START'
-#!/bin/sh
-exec /opt/wata/wata-fb
-WATA_START
-chmod 755 "$ROOTFS/opt/wata/start.sh"
+install -m 755 "$SCRIPT_DIR/rootfs/files/opt/wata/start.sh" "$ROOTFS/opt/wata/start.sh"
