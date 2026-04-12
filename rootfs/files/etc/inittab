@@ -1,0 +1,24 @@
+# Signal userspace reached
+::sysinit:/bin/sh -c 'echo 1 > /sys/class/leds/green/brightness 2>/dev/null'
+
+# Essential mounts before OpenRC (root may be mounted ro, tmpfs may be unavailable)
+::sysinit:/bin/mount -o remount,rw /
+::sysinit:/bin/mkdir -p /run /run/openrc
+::sysinit:/bin/mount -t tmpfs tmpfs /run 2>/dev/null
+::sysinit:/bin/mkdir -p /run/openrc
+::sysinit:/bin/mount -t proc proc /proc
+::sysinit:/bin/mount -t sysfs sysfs /sys
+::sysinit:/bin/mount -t configfs none /sys/kernel/config 2>/dev/null
+
+# OpenRC init sequence
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::once:/sbin/openrc default
+
+# System menu on framebuffer (launches wata, settings, sysinfo)
+tty1::respawn:/usr/local/bin/system-menu
+ttyGS0::respawn:/bin/sh -c 'while [ ! -e /dev/ttyGS0 ]; do sleep 1; done; exec /sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100'
+
+# Shutdown
+::shutdown:/sbin/openrc shutdown
+::ctrlaltdel:/sbin/reboot

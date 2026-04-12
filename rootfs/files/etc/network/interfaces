@@ -1,0 +1,6 @@
+auto lo
+iface lo inet loopback
+
+
+# WiFi (bring up manually: ifup wlan0)
+iface wlan0 inet dhcp

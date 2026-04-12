@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+description="devtmpfs (kernel-managed /dev)"
+depend() {
+    provide dev
+    need devfs
+    keyword -docker -podman -prefix -systemd-nspawn -vserver
+}
+start() {
+    ebegin "Using kernel devtmpfs for /dev"
+    eend 0
+}
