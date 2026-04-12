@@ -316,10 +316,11 @@ def toggle_dmesg_vt():
         os.system('chvt 2')
         _on_dmesg_vt = True
 
-def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5):
+def menu_loop(keys, items, draw_fn, on_select, on_back=None, on_left=None, refresh_interval=5):
     """Generic menu loop. items = list of labels.
     draw_fn(sel, items) renders the screen.
-    on_select(sel) handles selection (return True to exit).
+    on_select(sel) handles RIGHT/ENTER (return True to exit).
+    on_left(sel) handles LEFT (return True to exit).
     on_back() handles ESC/BACK (return True to exit)."""
     sel = 0
     n = len(items)
@@ -339,6 +340,9 @@ def menu_loop(keys, items, draw_fn, on_select, on_back=None, refresh_interval=5)
             sel = (sel + 1) % n
         elif key in ('KEY_RIGHT', 'KEY_ENTER'):
             if on_select(sel):
+                return
+        elif key == 'KEY_LEFT':
+            if on_left and on_left(sel):
                 return
         elif key in ('KEY_ESC', 'KEY_BACK'):
             if on_back and on_back():
@@ -484,20 +488,18 @@ def show_settings(keys):
         ]
         draw_lines(lines)
 
-    def on_sel(s):
+    def on_right(s):
         nonlocal bright, wifi_on, timeout_s
         if s == 0:
             bright = min(255, bright + 25)
             write_bright(bright)
         elif s == 1:
             if wifi_on:
-                run('killall wpa_supplicant 2>/dev/null; ip link set wlan0 down')
+                run('rc-service wifi stop', timeout=10)
                 wifi_on = False
             else:
-                run('ip link set wlan0 up; wpa_supplicant -B -i wlan0 '
-                    '-c /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null; '
-                    'udhcpc -i wlan0 -b -R -q 2>/dev/null &')
-                wifi_on = True
+                run('rc-service wifi start', timeout=10)
+                wifi_on = os.path.exists('/sys/class/net/wlan0')
         elif s == 2:
             idx = timeouts.index(timeout_s) if timeout_s in timeouts else 0
             timeout_s = timeouts[(idx + 1) % len(timeouts)]
@@ -510,10 +512,23 @@ def show_settings(keys):
             os.system('/usr/local/bin/reboot-bootloader')
         return False
 
+    def on_left(s):
+        nonlocal bright, wifi_on, timeout_s
+        if s == 0:
+            bright = max(1, bright - 25)
+            write_bright(bright)
+        elif s == 1:
+            on_right(1)  # WiFi is a toggle — left/right both toggle
+        elif s == 2:
+            idx = timeouts.index(timeout_s) if timeout_s in timeouts else 0
+            timeout_s = timeouts[(idx - 1) % len(timeouts)]
+            save_conf('SCREEN_TIMEOUT', timeout_s)
+        return False
+
     def on_back():
         return True
 
-    menu_loop(keys, items, draw_s, on_sel, on_back, refresh_interval=30)
+    menu_loop(keys, items, draw_s, on_right, on_back, on_left=on_left, refresh_interval=30)
 
 
 def write_bright(val):
