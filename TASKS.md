@@ -22,7 +22,7 @@
   - [x] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
   - [x] Wire into rootfs build: `rootfs/16-wata-metricsd.sh` installs the binary + service, and `just build-tools` now depends on `build-wata-metricsd` so a full rebuild picks it up automatically
   - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)
-  - [ ] Fixture-based integration tests for `sources.zig` once Zig 0.16-dev `std.Io.Dir` API stabilizes (or via `posix.mkdirat` if we keep the posix-level approach)
+  - [x] Fixture-based integration tests for `sources.zig` (3 tests under `/tmp`, exercising the full BQ268-shaped sysfs tree, backlight auto-discovery, and `bl=0 → screen_on=false`). Caught and fixed a latent alignment bug in `findFirstBacklight`'s `getdents64` buffer.
 - [ ] Dedicated `wata` user — wata currently runs as root via system-menu → `/opt/wata/start.sh`. Create an unprivileged `wata` user in the rootfs build and drop privs before `exec`-ing `wata-fb`. Dependency audit for group membership:
   - `video` — `/dev/fb0` (framebuffer writes)
   - `input` — `/dev/input/event*` (keypad + PTT)

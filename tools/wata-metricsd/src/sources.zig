@@ -101,7 +101,7 @@ fn findFirstBacklight(path_buf: []u8, root: []const u8, name_buf: []u8) ?[]const
     ) catch return null;
     defer _ = linux.close(fd);
 
-    var dbuf: [1024]u8 = undefined;
+    var dbuf: [1024]u8 align(@alignOf(linux.dirent64)) = undefined;
     const rc = linux.getdents64(fd, &dbuf, dbuf.len);
     switch (linux.errno(rc)) {
         .SUCCESS => {},
@@ -207,4 +207,182 @@ test "Sample.battStatus returns null when empty, slice when populated" {
     s.batt_status_len = v.len;
     try std.testing.expect(s.battStatus() != null);
     try std.testing.expectEqualStrings("Charging", s.battStatus().?);
+}
+
+// --- fixture-based tests against a populated /tmp tree ---
+
+const TestFixture = struct {
+    root_buf: [256:0]u8 = undefined,
+    root: [:0]const u8 = undefined,
+
+    fn init(self: *TestFixture) !void {
+        var ts: linux.timespec = undefined;
+        _ = linux.clock_gettime(.REALTIME, &ts);
+        const pid = linux.getpid();
+        self.root = try std.fmt.bufPrintZ(
+            &self.root_buf,
+            "/tmp/wata-metricsd-fixture-{d}-{d}",
+            .{ pid, ts.nsec },
+        );
+        try mkdirAt(self.root);
+    }
+
+    fn writeFile(self: *TestFixture, rel: []const u8, content: []const u8) !void {
+        var pb: [512]u8 = undefined;
+        // Make parent dirs.
+        var i: usize = 0;
+        while (i < rel.len) : (i += 1) {
+            if (rel[i] == '/') {
+                const dir_path = try std.fmt.bufPrintZ(
+                    &pb,
+                    "{s}/{s}",
+                    .{ self.root, rel[0..i] },
+                );
+                try mkdirAt(dir_path);
+            }
+        }
+        const full = try std.fmt.bufPrintZ(&pb, "{s}/{s}", .{ self.root, rel });
+        const fd = try posix.openatZ(
+            posix.AT.FDCWD,
+            full,
+            .{ .ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true },
+            0o644,
+        );
+        defer _ = linux.close(fd);
+        var off: usize = 0;
+        while (off < content.len) {
+            const w = linux.write(fd, content.ptr + off, content.len - off);
+            switch (linux.errno(w)) {
+                .SUCCESS => off += w,
+                .INTR => continue,
+                else => return error.WriteFailed,
+            }
+        }
+    }
+
+    fn deinit(self: *TestFixture) void {
+        // Best-effort: walk known files and remove, then the dirs we created.
+        // Tests use a unique root so leaks from one test don't affect another.
+        cleanup(self.root) catch {};
+    }
+};
+
+fn mkdirAt(path: [*:0]const u8) !void {
+    const rc = linux.mkdirat(linux.AT.FDCWD, path, 0o755);
+    switch (linux.errno(rc)) {
+        .SUCCESS, .EXIST => {},
+        else => return error.MkdirFailed,
+    }
+}
+
+fn cleanup(root: [:0]const u8) !void {
+    // Walk root via getdents64 recursively; on this filesystem-tree size
+    // (a handful of files) a small fixed buffer is plenty.
+    try rmTreeRec(root);
+    _ = linux.unlinkat(linux.AT.FDCWD, root, linux.AT.REMOVEDIR);
+}
+
+fn rmTreeRec(dir: [:0]const u8) !void {
+    const fd = posix.openatZ(
+        posix.AT.FDCWD,
+        dir,
+        .{ .ACCMODE = .RDONLY, .DIRECTORY = true },
+        0,
+    ) catch return;
+    defer _ = linux.close(fd);
+
+    var dbuf: [4096]u8 align(@alignOf(linux.dirent64)) = undefined;
+    while (true) {
+        const rc = linux.getdents64(fd, &dbuf, dbuf.len);
+        switch (linux.errno(rc)) {
+            .SUCCESS => {},
+            else => return,
+        }
+        if (rc == 0) return;
+        var off: usize = 0;
+        while (off < rc) {
+            const ent: *const linux.dirent64 = @ptrCast(@alignCast(&dbuf[off]));
+            const name_off = @offsetOf(linux.dirent64, "name");
+            const name_ptr: [*:0]const u8 = @ptrCast(&dbuf[off + name_off]);
+            const name = std.mem.span(name_ptr);
+            off += ent.reclen;
+            if (std.mem.eql(u8, name, ".") or std.mem.eql(u8, name, "..")) continue;
+
+            var pb: [512]u8 = undefined;
+            const child = try std.fmt.bufPrintZ(&pb, "{s}/{s}", .{ dir, name });
+            // Try as file first; if EISDIR, recurse.
+            const u = linux.unlinkat(linux.AT.FDCWD, child, 0);
+            switch (linux.errno(u)) {
+                .SUCCESS, .NOENT => {},
+                .ISDIR, .PERM => {
+                    try rmTreeRec(child);
+                    _ = linux.unlinkat(linux.AT.FDCWD, child, linux.AT.REMOVEDIR);
+                },
+                else => {},
+            }
+        }
+    }
+}
+
+test "Sources fixture: full BQ268-shaped tree populates all fields" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    try fx.writeFile("class/power_supply/battery/voltage_now", "3821000\n");
+    try fx.writeFile("class/power_supply/battery/current_now", "0\n");
+    try fx.writeFile("class/power_supply/battery/capacity", "67\n");
+    try fx.writeFile("class/power_supply/battery/status", "Discharging\n");
+    try fx.writeFile("class/net/wlan0/operstate", "up\n");
+    try fx.writeFile("class/net/wlan0/statistics/rx_bytes", "1234567\n");
+    try fx.writeFile("class/net/wlan0/statistics/tx_bytes", "89012\n");
+    try fx.writeFile("class/net/rmnet_data0/operstate", "down\n");
+    try fx.writeFile("class/net/rmnet_data0/statistics/rx_bytes", "9876\n");
+    try fx.writeFile("class/net/rmnet_data0/statistics/tx_bytes", "4321\n");
+    try fx.writeFile("class/backlight/panel0/brightness", "40\n");
+
+    const sources = Sources{ .sysfs_root = fx.root };
+    const s = sources.sample();
+
+    try std.testing.expectEqual(@as(?i64, 3821000), s.v_uv);
+    try std.testing.expectEqual(@as(?i64, 0), s.i_ua);
+    try std.testing.expectEqual(@as(?i64, 67), s.capacity);
+    try std.testing.expect(s.battStatus() != null);
+    try std.testing.expectEqualStrings("Discharging", s.battStatus().?);
+    try std.testing.expectEqual(@as(?i64, 40), s.bl);
+    try std.testing.expectEqual(@as(?bool, true), s.screen_on);
+    try std.testing.expectEqual(@as(?bool, true), s.wlan_up);
+    try std.testing.expectEqual(@as(?u64, 1234567), s.wlan_rx);
+    try std.testing.expectEqual(@as(?u64, 89012), s.wlan_tx);
+    try std.testing.expectEqual(@as(?bool, false), s.rmnet_up);
+    try std.testing.expectEqual(@as(?u64, 9876), s.rmnet_rx);
+    try std.testing.expectEqual(@as(?u64, 4321), s.rmnet_tx);
+}
+
+test "Sources fixture: backlight auto-discovery picks first non-dotfile entry" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    try fx.writeFile("class/backlight/fancy-pwm/brightness", "22\n");
+
+    const sources = Sources{ .sysfs_root = fx.root }; // no explicit backlight_name
+    const s = sources.sample();
+
+    try std.testing.expectEqual(@as(?i64, 22), s.bl);
+    try std.testing.expectEqual(@as(?bool, true), s.screen_on);
+}
+
+test "Sources fixture: bl=0 → screen_on=false" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    try fx.writeFile("class/backlight/panel0/brightness", "0\n");
+
+    const sources = Sources{ .sysfs_root = fx.root, .backlight_name = "panel0" };
+    const s = sources.sample();
+
+    try std.testing.expectEqual(@as(?i64, 0), s.bl);
+    try std.testing.expectEqual(@as(?bool, false), s.screen_on);
 }
