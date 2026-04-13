@@ -1,6 +1,11 @@
 # Metrics Sampler — Design Exploration
 
-**Status**: planning. Working document — update as the design evolves. Becomes a reference guide once implemented.
+**Status**: scaffold landed, iterating. Working document — update as the design evolves. Becomes a reference guide once implemented.
+
+## Progress log
+
+- **2026-04-13**: Scaffold committed (`tools/wata-metricsd/`). `protocol.zig` with `Tick` (16-byte packed struct, little-endian encode/decode) and `sources.zig` with `Sample` + `Sources.sample()` reading battery voltage/current/capacity, wlan + rmnet operstate and rx/tx byte counters, and backlight brightness. Native and `arm-linux-musleabihf` ReleaseSafe builds both green, 7 unit tests passing. `main.zig` is still a stub. **Not yet implemented**: `batt_status` string reader, backlight auto-discovery, event loop, JSONL sink, OpenRC service, `build-rootfs.sh` wiring.
+- **Zig 0.16-dev API notes** — the new `std.Io` abstraction (Io.Dir, File operations taking an `Io` arg) is what `fbclient` uses for higher-level IO. For sysfs reads we stay at `std.posix.openatZ` / `posix.read` / `std.os.linux.close` — sysfs files are tiny and the posix layer is stable. Clocks use `std.os.linux.clock_gettime` directly because `std.posix.clock_gettime` is gone in this dev version.
 
 ## Goal
 

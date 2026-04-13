@@ -8,7 +8,16 @@
 - [x] Power saving (screen off) — SW_LID switches CPU governor to powersave + fb0 blank. CPU hotplug crashes on re-online (CAF 4.4 SPM bug), suspend-to-RAM unlikely to work for same reason. powersave governor is the safe path.
 - [ ] Battery OCV table — Current table is estimated. Calibrate with real discharge measurements.
 - [ ] Battery stats daemon — **Superseded** by the metrics sampler task below; delete once `wata-metricsd` v1 lands.
-- [ ] Metrics sampler (`wata-metricsd`) — Zig 0.16-dev daemon that ingests a heartbeat from wata on `/run/wata.tick`, samples battery/backlight/wifi/cellular sysfs, and writes JSONL to `/var/log/metrics/`. Aligns wakeups with wata's matrix long-poll so we don't introduce a new tick source on a device that can't suspend. Planning doc: [docs/planning/metrics-sampler.md](docs/planning/metrics-sampler.md) — treat as working document, becomes reference once implemented. Paired spec for wata: `~/wata/docs/planning/metrics-heartbeat-tick.md`.
+- [ ] Metrics sampler (`wata-metricsd`) — Zig 0.16-dev daemon that ingests a heartbeat from wata on `/run/wata.tick`, samples battery/backlight/wifi/cellular sysfs, and writes JSONL to `/var/log/metrics/`. Aligns wakeups with wata's matrix long-poll so we don't introduce a new tick source on a device that can't suspend. Planning doc: [docs/planning/metrics-sampler.md](docs/planning/metrics-sampler.md) — treat as working document, becomes reference once implemented. Paired spec for wata: `~/wata/docs/planning/metrics-heartbeat-tick.md`. Subtasks:
+  - [x] Scaffold project, protocol module with Tick datagram + tests
+  - [x] Sources module: battery int fields, net operstate + counters, backlight brightness
+  - [ ] Sources: `batt_status` string reader and backlight auto-discovery (TODO in sources.zig)
+  - [ ] Sink module: JSONL writer with size-based rotation (1 MiB × 4 files)
+  - [ ] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
+  - [ ] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
+  - [ ] Wire into `build-rootfs.sh` (cross-compile with zig 0.16-dev to `arm-linux-musleabihf`, install to `/usr/sbin/wata-metricsd`)
+  - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)
+  - [ ] Fixture-based integration tests for `sources.zig` once Zig 0.16-dev `std.Io.Dir` API stabilizes (or via `posix.mkdirat` if we keep the posix-level approach)
 - [ ] Dedicated `wata` user — wata currently runs as root via system-menu → `/opt/wata/start.sh`. Create an unprivileged `wata` user in the rootfs build and drop privs before `exec`-ing `wata-fb`. Dependency audit for group membership:
   - `video` — `/dev/fb0` (framebuffer writes)
   - `input` — `/dev/input/event*` (keypad + PTT)
