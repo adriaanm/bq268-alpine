@@ -195,6 +195,10 @@ fn runLoop(
 
     var seq: u32 = 0;
     var prev_mono: u64 = 0;
+    // Latch a write failure so we warn on stderr once (which OpenRC
+    // routes to syslog) and then stay silent. Reset on next success
+    // so a transient eMMC blip can re-arm the warning.
+    var sink_warned: bool = false;
     var line_buf: [1024]u8 = undefined;
     var iters: u64 = 0;
 
@@ -265,7 +269,15 @@ fn runLoop(
         };
 
         const line = jsonl.format(&line_buf, rec) catch continue;
-        sink.write(line) catch continue;
+        if (sink.write(line)) |_| {
+            sink_warned = false;
+        } else |_| {
+            if (!sink_warned) {
+                const msg = "wata-metricsd: sink.write failed, continuing\n";
+                _ = linux.write(2, msg, msg.len);
+                sink_warned = true;
+            }
+        }
 
         iters += 1;
         if (max_iters != 0 and iters >= max_iters) return 0;
