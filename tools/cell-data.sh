@@ -107,11 +107,17 @@ ensure_rat_prefs() {
     local prefs
     prefs=$(qmicli -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
     if echo "$prefs" | grep -q "Mode preference: 'lte'" && \
-       echo "$prefs" | grep -q "Network selection preference: 'automatic'"; then
+       echo "$prefs" | grep -q "Network selection preference: 'automatic'" && \
+       echo "$prefs" | grep -q "Usage preference: 'data-centric'"; then
         return 0
     fi
-    log "enforcing lte, automatic network selection"
-    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic' 2>&1 \
+    # usage=data-centric: BQ268 is a data-only device. Voice-centric (the
+    # Qualcomm default) makes NAS refuse to camp on LTE cells whose CS
+    # domain can't be negotiated, which kills attach on MVNO roaming in
+    # markets where 2G/3G is decommissioned. Requires the qmicli usage-pref
+    # extension (libqmi commit d8995d3).
+    log "enforcing lte, automatic network selection, data-centric"
+    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic,usage=data-centric' 2>&1 \
         | logger -t cell-data || true
     return 1
 }
