@@ -165,36 +165,23 @@ static int diag_read_one(uint8_t *out, int out_max, int timeout_ms)
  * Drain everything that's currently waiting on the fd, feeding each
  * packet to the log handler. Called from the main loop.
  */
-static void handle_packet(const uint8_t *pkt, int len)
+/* Parse a single un-framed DIAG payload (already stripped of the
+ * 0x7e 0x01 LL LL ... 7e envelope). For log packets (cmd 0x10) we
+ * extract code/timestamp/payload and emit one JSONL line. Other
+ * packets (subsystem responses, async notifications) are logged as
+ * DIAG_OTHER so we can eyeball what the modem is saying. */
+static void handle_one(const uint8_t *p, int n)
 {
-	if (len < 1) return;
+	if (n < 1) return;
 
-	/* Log packets start with command code 0x10 (LOG_F). The exact
-	 * wrapper shape on MSM8909 CAF 4.4 we'll discover empirically
-	 * on first run; for now parse two common layouts:
-	 *
-	 * Layout A (kernel diagchar.h):
-	 *   [0]     0x10
-	 *   [1]     0x00
-	 *   [2..3]  uint16 outer_len  (length from [2] onwards)
-	 *   [4..5]  uint16 inner_len
-	 *   [6..7]  uint16 log_code
-	 *   [8..15] uint64 timestamp (1.25 us units)
-	 *   [16..]  payload
-	 *
-	 * Layout B (some vendor blobs):
-	 *   [0..1]  uint16 len
-	 *   [2..3]  uint16 log_code
-	 *   [4..11] uint64 ts
-	 *   [12..]  payload
-	 */
-	if (pkt[0] == 0x10 && len >= 16) {
-		uint16_t log_code = (uint16_t)(pkt[6] | (pkt[7] << 8));
+	if (p[0] == 0x10 && n >= 18) {
+		/* [0]=0x10 cmd, [1]=pad, [2..3]=len, [4..5]=len2,
+		 * [6..7]=log_code LE, [8..15]=timestamp, [16..]=payload */
+		uint16_t log_code = (uint16_t)(p[6] | (p[7] << 8));
 		uint64_t ts;
-		memcpy(&ts, pkt + 8, 8);
-		const uint8_t *payload = pkt + 16;
-		int paylen = len - 16;
-		if (paylen < 0) paylen = 0;
+		memcpy(&ts, p + 8, 8);
+		const uint8_t *payload = p + 16;
+		int paylen = n - 16;
 
 		const char *ev = "LOG";
 		switch (log_code) {
@@ -213,9 +200,53 @@ static void handle_packet(const uint8_t *pkt, int len)
 		return;
 	}
 
-	/* Non-log packet — subsystem response, error, etc. Log as debug
-	 * so we can see what the modem is saying back to our commands. */
-	emit_json("DIAG_OTHER", now_ms(), -1, 0, pkt, len);
+	emit_json("DIAG_OTHER", now_ms(), -1, 0, p, n);
+}
+
+/* A sub-packet returned by diag_read_one may contain several wireline
+ * HDLC-framed packets concatenated (the kernel groups small packets to
+ * amortise the ring-buffer dequeue). Split on 0x7e boundaries, peel the
+ * `0x7e 0x01 LL LL ... 0x7e` envelope, and feed each inner packet to
+ * handle_one. */
+static void handle_packet(const uint8_t *pkt, int len)
+{
+	int i = 0;
+	int frames = 0;
+	while (i < len) {
+		/* skip runs of 0x7e between frames */
+		while (i < len && pkt[i] == 0x7e) i++;
+		int start = i;
+		/* find next 0x7e (end-of-frame) */
+		while (i < len && pkt[i] != 0x7e) i++;
+		int end = i;
+		int fl = end - start;
+		if (fl < 5) continue;
+
+		/* Envelope shape from diag-apdu.c strip_frame:
+		 *   [0] = 0x01 (channel/address)
+		 *   [1..2] = uint16 outer_len  (in practice: inner+4)
+		 *   [3..] = payload (inner_len bytes), trailing 2-byte CRC
+		 * We trust outer_len but clamp to what we actually have. */
+		if (pkt[start] != 0x01) {
+			/* not an envelope we recognise — feed whole thing */
+			handle_one(pkt + start, fl);
+			frames++;
+			continue;
+		}
+		uint16_t outer = (uint16_t)(pkt[start+1] | (pkt[start+2] << 8));
+		int inner_off = start + 3;
+		int inner_len = outer;
+		if (inner_len > fl - 3) inner_len = fl - 3;
+		/* strip trailing 2-byte CRC if there's room */
+		if (inner_len > 2) inner_len -= 2;
+		if (inner_len > 0)
+			handle_one(pkt + inner_off, inner_len);
+		frames++;
+	}
+	if (frames == 0 && len > 0) {
+		/* nothing looked framed — dump raw so we can debug */
+		emit_json("DIAG_RAW", now_ms(), -1, 0, pkt, len);
+	}
 }
 
 static int diag_init(void)
