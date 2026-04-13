@@ -1,0 +1,306 @@
+- Albania
+  - Vodafone 4G
+- Anguilla
+  - Cable & Wireless 4G
+- Antigua and Barbuda
+  - Cable & Wireless 4G
+- Argentina
+  - Telefonica 5G
+- Armenia
+  - Veon 4G
+- Aruba
+  - Digicel 4G
+- Australia
+  - Optus 5G
+- Austria
+  - T- Mobile 5G
+- Azerbaijan
+  - Bakcell 5G
+- Bahrain
+  - Batelco 5G
+- Bangladesh
+  - Bangalink (Veon) 4G
+- Belarus
+  - Unitary enterprise A1 4G
+- Belgium
+  - Proximus (Begalcom) 5G
+- Benin
+  - Spacetel 4G
+- Bosnia and Herzegovina
+  - Bh Telecom 4G
+- Botswana
+  - Mascom (MTN) 4G
+- Brazil
+  - Telefonica 5G
+- Brunei
+  - DSTcom 5G
+- Bulgaria
+  - Telenor 5G
+- Burkina Faso
+  - Orange 4G
+- Cambodia
+  - Cellcard 5G
+  - Viettel (Metfon) 5G
+  - Smart Axiata 5G
+- Cameroon
+  - MTN 4G
+- Canada
+  - Rogers 5G
+- Chad
+  - Airtel 4G
+- Chile
+  - Telefonica 5G
+- China
+  - China Telecom 5G
+  - Unicom 5G
+- Colombia
+  - Telefonica 4G
+- Congo (DRC)
+  - Airtel 4G
+  - Vodacom 4G
+- Costa Rica
+  - Telefonica 4G
+- Croatia
+  - Hrvatski Tel (T- Mobile) 5G
+- Cyprus
+  - MTN 5G
+- Czech Republic
+  - RadioMobil (T- Mobile) 5G
+  - Vodafone 4G
+- Denmark
+  - Telia 5G
+- Dominican Republic
+  - Altice 5G
+- Ecuador
+  - Otecel (Telefonica) 4G
+- Egypt
+  - Orange 5G
+- El Salvador
+  - Telefonica 4G
+- Estonia
+  - Telia 5G
+- Eswatini
+  - MTN 4G
+- Faroe Islands
+  - Faroese Telecom 5G
+- Fiji
+  - Vodafone 4G
+- Finland
+  - Telia 5G
+- France
+  - Bouygues 5G
+  - Orange 5G
+- Gabon
+  - Airtel 4G
+- Georgia
+  - Veon 4G
+- Germany
+  - Vodafone 4G
+  - Telekom 5G
+- Ghana
+  - Vodafone 4G
+- Gibraltar
+  - GibTelecom 5G
+- Greece
+  - Cosmote 5G
+  - Vodafone Panafon S.A. 5G
+- Guam
+  - PTI Pacifica 5G
+- Guernsey
+  - Sure 4G
+- Guinea Bissau
+  - MTN 4G
+- Haiti
+  - Nation Telecom 4G
+- Hong Kong
+  - China Mobile 5G
+- Hungary
+  - Magyar Tel (T- Mobile) 5G
+  - Vodafone 4G
+- Iceland
+  - Siminn 5G
+- India
+  - JIO 5G
+  - Bharti Airtel 5G
+- Indonesia
+  - Telkomsel 5G
+- Iraq
+  - Zain 4G
+- Ireland
+  - Vodafone 4G
+  - Hutchinson 5G
+- Isle of Man
+  - Manx Telecom 4G
+- Israel
+  - Cellcom 5G
+- Italy
+  - WindTre 5G
+  - Vodafone Omnitel N.V. 4G
+- Japan
+  - SoftBank 5G
+  - KDDI 5G
+- Jersey
+  - JT (Jersey) 5G
+- Jordan
+  - Zain 5G
+- Kazakhstan
+  - Beeline (Veon) 4G
+- Kenya
+  - Airtel 5G
+- Kuwait
+  - Ooredoo 5G
+- Kyrgyzstan
+  - Sky Mobile (Veon) 4G
+- Laos
+  - Lao Telecom (LTC) 5G
+- Latvia
+  - Latvijas Mobilais (Telia) 5G
+- Lesotho
+  - Vodafone 4G
+- Liechtenstein
+  - Telecom (A1) 5G
+- Lithuania
+  - Telia 5G
+- Luxembourg
+  - Post Luxembourg 5G
+- Macau
+  - CTM 5G
+- Macedonia
+  - One.VIP Dooel Skopje (A1) 4G
+- Madagascar
+  - Airtel 4G
+- Malawi
+  - Airtel 4G
+- Malaysia
+  - MY CelcomDigi 5G
+  - MY Celcom 5G
+  - MY Maxis 5G
+- Maldives
+  - Dhivehi 5G
+- Malta
+  - Epic Communications 5G
+- Mauritius
+  - Emtel 5G
+- Mexico
+  - AT&T 5G
+- Moldova
+  - Orange 4G
+- Mongolia
+  - Mobicom 4G
+- Montenegro
+  - Telekom 5G
+  - Telenor 4G
+- Mozambique
+  - Vodacom 4G
+- Nepal
+  - Ncell 4G
+- Netherlands
+  - Vodafone 4G
+  - KPN 5G
+- New Zealand
+  - Vodafone 5G
+  - Spark 5G
+- Niger
+  - Celtel 4G
+- Nigeria
+  - Airtel 5G
+- Norway
+  - Teliasonera Norge 5G
+- Oman
+  - Oman Mobile 5G
+- Pakistan
+  - Telenor Pakistan 4G
+  - Zong 4G
+- Palestine
+  - Palestine Cellular 4G
+- Panama
+  - Cable and Wireless 4G
+- Papua New Guinea
+  - Bemobile 4G
+- Peru
+  - Telefonica 4G
+- Philippines
+  - Globe 5G
+- Poland
+  - T- Mobile (ERA) 5G
+- Portugal
+  - Vodafone 4G
+- Puerto Rico
+  - Claro 5G
+- Qatar
+  - Vodafone 5G
+- Reunion
+  - SRR (Altice Group) 4G
+- Romania
+  - Vodafone 5G
+  - Digi Romania S.A. 5G
+- Russia
+  - MTS 4G
+- Rwanda
+  - Airtel 4G
+- San Marino
+  - Wind 5G
+- Seychelles
+  - Airtel 4G
+- Singapore
+  - Singtel 5G
+- Slovakia
+  - Slovak Telekom 5G
+- Slovenia
+  - A1 Slovenija 5G
+- Solomon Islands
+  - Bemobile 4G
+- South Africa
+  - Vodacom 5G
+- South Korea
+  - SK Telecom 5G
+  - KT Corp 5G
+- Spain
+  - Telefonica (Movistar) 5G
+  - Vodafone Espana S.A.U. 4G
+- Sri Lanka
+  - Mobitel 5G
+  - Dialog 4G
+- Sweden
+  - Telia 5G
+- Switzerland
+  - Sunrise 5G
+- Taiwan
+  - Chunghwa 5G
+- Tajikistan
+  - Tcell 4G
+- Tanzania
+  - Airtel 5G
+  - Vodacom 5G
+- Thailand
+  - AWN (AIS) 5G
+- Timor Leste
+  - Viettel 4G
+- Tunisia
+  - Ooredoo 4G
+- Turkey
+  - Vodafone Telekomunikasyon 5G
+- Uganda
+  - Airtel 5G
+- Ukraine
+  - Veon 4G
+- United Arab Emirates
+  - DU 5G
+- United Kingdom
+  - Vodafone 4G
+  - EE 5G
+- United States
+  - AT&T 5G
+  - T- Mobile 5G
+- Uruguay
+  - Telefonica 5G
+- Uzbekistan
+  - Unitel (Veon) 4G
+- Vietnam
+  - Mobifone 4G
+  - Vinaphone 5G
+  - Viettel 5G
+- Yemen
+  - MTN 4G
+- Zambia
+  - Airtel 4G
