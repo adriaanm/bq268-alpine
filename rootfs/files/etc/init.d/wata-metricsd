@@ -1,0 +1,17 @@
+#!/sbin/openrc-run
+
+description="Metrics sampler aligned to wata's matrix long-poll heartbeat"
+command="/usr/sbin/wata-metricsd"
+command_background=true
+pidfile="/run/wata-metricsd.pid"
+output_log="/var/log/wata-metricsd.log"
+error_log="/var/log/wata-metricsd.log"
+
+depend() {
+    need localmount
+    before local
+}
+
+start_pre() {
+    checkpath -d -m 0755 /var/log/metrics
+}

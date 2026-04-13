@@ -16,8 +16,8 @@
   - [x] Sink module: file-level open/append + size-based rotation with startup rotation for boot-cycle boundaries
   - [x] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
   - [ ] On-device smoke test: cross-compile, scp, run as root, hit it with a test sender, verify `/var/log/metrics/current.jsonl` grows and rotates
-  - [ ] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
-  - [ ] Wire into `build-rootfs.sh` (cross-compile with zig 0.16-dev to `arm-linux-musleabihf`, install to `/usr/sbin/wata-metricsd`)
+  - [x] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
+  - [x] Wire into rootfs build: `rootfs/16-wata-metricsd.sh` installs the binary + service, and `just build-tools` now depends on `build-wata-metricsd` so a full rebuild picks it up automatically
   - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)
   - [ ] Fixture-based integration tests for `sources.zig` once Zig 0.16-dev `std.Io.Dir` API stabilizes (or via `posix.mkdirat` if we keep the posix-level approach)
 - [ ] Dedicated `wata` user — wata currently runs as root via system-menu → `/opt/wata/start.sh`. Create an unprivileged `wata` user in the rootfs build and drop privs before `exec`-ing `wata-fb`. Dependency audit for group membership:
