@@ -12,7 +12,8 @@
   - [x] Scaffold project, protocol module with Tick datagram + tests
   - [x] Sources module: battery int fields, net operstate + counters, backlight brightness
   - [ ] Sources: `batt_status` string reader and backlight auto-discovery (TODO in sources.zig)
-  - [ ] Sink module: JSONL writer with size-based rotation (1 MiB × 4 files)
+  - [x] JSONL formatter: pure `format(out, Record)` with tests for mandatory + optional fields
+  - [ ] Sink module: file-level open/append + size-based rotation (1 MiB × 4 files) on top of the formatter
   - [ ] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
   - [ ] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
   - [ ] Wire into `build-rootfs.sh` (cross-compile with zig 0.16-dev to `arm-linux-musleabihf`, install to `/usr/sbin/wata-metricsd`)
