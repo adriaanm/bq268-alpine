@@ -67,8 +67,12 @@ ensure_mcfg() {
     [ -f "$MCFG_PRIMARY" ] || return 0
     local list
     list=$(qmicli -p -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
-    # Already loaded + active? No-op.
-    if echo "$list" | grep -A1 "Singtel_Commercial" | grep -q "Active"; then
+    # Already loaded + active? No-op. The `pdc-list-configs` output
+    # puts `Status: Active` ~3 lines below the Description, so we need
+    # enough context — -A4 is safe. Without this, ensure_mcfg would
+    # re-activate every wake, which triggers an internal modem reset
+    # and drops whatever registration we had.
+    if echo "$list" | grep -A4 "Singtel_Commercial" | grep -q "Status: *Active"; then
         return 0
     fi
     # Not loaded at all? Upload both files.
@@ -96,17 +100,24 @@ ensure_mcfg() {
     return 0
 }
 
-# LTE-only with automatic network selection. Idempotent.
+# LTE preferred with UMTS fallback, automatic network selection. Idempotent.
 #
-# UMTS is intentionally excluded: at the test bench in CH, the modem
-# otherwise latches onto a weak cross-border UMTS Orange France carrier
-# and never attempts LTE attach on the stronger Sunrise cell. Android
-# prefers LTE on the same SIM in the same spot. If we ever need 3G
-# fallback for coverage we should re-introduce it location-aware.
+# History: we previously enforced `lte,automatic` (LTE-only) to avoid
+# latching onto a weak cross-border UMTS Orange France cell in CH. But
+# 2026-04-13 DIAG captures showed that in LTE-only mode the modem reads
+# SIBs from multiple Swiss LTE cells yet never transmits an ATTACH
+# REQUEST — zero EMM_OTA_OUT in 60 s of searching. With `lte|umts` the
+# modem attaches cleanly to Orange F (208/01) within 40 s. UMTS coverage
+# is strong enough at the bench that the occasional cross-border camp is
+# a tolerable tradeoff against never attaching at all. If/when we
+# resolve the underlying LTE attach block (likely MCFG or TAI-reject at
+# the HSS), we can tighten this back to lte-only.
 ensure_rat_prefs() {
     local prefs
     prefs=$(qmicli -p -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
-    if echo "$prefs" | grep -q "Mode preference: 'lte'" && \
+    # Modem reports mode preference with an unspecified ordering
+    # ('umts, lte' or 'lte, umts'); match either.
+    if echo "$prefs" | grep -Eq "Mode preference: '(lte, umts|umts, lte)'" && \
        echo "$prefs" | grep -q "Network selection preference: 'automatic'" && \
        echo "$prefs" | grep -q "Usage preference: 'data-centric'"; then
         return 0
@@ -116,8 +127,8 @@ ensure_rat_prefs() {
     # domain can't be negotiated, which kills attach on MVNO roaming in
     # markets where 2G/3G is decommissioned. Requires the qmicli usage-pref
     # extension (libqmi commit d8995d3).
-    log "enforcing lte, automatic network selection, data-centric"
-    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic,usage=data-centric' 2>&1 \
+    log "enforcing lte|umts, automatic network selection, data-centric"
+    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference='lte|umts,automatic,usage=data-centric' 2>&1 \
         | logger -t cell-data || true
     return 1
 }
@@ -358,7 +369,7 @@ try_partner_attach() {
     mnc_padded=$(printf '%02d' "$mnc")
     target="${mcc}${mnc_padded}"
     log "trying manual attach to $mcc/$mnc_padded (${target})"
-    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference="lte,manual=${target}" 2>&1 \
+    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference="lte|umts,manual=${target}" 2>&1 \
         | logger -t cell-data || true
     while [ $elapsed -lt "$PARTNER_BUDGET" ]; do
         if qmicli -p -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
