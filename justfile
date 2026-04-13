@@ -123,6 +123,26 @@ build-lpac:
 build-rootfs: extract-firmware patch-modem build-tools
     sudo bash build-rootfs.sh
 
+# ── Cellular ─────────────────────────────────────────────────────────────
+
+# Push the current cell-data.sh to the device in-place (no rebuild).
+push-cell-data:
+    scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
+    ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data && echo ok'
+
+# End-to-end cellular smoke test against the live device. Bounded at
+# ~2 minutes: wake (LTE-only, automatic, PS attach 90s), pppd up
+# (30s), ping, teardown. Exits non-zero on any failure.
+smoke-cellular:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    ssh bq268 'set -e; \
+        echo "=== wake ==="; time cell-data wake; \
+        echo "=== up ===";   time cell-data up; \
+        echo "=== ping ==="; ping -c 3 -W 5 -I ppp0 8.8.8.8; \
+        echo "=== status ==="; cell-data status; \
+        echo "=== down ==="; cell-data down'
+
 # ── QEMU testing ──────────────────────────────────────────────────────────
 
 # boot rootfs in QEMU (tests Alpine userspace without real hardware)

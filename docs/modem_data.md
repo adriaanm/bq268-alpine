@@ -240,10 +240,73 @@ PPP config at `/etc/ppp/peers/cellular`, chat script at
 
 Kernel requirements: CONFIG_PPP, CONFIG_PPP_ASYNC (added in kernel #66).
 
+## Bringup chain (2026-04-13)
+
+`cell-data up` (see `tools/cell-data.sh`) is the single entry point.
+It performs, in order:
+
+1. **Enforce QMI prefs** (`ensure_lte_prefs`) — idempotent check that
+   `Mode preference = lte` and `Network selection preference = automatic`.
+   These settings are stored in modem NV and **persist across reboots
+   and `dms` resets**, so this is usually a no-op after the first
+   application. When it does change prefs, `qmicli` prints "replug your
+   device"; the following `set_online` → reset escalation picks up the
+   new config.
+2. **Drive modem to `online`** (`set_online`) — handles `low-power`,
+   `offline`, `persistent-low-power`, and transient `shutting-down` /
+   `resetting` states. Bounded at `WAKE_BUDGET=20s`; on timeout escalates
+   to `dms-set-operating-mode=reset` + `RESET_SETTLE=10s` and retries
+   once. Returns non-zero if the modem cannot be driven online.
+3. **Wait for PS attach** (`wait_ps_attached`) — polls
+   `nas-get-serving-system` for `PS: 'attached'` on a
+   `ATTACH_BUDGET=90s` budget. Total wake wall-time is ≤2 minutes.
+4. **Log serving PLMN + roaming** (`log_serving`) — appends MCC/MNC,
+   RAT, roaming bool (derived by comparing serving PLMN to
+   `nas-get-home-network`), and QMI's own roaming status to
+   `/var/log/cellular.log` for correlation with data usage.
+5. **`pppd call cellular`** — daemonizes pppd and waits ≤30 s for
+   `ppp0` to acquire an IPv4 address. Kills pppd on timeout so we don't
+   leak a half-up session.
+
+### Required QMI preferences
+
+Expected output of `qmicli -d msmipc://0 --nas-get-system-selection-preference`:
+
+```
+Mode preference: 'lte'
+Network selection preference: 'automatic'
+Acquisition order preference: 'lte, ...'
+```
+
+The default acquisition order on this firmware puts CDMA/GSM/UMTS
+ahead of LTE, which means the modem finds UMTS first and parks on it
+with `WCDMA Status: limited` (the Singtel SIM is not allowed PS attach
+on roamed WCDMA). Forcing `lte,automatic` is what makes attach possible
+on foreign LTE networks. The setting is non-volatile — we apply it
+once and it survives reboots.
+
+### Recovery from stuck modem states
+
+| Observed state | Meaning | Action |
+|---|---|---|
+| `mode=shutting-down` (persistent) | Modem crashed mid-transition, usually after a failed `online` ↔ `offline` sequence. `set-operating-mode=online` succeeds with no effect. | `dms-set-operating-mode=reset`, then retry online after ≥10 s. If still stuck, reboot the device. |
+| `mode=offline` + `InvalidTransition` on `online` | Known deadlock — the modem rejects transitions out of offline. | Same as above: issue `reset` and wait ≥10 s. Reboot if reset also fails. |
+| `Registration state: not-registered-searching`, radio oscillating between `none` and `umts` | No compatible LTE cell visible / roaming not permitted at current location | Not a state-machine bug. Run `qmicli --nas-network-scan=lte` to confirm LTE coverage. If coverage exists but attach fails, check SIM roaming agreements for the visited PLMN. |
+| `Registration state: not-registered` + `Status: power-save` | Modem gave up searching and is in dormant mode. | `dms-set-operating-mode=reset` forces a fresh scan cycle. |
+
+All of these are handled automatically by `cell-data wake` within its
+2-minute budget; on failure it returns exit code 2 (PS not attached)
+vs 1 (modem could not be brought online) so callers can distinguish
+a coverage problem from a firmware/state problem.
+
+### Smoke test
+
+`just smoke-cellular` runs the full chain against the live device and
+verifies a ping through `ppp0`. Useful after kernel changes, firmware
+patches, or physical moves.
+
 ## Next Steps
 
-1. **Update cell-data script** — replace WDS/rmnet references with
-   pppd/ppp0 for the failover system
-2. **WiFi/cellular failover testing** — test net-watchdog with actual
+1. **WiFi/cellular failover testing** — test net-watchdog with actual
    WiFi drops and cellular PPP failover
-3. **Suspend integration** — modem low-power mode when idle
+2. **Suspend integration** — modem low-power mode when idle
