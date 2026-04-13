@@ -40,6 +40,35 @@ re-reading the whole session history. Pick up from commits `bd05c19`,
   to stderr — extend `BRAND_PARENTS`/`COUNTRY_ALIASES` and re-run.
 - **Home SIM**: Eskimo eSIM, **MVNO on Singtel IMSI 525-01**.
 
+## Key findings from cross-device testing
+
+- **Eskimo eSIM works fine on Android** at the same physical
+  location: attaches, 4G, picks Sunrise as roaming partner, data
+  flows. Rules out Eskimo account state, Singtel HSS path, Sunrise
+  roaming agreement, and reception. The blocker is specific to our
+  MSM8909 modem / kernel / userspace config.
+- **APN on Android: `hicard`**. We were attempting an empty APN
+  (`AT+CGDCONT=1,"IP",""`) in `rootfs/files/etc/ppp/cellular-chat`
+  and earlier notes mentioned `globaldata` from the initial bringup
+  on Orange France. The chat-script fix (hardcoding `hicard` in
+  CGDCONT) is committed, **but that only applies at CGACT / PPP
+  time — after attach**. We're failing at attach. So the real
+  question is: **what APN does the modem use during the attach-time
+  PDN-CONNECTIVITY-REQUEST?** On Qualcomm firmware that comes from
+  the default WDS 3GPP profile (profile 1), not from the chat
+  script. Earlier enumeration showed profiles `empty-APN / ims /
+  sos`. If attach is being rejected for "missing or unknown APN"
+  (3GPP 24.301 #27) or "requested service option not subscribed"
+  (#33), the fix is to set profile 1's APN to `hicard` via
+  `qmicli --wds-modify-profile` before attach, not just in the
+  chat script.
+
+  **Next action**: set WDS profile 1 APN to `hicard` and retry
+  `cell-data wake`. If attach then succeeds, wire this into
+  `ensure_rat_prefs` (or a new `ensure_wds_profile`) as another
+  idempotent bringup step. The chat-script change stays as a
+  matching belt-and-braces for CGACT.
+
 ## What's broken
 
 At the test bench on 2026-04-13 (Switzerland, same physical location),
