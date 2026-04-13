@@ -74,6 +74,7 @@ build-tools: build-wata-metricsd
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/qmi-send-apdu tools/qmi-send-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
 
 # cross-compile wata-metricsd (Zig 0.16-dev → arm-linux-musleabihf, ReleaseSmall ≈ 65 KB)
 build-wata-metricsd:
@@ -135,6 +136,29 @@ gen-roaming-partners:
 push-cell-data:
     scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
     ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data && echo ok'
+
+# Build + push cell-diag and run it in the background for DURATION
+# seconds against the live device, then fetch the log. Useful for
+# capturing NAS reject causes during a failing attach attempt.
+#   just diag-capture             # 60s default
+#   just diag-capture 120         # 2 minutes
+diag-capture duration="60":
+    #!/usr/bin/env bash
+    set -eo pipefail
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
+    scp -q tools/cell-diag bq268:/tmp/cell-diag
+    ssh bq268 'chmod +x /tmp/cell-diag && : > /tmp/cell-diag.log && \
+        /tmp/cell-diag -o /tmp/cell-diag.log -d >/tmp/cell-diag.stderr 2>&1 & \
+        echo $! >/tmp/cell-diag.pid; sleep 1; \
+        echo "=== triggering wake ==="; cell-data wake || true; \
+        sleep {{duration}}; \
+        kill -TERM $(cat /tmp/cell-diag.pid) 2>/dev/null || true; \
+        sleep 1; \
+        echo "=== stderr ==="; cat /tmp/cell-diag.stderr; \
+        echo "=== log lines: $(wc -l </tmp/cell-diag.log) ===" '
+    scp -q bq268:/tmp/cell-diag.log ./cell-diag.log
+    echo "--- cell-diag.log (tail) ---"
+    tail -n 40 ./cell-diag.log || true
 
 # End-to-end cellular smoke test against the live device. Bounded at
 # ~2 minutes: wake (LTE-only, automatic, PS attach 90s), pppd up
