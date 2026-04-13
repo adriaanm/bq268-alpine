@@ -44,28 +44,112 @@ modem_mode() {
         sed -n "s/.*Mode: '\([^']*\)'.*/\1/p"
 }
 
-# Restrict to modern RATs (LTE + UMTS) with LTE preferred and
-# automatic network selection. Idempotent: re-applies only when
-# current prefs differ (avoids the "replug your device" reset when
-# already correct).
+# LTE-only with automatic network selection. Idempotent.
 #
-# Putting `lte` first in the qmicli arg flips the acquisition order to
-# `lte, umts, ...` — the default vendor order puts LTE last, which
-# makes the modem park on UMTS and never try LTE (see
-# docs/modem_data.md "Root cause").
+# UMTS is intentionally excluded: at the test bench in CH, the modem
+# otherwise latches onto a weak cross-border UMTS Orange France carrier
+# and never attempts LTE attach on the stronger Sunrise cell. Android
+# prefers LTE on the same SIM in the same spot. If we ever need 3G
+# fallback for coverage we should re-introduce it location-aware.
 ensure_rat_prefs() {
     local prefs
     prefs=$(qmicli -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
-    if echo "$prefs" | grep -q "Mode preference: 'lte, umts'" && \
+    if echo "$prefs" | grep -q "Mode preference: 'lte'" && \
        echo "$prefs" | grep -q "Network selection preference: 'automatic'"; then
         return 0
     fi
-    log "enforcing lte|umts, automatic network selection"
-    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte|umts,automatic' 2>&1 \
+    log "enforcing lte, automatic network selection"
+    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic' 2>&1 \
         | logger -t cell-data || true
-    # Setting is non-volatile across reboots but needs a modem reset to
-    # take effect. Caller should issue a reset and wait.
     return 1
+}
+
+# Profile 1 is the LTE-attach PDN (wds-get-lte-attach-pdn-list = [1])
+# on this modem, so its APN and PDP type are what the UE sends in the
+# initial PDN-CONNECTIVITY-REQUEST. Eskimo's live Android config uses
+# APN 'hicard' with IPv4v6; the vendor shipped profile 1 with empty
+# APN / ipv4 which caused attach to reach EMM-REGISTERED and then get
+# the default bearer torn down in ~2s. Persists in modem NV.
+ensure_wds_profile() {
+    local list apn pdp
+    list=$(qmicli -d "$QMI_DEV" --wds-get-profile-list=3gpp 2>&1 || true)
+    apn=$(echo "$list" | sed -n "/\[1\] 3gpp/,/\[2\] 3gpp/ {s/.*APN: '\([^']*\)'.*/\1/p;}" | head -1)
+    pdp=$(echo "$list" | sed -n "/\[1\] 3gpp/,/\[2\] 3gpp/ {s/.*PDP type: '\([^']*\)'.*/\1/p;}" | head -1)
+    if [ "$apn" = "hicard" ] && [ "$pdp" = "ipv4-or-ipv6" ]; then
+        return 0
+    fi
+    log "rewriting WDS profile 1: apn=hicard, pdp=ipv4v6 (was apn='$apn' pdp='$pdp')"
+    qmicli -d "$QMI_DEV" --wds-modify-profile="3gpp,1,apn=hicard,pdp-type=IPV4V6" 2>&1 \
+        | logger -t cell-data || true
+    return 0
+}
+
+# User-controlled preferred PLMN list. Eskimo's eSIM ships with
+# EF_OPLMNwAcT containing only the HPLMN (525/01 Singtel) — zero
+# roaming partners — so automatic selection has no steering and can
+# latch onto cross-border RATs that happen to be louder (e.g. UMTS
+# Orange-FR from inside CH). We populate the modem's user-controlled
+# list from /etc/cellular/roaming-partners so automatic selection
+# prefers approved roaming networks.
+#
+# The modem caps the user-controlled list at ~23 entries (SIM
+# EF_PLMNwAcT allocation) and silently drops any beyond that. We
+# therefore can't write all 154 partners — we prioritize by
+# PRIORITY_MCCS (Swiss + immediate neighbours) and fill the rest of
+# the 20-slot budget from the full file in file order. Persists in
+# modem NV.
+PRIORITY_MCCS="228 208 262 222 232 214 268 272 206 234"
+PREFERRED_LIMIT=20
+ensure_preferred_networks() {
+    local have count
+    have=$(qmicli -d "$QMI_DEV" --nas-get-preferred-networks 2>&1 || true)
+    count=$(echo "$have" | sed -n '/Preferred PLMN list/,/PCS digit status/p' \
+        | grep -c "Access Technology: 'eutran'")
+    # Sanity check: the target list always contains 228/02 Sunrise
+    # (top of PRIORITY_MCCS). If it's already there with roughly the
+    # right number of entries, this is a no-op.
+    if [ "$count" -ge "$PREFERRED_LIMIT" ] && \
+       echo "$have" | sed -n '/Preferred PLMN list/,/PCS digit status/p' \
+         | grep -B1 "Access Technology: 'eutran'" | grep -B1 "MCC: '228'" \
+         | grep -q "MNC: '2'"; then
+        return 0
+    fi
+    if [ ! -f "$PARTNERS_FILE" ]; then
+        return 0
+    fi
+    local args="" n=0 mcc mnc
+    # Pass 1: priority MCCs in PRIORITY_MCCS order.
+    local pmcc
+    for pmcc in $PRIORITY_MCCS; do
+        while IFS= read -r line; do
+            case "$line" in ''|'#'*) continue ;; esac
+            set -- $line
+            [ "$1" = "$pmcc" ] || continue
+            [ -z "$2" ] && continue
+            args="$args,$1$2,eutran"
+            n=$((n + 1))
+            [ $n -ge "$PREFERRED_LIMIT" ] && break
+        done < "$PARTNERS_FILE"
+        [ $n -ge "$PREFERRED_LIMIT" ] && break
+    done
+    # Pass 2: fill remainder from file order, skipping priority MCCs.
+    if [ $n -lt "$PREFERRED_LIMIT" ]; then
+        while IFS= read -r line; do
+            case "$line" in ''|'#'*) continue ;; esac
+            set -- $line
+            [ -z "$1" ] || [ -z "$2" ] && continue
+            case " $PRIORITY_MCCS " in *" $1 "*) continue ;; esac
+            args="$args,$1$2,eutran"
+            n=$((n + 1))
+            [ $n -ge "$PREFERRED_LIMIT" ] && break
+        done < "$PARTNERS_FILE"
+    fi
+    args="${args#,}"
+    [ -z "$args" ] && return 0
+    log "writing preferred-networks ($n entries, priority first)"
+    qmicli -d "$QMI_DEV" --nas-set-preferred-networks="$args" 2>&1 \
+        | logger -t cell-data || true
+    return 0
 }
 
 # Drive the modem into 'online' from whatever state it's in. Handles:
@@ -225,10 +309,12 @@ try_partner_attach() {
 }
 
 do_wake() {
-    # Prefs are persistent in modem NV, so ensure_rat_prefs is usually a
-    # no-op and does NOT force a reset. If it did change prefs, set_online
-    # + reset escalation below will pick up the new config.
+    # All three ensure_* are persistent in modem NV and normally no-ops.
+    # If any changed state, set_online + reset escalation below picks
+    # up the new config.
     ensure_rat_prefs || true
+    ensure_wds_profile || true
+    ensure_preferred_networks || true
 
     set_online || return 1
 

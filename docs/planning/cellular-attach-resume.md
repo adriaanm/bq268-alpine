@@ -93,6 +93,214 @@ so the state machine is correct. The actual attach failure is
 downstream of the script — environmental, agreement-layer, or a
 firmware/kernel problem.
 
+## Session 2026-04-13 (session 2) — preferred-PLMN list + cell-data.sh hardening
+
+Follow-on session after a device reboot. Focus: mimic what Android is
+doing by populating the modem's preferred-PLMN list, then hardening
+`cell-data.sh` so the winning config is applied automatically.
+
+### What we did
+
+1. **Dumped SIM PLMN-selector EFs via `qmicli --uim-read-transparent`:**
+   - `EF_OPLMNwAcT` (6F61, operator-controlled roaming list):
+     **only one entry — `525/01 Singtel` with UTRAN+EUTRAN+NG-RAN+GSM.
+     Zero roaming partners.** Every other slot is `00 00 FF FF FF`.
+   - `EF_PLMNwAcT` (6F60, user-controlled): also only `525/01`.
+   - `EF_HPLMNwAcT` (6F62): correct HPLMN `525/01`.
+   - `EF_FPLMN` (6F7B): `525/03, 525/05, 502/18, 502/19` — old SE-Asia
+     forbidden entries, nothing Swiss-blocking.
+   - Conclusion: Android must be succeeding by either (a) SOR from
+     SingTel HSS after a first registration, or (b) scanning and
+     attaching to any non-forbidden PLMN because OPLMN has no steering.
+     We can fake (a) by writing the modem's *user-controlled*
+     preferred list via QMI (no ADM PIN needed, persists in modem NV).
+
+2. **Patched `tools/cell-data.sh`** (3 new idempotent bringup steps):
+   - `ensure_rat_prefs` now applies `lte,automatic` (was
+     `lte|umts,automatic`). UMTS is dropped because the modem
+     otherwise latches onto weak cross-border **UMTS Orange-FR
+     (208/01)** inside CH and never attempts Sunrise LTE.
+   - `ensure_wds_profile` rewrites WDS profile 1 to
+     `APN=hicard, PDP=IPV4V6` (was `'', ipv4`). Profile 1 is the
+     LTE-attach PDN per `wds-get-lte-attach-pdn-list=[1]`, so this is
+     what gets sent in the initial PDN-CONNECTIVITY-REQUEST.
+   - `ensure_preferred_networks` writes a priority-ordered preferred
+     PLMN list via `qmicli --nas-set-preferred-networks`. Cap is 20
+     entries (see below). `PRIORITY_MCCS="228 208 262 222 232 214 268
+     272 206 234"` — CH first, then immediate neighbours and common
+     EU. Remainder filled from `/etc/cellular/roaming-partners` in
+     file order (skipping priority MCCs). Persists in modem NV.
+
+3. **Discovered the modem's preferred-PLMN list cap**: QMI accepts
+   `--nas-set-preferred-networks` with up to ~80 entries, but the
+   modem silently stores only the first **~23** — likely the SIM's
+   EF_PLMNwAcT allocation (≈100 bytes / 5 bytes per entry). Writing
+   all 154 partners unordered pushes `228/02 Sunrise` (position 27 in
+   the alphabetically-sorted file) out of the window entirely. Fix
+   is in `PRIORITY_MCCS` ordering + 20-entry cap in
+   `ensure_preferred_networks`. Verified post-write that the dynamic
+   list contains `[0] 228/2 eutran` as the top entry.
+
+### What we observed
+
+- **One real PS attach**, for ~3 seconds, captured live in a
+  1.5-second serving-system poll:
+  ```
+  t=01 Registration: registered | PS: attached  | Selected: 3gpp
+  t=02 Registration: registered | PS: attached  | Selected: 3gpp
+  t=03 Registration: registered | PS: detached  | Selected: 3gpp
+  t=04 Registration: registered | PS: detached
+  t=05 Registration: registered | PS: detached
+  t=06 Registration: not-registered-searching | Status: none
+  ...
+  t=18 Status: power-save
+  ```
+  This is the **only** successful PS attach in the entire
+  investigation so far, and it came after all three fixes above were
+  applied manually. Signature: EPS attach → default bearer allocated
+  → bearer deactivated by network after ~3s → EMM stays registered
+  briefly → full detach. Textbook "bearer teardown by core" (ESM
+  cause #36 / #29 / #30 / #30-family, SGW/PGW policy / auth fail).
+  This is **not** reproducible at will — subsequent runs with
+  identical config go straight to `not-registered-searching →
+  power-save` with no EMM flash, suggesting NAS backoff (T3402 or
+  similar) and/or marginal signal at this bench.
+
+- **iPhone data point still relevant**: iPhone on a Sunrise MVNO at
+  the same bench reports 2/4 bars on LTE. Our modem may simply have
+  a weaker RF frontend / SIB1 handling, or the accumulated-reject
+  backoff is stickier on Qualcomm NAS.
+
+### What's committed / ready to flash
+
+- `tools/cell-data.sh` updated with the three new `ensure_*` steps
+  (on-device at `/usr/sbin/cell-data`, also in repo).
+- Profile 1 is `APN=hicard, PDP=ipv4-or-ipv6` in NV.
+- Preferred-networks NV has 20 entries, `228/2 Sunrise eutran` at
+  index [0].
+- All new state is NV-backed so survives modem + device reboots.
+
+### Open blockers / next-session priorities
+
+1. **Get DIAG NAS logging actually working**. Without a NAS cause
+   code, we can't distinguish "network rejecting our attach"
+   (#33/#36/#8/#11/#27/#50/#51 all have different fixes) from "NAS
+   backoff after earlier rejects". This is the single highest-value
+   piece of tooling the project lacks. Starting points:
+   - `modem_decompiled_src/pass7_diag*.c` — already have the DIAG
+     CNTL analysis.
+   - `memory/project_diag_state.md` — known state: feature mask
+     sends OK but modem port blocks cmd registration. That blocker
+     is the thing to crack.
+   - Target: subscribe to LTE NAS log packets (LTE NAS EMM OTA
+     Incoming/Outgoing 0xB0EC/0xB0ED, EMM state 0xB0E2), decode,
+     print cause code.
+
+2. **Alternate-SIM test**: a local Swiss prepaid (Sunrise/Swisscom/
+   Salt physical SIM) in the same device. If it attaches
+   immediately, the remaining failure is Eskimo-SIM-specific even
+   with our config fix in place. If it fails, there's a real
+   kernel/modem-firmware bug to chase. Cheap and decisive.
+
+3. **Move to a location with stronger Sunrise LTE** and re-run
+   `cell-data wake` with the current config. One attach-hold there
+   would retroactively validate every fix in this session. If it
+   still fails in strong coverage, we need DIAG.
+
+4. **Consider the NAS backoff clearance path**. If reboots don't
+   clear T3402 etc., the modem may have NV-persistent backoff state
+   we can zero via NV writes (dangerous) or a factory reset via DMS.
+   Only worth chasing if (3) also fails.
+
+## Session 2026-04-13 (session 1) — live probing results
+
+Android-with-same-SIM-same-location is confirmed working, so we spent a
+session poking the modem via QMI to narrow down *where* on our side the
+attach is failing. Summary of what we learned, in rough order of
+importance:
+
+1. **The LTE initial-attach profile chain is configured correctly.**
+   - `wds-get-default-profile-number=3gpp` → 1
+   - `wds-get-lte-attach-pdn-list` → `[1]`
+   - Profile 1 APN was `''` and PDP type was `ipv4`.
+   - **Set profile 1 APN=`hicard`, PDP type=`ipv4-or-ipv6`** this session
+     — persists across `rc-service modem restart`, so it survives in
+     modem NV. These should be added to `ensure_rat_prefs` (or a new
+     `ensure_wds_profile`) as idempotent bringup steps.
+
+2. **We finally triggered a real attach attempt and it reached
+   EMM-REGISTERED briefly.** With `lte,manual=22802` (LTE-only, manual
+   Sunrise) freshly applied, a 1.5-second serving-system poll captured:
+   ```
+   t=01 Registration: registered | PS: detached | Selected: 3gpp | Status: available
+   t=02 Registration: registered | PS: detached | Selected: 3gpp | Status: available
+   t=03 Registration: not-registered | Status: none
+   ...
+   t=18 Registration: not-registered | Status: power-save
+   ```
+   This is the signature of **attach reaching the core and being torn
+   down within ~2s** — not an RF/roaming denial (which would stay
+   `not-registered-searching` and never flash `registered`). Most likely
+   culprits at this stage: ESM cause #33 (requested service option not
+   subscribed), #50/#51 (PDN type IPv4-only / IPv6-only allowed), or
+   #27 (missing or unknown APN) from HSS/P-GW. The IPv4→IPv4v6 fix in
+   (1) is our best guess for addressing #50/#51; needs a re-run from a
+   clean modem state to confirm.
+
+3. **Under `lte|umts,automatic`, the modem biases hard to UMTS Orange F
+   (208/01) instead of Sunrise LTE.** `nas-network-scan` shows
+   `228/02 Sunrise lte` *and* `208/01 Orange F umts`, and the current-
+   serving marker during scans lands on Orange F UMTS — weak
+   cross-border signal from Switzerland. UMTS acquisition apparently
+   wins the race against LTE in the modem's search priority. This is
+   why automatic-mode wake never produced a `registered` flash at all:
+   it was chasing UMTS France, not Sunrise LTE.
+   - **Fix**: `ensure_rat_prefs` should use `lte,automatic` (not
+     `lte|umts,automatic`) so UMTS is disabled and the modem is forced
+     to attempt LTE attach somewhere. `umts` was a historical
+     safety-net for 3G-only areas; at our bench this is actively
+     harmful. Worth making it location-aware later (fall back to
+     `lte|umts` if LTE fails for N minutes), but the default should
+     be LTE-only.
+
+4. **SIM preferred-PLMN list is essentially empty for roaming.**
+   `nas-get-preferred-networks` returns exactly one entry: HPLMN
+   `525/01 Singtel`. No operator-controlled PLMN list with Eskimo
+   partners. Automatic selection is therefore pure "scan and pick
+   strongest non-forbidden PLMN", which is why UMTS Orange F wins.
+   Not fixable from our side without EFS writes — but (3) renders it
+   moot.
+
+5. **DMS / NAS state can desync into an unrecoverable deadlock.**
+   Toward the end of the session, `dms-get-operating-mode` returned
+   `shutting-down` permanently while `nas-get-serving-system` returned
+   `not-registered-searching` (i.e. NAS thinks modem is online, DMS
+   thinks it's shutting down). `dms-set-operating-mode=reset` and
+   `rc-service modem restart` neither fix this. Only a full device
+   reboot will. `cell-data wake` correctly exits 1 in this state. This
+   is likely the same class of bug as the "stuck modem states" noted
+   in `docs/modem_data.md`.
+
+### Next session
+
+1. Reboot the device to clear the DMS/NAS deadlock.
+2. On the next `cell-data wake`, confirm that profile 1 still has
+   `APN=hicard, PDP=ipv4-or-ipv6` (NV-persisted). If so:
+3. Run `cell-data wake` once with the current `lte|umts,automatic`
+   default — expect it to still fail, confirming the UMTS-bias
+   hypothesis (3).
+4. Edit `tools/cell-data.sh` `ensure_rat_prefs` to set
+   `lte,automatic` instead of `lte|umts,automatic`. Re-run
+   `cell-data wake`. If we see a durable `registered + PS: attached`,
+   the session's fixes worked. If we see another ~2s EMM-REGISTERED
+   flash and collapse, the IPv4v6 change was not enough and the next
+   step is DIAG NAS logging (project, not a one-liner — see
+   `modem_decompiled_src/pass7_diag*.c` as a starting point) to get
+   the real ESM cause code.
+5. Once attach sticks, add `ensure_wds_profile` as a new idempotent
+   step in `cell-data.sh`: checks profile 1's APN and PDP type and
+   rewrites only when wrong (same ethos as `ensure_rat_prefs`).
+
 ## Key data point (2026-04-13)
 
 **An iPhone on a local Swiss MVNO that uses Sunrise's network
