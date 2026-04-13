@@ -19,9 +19,9 @@ pub const Sample = struct {
     wlan_up: ?bool = null,
     wlan_rx: ?u64 = null,
     wlan_tx: ?u64 = null,
-    rmnet_up: ?bool = null,
-    rmnet_rx: ?u64 = null,
-    rmnet_tx: ?u64 = null,
+    cell_up: ?bool = null,
+    cell_rx: ?u64 = null,
+    cell_tx: ?u64 = null,
 
     pub fn battStatus(self: *const Sample) ?[]const u8 {
         if (self.batt_status_len == 0) return null;
@@ -30,14 +30,22 @@ pub const Sample = struct {
 };
 
 /// Configuration for where to read sysfs from. `sysfs_root` is overridable
-/// so tests can point at a fixture tree. Interface names and backlight name
-/// can be pinned; if `backlight_name` is empty, the sampler falls back to
-/// the device's only known backlight at runtime (TODO: auto-discover).
+/// so tests can point at a fixture tree. Defaults match BQ268:
+///   - cellular is PPP over SMD (see docs/modem_data.md), so `ppp0` when
+///     up; there's no rmnet on this hardware
+///   - the LCD backlight is exposed as a LED at
+///     `/sys/class/leds/lcd-bl/brightness` (the same path used by
+///     `screen-on.sh` / `screen-off.sh`), since this kernel has no
+///     `/sys/class/backlight/` device for the panel
 pub const Sources = struct {
     sysfs_root: []const u8 = "/sys",
     wlan_iface: []const u8 = "wlan0",
-    rmnet_iface: []const u8 = "rmnet_data0",
+    cell_iface: []const u8 = "ppp0",
+    /// Explicit /sys/class/backlight/<name> entry. Empty = auto-discover.
     backlight_name: []const u8 = "",
+    /// Fallback LED path (under /sys/class/leds/<name>/brightness) when
+    /// no /sys/class/backlight/ entry is found. Empty disables the fallback.
+    led_backlight_name: []const u8 = "lcd-bl",
 
     pub fn sample(self: Sources) Sample {
         var s = Sample{
@@ -66,13 +74,16 @@ pub const Sources = struct {
         const wlan_tx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/tx_bytes", .{self.wlan_iface}) catch null;
         if (wlan_tx_rel) |r| s.wlan_tx = readUintAt(&pb, self.sysfs_root, r);
 
-        const rm_op = std.fmt.bufPrint(&iface_buf, "class/net/{s}/operstate", .{self.rmnet_iface}) catch null;
-        if (rm_op) |r| s.rmnet_up = readOperstate(&pb, self.sysfs_root, r);
-        const rm_rx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/rx_bytes", .{self.rmnet_iface}) catch null;
-        if (rm_rx_rel) |r| s.rmnet_rx = readUintAt(&pb, self.sysfs_root, r);
-        const rm_tx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/tx_bytes", .{self.rmnet_iface}) catch null;
-        if (rm_tx_rel) |r| s.rmnet_tx = readUintAt(&pb, self.sysfs_root, r);
+        const cl_op = std.fmt.bufPrint(&iface_buf, "class/net/{s}/operstate", .{self.cell_iface}) catch null;
+        if (cl_op) |r| s.cell_up = readOperstate(&pb, self.sysfs_root, r);
+        const cl_rx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/rx_bytes", .{self.cell_iface}) catch null;
+        if (cl_rx_rel) |r| s.cell_rx = readUintAt(&pb, self.sysfs_root, r);
+        const cl_tx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/tx_bytes", .{self.cell_iface}) catch null;
+        if (cl_tx_rel) |r| s.cell_tx = readUintAt(&pb, self.sysfs_root, r);
 
+        // Backlight: prefer /sys/class/backlight/, fall back to a LED path.
+        // BQ268 has no backlight class device — the LCD backlight is wired
+        // as /sys/class/leds/lcd-bl/brightness on this kernel.
         var bl_name_buf: [64]u8 = undefined;
         const bl_name: ?[]const u8 = if (self.backlight_name.len > 0)
             self.backlight_name
@@ -81,8 +92,12 @@ pub const Sources = struct {
         if (bl_name) |name| {
             const bl_rel = std.fmt.bufPrint(&iface_buf, "class/backlight/{s}/brightness", .{name}) catch null;
             if (bl_rel) |r| s.bl = readIntAt(&pb, self.sysfs_root, r);
-            if (s.bl) |bl| s.screen_on = bl > 0;
         }
+        if (s.bl == null and self.led_backlight_name.len > 0) {
+            const led_rel = std.fmt.bufPrint(&iface_buf, "class/leds/{s}/brightness", .{self.led_backlight_name}) catch null;
+            if (led_rel) |r| s.bl = readIntAt(&pb, self.sysfs_root, r);
+        }
+        if (s.bl) |bl| s.screen_on = bl > 0;
 
         return s;
     }
@@ -194,6 +209,7 @@ test "Sources against missing tree returns nulls, never errors" {
     const s = src.sample();
     try std.testing.expectEqual(@as(?i64, null), s.v_uv);
     try std.testing.expectEqual(@as(?u64, null), s.wlan_rx);
+    try std.testing.expectEqual(@as(?u64, null), s.cell_rx);
     try std.testing.expectEqual(@as(?[]const u8, null), s.battStatus());
     try std.testing.expect(s.ts_mono_ns > 0);
 }
@@ -336,9 +352,9 @@ test "Sources fixture: full BQ268-shaped tree populates all fields" {
     try fx.writeFile("class/net/wlan0/operstate", "up\n");
     try fx.writeFile("class/net/wlan0/statistics/rx_bytes", "1234567\n");
     try fx.writeFile("class/net/wlan0/statistics/tx_bytes", "89012\n");
-    try fx.writeFile("class/net/rmnet_data0/operstate", "down\n");
-    try fx.writeFile("class/net/rmnet_data0/statistics/rx_bytes", "9876\n");
-    try fx.writeFile("class/net/rmnet_data0/statistics/tx_bytes", "4321\n");
+    try fx.writeFile("class/net/ppp0/operstate", "down\n");
+    try fx.writeFile("class/net/ppp0/statistics/rx_bytes", "9876\n");
+    try fx.writeFile("class/net/ppp0/statistics/tx_bytes", "4321\n");
     try fx.writeFile("class/backlight/panel0/brightness", "40\n");
 
     const sources = Sources{ .sysfs_root = fx.root };
@@ -354,9 +370,24 @@ test "Sources fixture: full BQ268-shaped tree populates all fields" {
     try std.testing.expectEqual(@as(?bool, true), s.wlan_up);
     try std.testing.expectEqual(@as(?u64, 1234567), s.wlan_rx);
     try std.testing.expectEqual(@as(?u64, 89012), s.wlan_tx);
-    try std.testing.expectEqual(@as(?bool, false), s.rmnet_up);
-    try std.testing.expectEqual(@as(?u64, 9876), s.rmnet_rx);
-    try std.testing.expectEqual(@as(?u64, 4321), s.rmnet_tx);
+    try std.testing.expectEqual(@as(?bool, false), s.cell_up);
+    try std.testing.expectEqual(@as(?u64, 9876), s.cell_rx);
+    try std.testing.expectEqual(@as(?u64, 4321), s.cell_tx);
+}
+
+test "Sources fixture: falls back to /sys/class/leds/lcd-bl when no backlight class" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    // No /sys/class/backlight/ at all — only the LED path (matches BQ268).
+    try fx.writeFile("class/leds/lcd-bl/brightness", "20\n");
+
+    const sources = Sources{ .sysfs_root = fx.root };
+    const s = sources.sample();
+
+    try std.testing.expectEqual(@as(?i64, 20), s.bl);
+    try std.testing.expectEqual(@as(?bool, true), s.screen_on);
 }
 
 test "Sources fixture: backlight auto-discovery picks first non-dotfile entry" {

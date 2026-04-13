@@ -59,9 +59,9 @@ pub fn format(out: []u8, rec: Record) ![]const u8 {
     try writeOptBool(&w, "wlan_up", rec.sample.wlan_up);
     try writeOptU64(&w, "wlan_rx", rec.sample.wlan_rx);
     try writeOptU64(&w, "wlan_tx", rec.sample.wlan_tx);
-    try writeOptBool(&w, "rmnet_up", rec.sample.rmnet_up);
-    try writeOptU64(&w, "rmnet_rx", rec.sample.rmnet_rx);
-    try writeOptU64(&w, "rmnet_tx", rec.sample.rmnet_tx);
+    try writeOptBool(&w, "cell_up", rec.sample.cell_up);
+    try writeOptU64(&w, "cell_rx", rec.sample.cell_rx);
+    try writeOptU64(&w, "cell_tx", rec.sample.cell_tx);
     try w.writeAll("}\n");
     return w.buf[0..w.len];
 }
@@ -114,9 +114,9 @@ test "format emits optional fields when present" {
         .wlan_up = true,
         .wlan_rx = 1234567,
         .wlan_tx = 89012,
-        .rmnet_up = false,
-        .rmnet_rx = 9876,
-        .rmnet_tx = 4321,
+        .cell_up = false,
+        .cell_rx = 9876,
+        .cell_tx = 4321,
     };
     const status = "Discharging";
     @memcpy(sample.batt_status_buf[0..status.len], status);
@@ -133,7 +133,7 @@ test "format emits optional fields when present" {
     try std.testing.expect(std.mem.indexOf(u8, line, "\"i_ua\":0") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"batt_status\":\"Discharging\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"screen_on\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, line, "\"rmnet_up\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"cell_up\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"src\":\"watchdog\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"wlan_rx\":1234567") != null);
 }
