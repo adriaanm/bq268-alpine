@@ -26,7 +26,7 @@ status_wifi() {
 status_modem() {
     # Cache modem info (qmicli is slow, ~200ms per call)
     local nas
-    nas=$(qmicli -d msmipc://0 --nas-get-serving-system 2>&1)
+    nas=$(qmicli -p -d msmipc://0 --nas-get-serving-system 2>&1)
     if echo "$nas" | grep -q "'registered'"; then
         MODEM_REG=1
         MODEM_NET=$(echo "$nas" | sed -n "s/.*Description: '\(.*\)'/\1/p")
@@ -40,7 +40,7 @@ status_modem() {
 
     # Signal strength
     local sig
-    sig=$(qmicli -d msmipc://0 --nas-get-signal-strength 2>&1)
+    sig=$(qmicli -p -d msmipc://0 --nas-get-signal-strength 2>&1)
     MODEM_DBM=$(echo "$sig" | awk '/Current:/{getline; print $NF}' | tr -d "'")
     [ "$MODEM_DBM" = "-128" ] && MODEM_DBM="--"
 

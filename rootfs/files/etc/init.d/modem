@@ -4,7 +4,7 @@ description="Modem subsystem (Q6 DSP)"
 pidfile="/run/modem.pid"
 
 depend() {
-    need rmt-storage
+    need rmt-storage qmi-proxy
     after modules
 }
 
@@ -22,10 +22,20 @@ start() {
         --pidfile "$pidfile" \
         --exec /bin/sh -- -c '
             exec 3< /dev/subsys_modem
-            # Poll for QMI DMS service ready (timeout 15s)
+            # Poll DMS readiness without subscribing to indications.
+            # We wait for qmi-proxy to be up and then route through it
+            # (qmicli -p) so each failing retry does not leak a NAS
+            # indication subscription into msm_ipc_router (which would
+            # pile up "send_filled_buffers_to_user: Send Failed -3"
+            # drops in dmesg and stick kworker/u8:N in D state).
             w=0
-            while [ $w -lt 30 ]; do
-                qmicli -d msmipc://0 --dms-set-operating-mode=online 2>&1 | logger -t modem && break
+            while [ $w -lt 60 ]; do
+                [ -S /run/qmi-proxy ] || [ -e @qmi-proxy ] 2>/dev/null
+                if [ -x /usr/bin/qmicli ] && \
+                   qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 \
+                   | logger -t modem; then
+                    break
+                fi
                 sleep 0.5
                 w=$((w + 1))
             done

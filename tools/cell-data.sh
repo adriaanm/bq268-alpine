@@ -45,7 +45,7 @@ log() {
 }
 
 modem_mode() {
-    qmicli -d "$QMI_DEV" --dms-get-operating-mode 2>&1 | \
+    qmicli -p -d "$QMI_DEV" --dms-get-operating-mode 2>&1 | \
         sed -n "s/.*Mode: '\([^']*\)'.*/\1/p"
 }
 
@@ -66,7 +66,7 @@ modem_mode() {
 ensure_mcfg() {
     [ -f "$MCFG_PRIMARY" ] || return 0
     local list
-    list=$(qmicli -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
+    list=$(qmicli -p -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
     # Already loaded + active? No-op.
     if echo "$list" | grep -A1 "Singtel_Commercial" | grep -q "Active"; then
         return 0
@@ -74,12 +74,12 @@ ensure_mcfg() {
     # Not loaded at all? Upload both files.
     if ! echo "$list" | grep -q "Singtel_Commercial"; then
         log "loading MCFG $MCFG_PRIMARY"
-        qmicli -d "$QMI_DEV" --pdc-load-config="$MCFG_PRIMARY" 2>&1 \
+        qmicli -p -d "$QMI_DEV" --pdc-load-config="$MCFG_PRIMARY" 2>&1 \
             | tail -2 | logger -t cell-data || true
         [ -f "$MCFG_FALLBACK" ] && \
-            qmicli -d "$QMI_DEV" --pdc-load-config="$MCFG_FALLBACK" 2>&1 \
+            qmicli -p -d "$QMI_DEV" --pdc-load-config="$MCFG_FALLBACK" 2>&1 \
                 | tail -2 | logger -t cell-data || true
-        list=$(qmicli -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
+        list=$(qmicli -p -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
     fi
     # Activate Singtel by ID (parse from list).
     local id
@@ -89,7 +89,7 @@ ensure_mcfg() {
     ')
     [ -z "$id" ] && return 0
     log "activating Singtel MCFG"
-    qmicli -d "$QMI_DEV" --pdc-activate-config="software,$id" 2>&1 \
+    qmicli -p -d "$QMI_DEV" --pdc-activate-config="software,$id" 2>&1 \
         | tail -2 | logger -t cell-data || true
     # Activation triggers modem internal reset; let set_online handle
     # the transient shutting-down state.
@@ -105,7 +105,7 @@ ensure_mcfg() {
 # fallback for coverage we should re-introduce it location-aware.
 ensure_rat_prefs() {
     local prefs
-    prefs=$(qmicli -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
+    prefs=$(qmicli -p -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
     if echo "$prefs" | grep -q "Mode preference: 'lte'" && \
        echo "$prefs" | grep -q "Network selection preference: 'automatic'" && \
        echo "$prefs" | grep -q "Usage preference: 'data-centric'"; then
@@ -117,7 +117,7 @@ ensure_rat_prefs() {
     # markets where 2G/3G is decommissioned. Requires the qmicli usage-pref
     # extension (libqmi commit d8995d3).
     log "enforcing lte, automatic network selection, data-centric"
-    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic,usage=data-centric' 2>&1 \
+    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic,usage=data-centric' 2>&1 \
         | logger -t cell-data || true
     return 1
 }
@@ -134,14 +134,14 @@ ensure_rat_prefs() {
 # touching the attach profile.
 ensure_wds_profile() {
     local list apn2 pdp2
-    list=$(qmicli -d "$QMI_DEV" --wds-get-profile-list=3gpp 2>&1 || true)
+    list=$(qmicli -p -d "$QMI_DEV" --wds-get-profile-list=3gpp 2>&1 || true)
     apn2=$(echo "$list" | sed -n "/\[2\] 3gpp/,/\[3\] 3gpp/ {s/.*APN: '\([^']*\)'.*/\1/p;}" | head -1)
     pdp2=$(echo "$list" | sed -n "/\[2\] 3gpp/,/\[3\] 3gpp/ {s/.*PDP type: '\([^']*\)'.*/\1/p;}" | head -1)
     if [ "$apn2" = "hicard" ] && [ "$pdp2" = "ipv4-or-ipv6" ]; then
         return 0
     fi
     log "rewriting WDS profile 2: apn=hicard, pdp=ipv4v6 (was apn='$apn2' pdp='$pdp2')"
-    qmicli -d "$QMI_DEV" --wds-modify-profile="3gpp,2,apn=hicard,pdp-type=IPV4V6" 2>&1 \
+    qmicli -p -d "$QMI_DEV" --wds-modify-profile="3gpp,2,apn=hicard,pdp-type=IPV4V6" 2>&1 \
         | logger -t cell-data || true
     return 0
 }
@@ -164,7 +164,7 @@ PRIORITY_MCCS="228 208 262 222 232 214 268 272 206 234"
 PREFERRED_LIMIT=20
 ensure_preferred_networks() {
     local have count
-    have=$(qmicli -d "$QMI_DEV" --nas-get-preferred-networks 2>&1 || true)
+    have=$(qmicli -p -d "$QMI_DEV" --nas-get-preferred-networks 2>&1 || true)
     count=$(echo "$have" | sed -n '/Preferred PLMN list/,/PCS digit status/p' \
         | grep -c "Access Technology: 'eutran'")
     # Sanity check: the target list always contains 228/02 Sunrise
@@ -209,7 +209,7 @@ ensure_preferred_networks() {
     args="${args#,}"
     [ -z "$args" ] && return 0
     log "writing preferred-networks ($n entries, priority first)"
-    qmicli -d "$QMI_DEV" --nas-set-preferred-networks="$args" 2>&1 \
+    qmicli -p -d "$QMI_DEV" --nas-set-preferred-networks="$args" 2>&1 \
         | logger -t cell-data || true
     return 0
 }
@@ -231,7 +231,7 @@ set_online() {
                 return 0 ;;
             low-power|persistent-low-power|offline)
                 log "modem $mode → online"
-                qmicli -d "$QMI_DEV" --dms-set-operating-mode=online 2>&1 \
+                qmicli -p -d "$QMI_DEV" --dms-set-operating-mode=online 2>&1 \
                     | logger -t cell-data || true
                 ;;
             shutting-down|resetting)
@@ -248,7 +248,7 @@ set_online() {
         if [ $((now - start)) -ge "$WAKE_BUDGET" ]; then
             if [ "$tried_reset" -eq 0 ]; then
                 log "wake budget (${WAKE_BUDGET}s) exhausted in mode '$mode', escalating to reset"
-                qmicli -d "$QMI_DEV" --dms-set-operating-mode=reset 2>&1 \
+                qmicli -p -d "$QMI_DEV" --dms-set-operating-mode=reset 2>&1 \
                     | logger -t cell-data || true
                 sleep "$RESET_SETTLE"
                 tried_reset=1
@@ -264,7 +264,7 @@ set_online() {
 wait_ps_attached() {
     local budget="${1:-$ATTACH_BUDGET}" elapsed=0 s
     while [ $elapsed -lt "$budget" ]; do
-        s=$(qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 || true)
+        s=$(qmicli -p -d "$QMI_DEV" --nas-get-serving-system 2>&1 || true)
         if echo "$s" | grep -q "PS: 'attached'"; then
             return 0
         fi
@@ -278,12 +278,12 @@ wait_ps_attached() {
 # Pulled after a successful attach so data-byte correlation is possible.
 log_serving() {
     local s mcc mnc rat roaming h hmcc hmnc
-    s=$(qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 || true)
+    s=$(qmicli -p -d "$QMI_DEV" --nas-get-serving-system 2>&1 || true)
     mcc=$(echo "$s" | awk -F"'" '/MCC:/ {print $2; exit}')
     mnc=$(echo "$s" | awk -F"'" '/MNC:/ {print $2; exit}')
     rat=$(echo "$s" | awk -F"'" '/Radio interfaces/{getline; print $2; exit}')
     roaming=$(echo "$s" | awk -F"'" '/Roaming status:/ {print $2; exit}')
-    h=$(qmicli -d "$QMI_DEV" --nas-get-home-network 2>&1 || true)
+    h=$(qmicli -p -d "$QMI_DEV" --nas-get-home-network 2>&1 || true)
     hmcc=$(echo "$h" | awk -F"'" '/MCC:/ {print $2; exit}')
     hmnc=$(echo "$h" | awk -F"'" '/MNC:/ {print $2; exit}')
 
@@ -330,7 +330,7 @@ partner_priority() {
 # extracting unique MCC/MNC pairs with awk.
 approved_lte_candidates() {
     local scan mcc mnc prio
-    scan=$(qmicli -d "$QMI_DEV" --nas-network-scan=lte 2>&1 || true)
+    scan=$(qmicli -p -d "$QMI_DEV" --nas-network-scan=lte 2>&1 || true)
     echo "$scan" | awk '
         /MCC:/ { match($0, /'"'"'[^'"'"']+'"'"'/); mcc=substr($0, RSTART+1, RLENGTH-2); next }
         /MNC:/ {
@@ -358,10 +358,10 @@ try_partner_attach() {
     mnc_padded=$(printf '%02d' "$mnc")
     target="${mcc}${mnc_padded}"
     log "trying manual attach to $mcc/$mnc_padded (${target})"
-    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference="lte,manual=${target}" 2>&1 \
+    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference="lte,manual=${target}" 2>&1 \
         | logger -t cell-data || true
     while [ $elapsed -lt "$PARTNER_BUDGET" ]; do
-        if qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
+        if qmicli -p -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
             return 0
         fi
         sleep 3
@@ -444,7 +444,7 @@ do_sleep() {
         return 0
     fi
     log "putting modem to low-power mode..."
-    qmicli -d "$QMI_DEV" --dms-set-operating-mode=low-power 2>&1 | logger -t cell-data
+    qmicli -p -d "$QMI_DEV" --dms-set-operating-mode=low-power 2>&1 | logger -t cell-data
     log "modem sleeping (RF off)"
 }
 
@@ -544,9 +544,9 @@ do_status() {
     fi
 
     echo "  modem: $(modem_mode)"
-    qmicli -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 | \
+    qmicli -p -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 | \
         grep -E "Mode preference|Network selection|Acquisition order" | sed 's/^[[:space:]]*/  /'
-    qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | \
+    qmicli -p -d "$QMI_DEV" --nas-get-serving-system 2>&1 | \
         grep -E "Registration|CS:|PS:|Roaming status|PLMN" | sed 's/^[[:space:]]*/  /'
 }
 

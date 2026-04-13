@@ -1,0 +1,32 @@
+#!/sbin/openrc-run
+
+# qmi-proxy: persistent QMI multiplexer.
+#
+# Holds one long-lived QmiDevice against msmipc://0 and multiplexes all
+# qmicli clients through it (clients opt in via `qmicli -p`). Libqmi
+# owns indication draining for every subscribed client, so stale
+# subscriptions from short-lived qmicli invocations no longer pile up in
+# the kernel msm_ipc_router delivery queue (see
+# `send_filled_buffers_to_user: Send Failed -3` in dmesg).
+#
+# Listens on the abstract unix socket "qmi-proxy" — no filesystem path.
+# `--no-exit` keeps the daemon alive even when no clients are
+# connected, so we don't pay reconnect/open cost on every qmicli call.
+
+description="QMI proxy (multiplexer for msmipc://0)"
+command="/usr/libexec/qmi-proxy"
+command_args="--no-exit"
+command_background=true
+pidfile="/run/qmi-proxy.pid"
+output_log="/var/log/qmi-proxy.log"
+error_log="/var/log/qmi-proxy.log"
+
+depend() {
+    need rmt-storage
+    before modem
+    # We do NOT "need modem" — the proxy is a plain unix-socket
+    # multiplexer and can (and must) start before Q6 is up, so the
+    # modem init script can route its `dms-set-operating-mode=online`
+    # readiness probe through us (qmicli -p) and not leak a NAS
+    # indication subscription per retry into msm_ipc_router.
+}

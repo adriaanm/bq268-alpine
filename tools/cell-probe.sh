@@ -21,23 +21,23 @@ probe_once() {
     ts=$(date +%Y-%m-%dT%H:%M:%S)
 
     /usr/sbin/cell-data wake >/dev/null 2>&1
-    mode=$(qmicli -d "$QMI" --dms-get-operating-mode 2>&1 | \
+    mode=$(qmicli -p -d "$QMI" --dms-get-operating-mode 2>&1 | \
         sed -n "s/.*Mode: '\([^']*\)'.*/\1/p")
 
-    serv=$(qmicli -d "$QMI" --nas-get-serving-system 2>&1 || true)
+    serv=$(qmicli -p -d "$QMI" --nas-get-serving-system 2>&1 || true)
     reg=$(echo "$serv" | sed -n "s/.*Registration state: '\([^']*\)'.*/\1/p" | head -1)
     ps=$(echo "$serv"  | sed -n "s/.*PS: '\([^']*\)'.*/\1/p" | head -1)
     sel=$(echo "$serv" | sed -n "s/.*Selected network: '\([^']*\)'.*/\1/p" | head -1)
     rat=$(echo "$serv" | sed -n "s/.*\[0\]: '\([^']*\)'.*/\1/p" | head -1)
     status=$(echo "$serv" | sed -n "s/.*Status: '\([^']*\)'.*/\1/p" | head -1)
 
-    rsrp=$(qmicli -d "$QMI" --nas-get-signal-strength 2>&1 | \
+    rsrp=$(qmicli -p -d "$QMI" --nas-get-signal-strength 2>&1 | \
         sed -n "/^Current:/,/^[A-Z]/ p" | \
         sed -n "s/.*'\(-[0-9]*\) dBm'.*/\1/p" | head -1)
     [ -z "$rsrp" ] && rsrp=unknown
 
     local eps
-    eps=$(qmicli -d "$QMI" --uim-read-transparent=0x3F00,0x7FFF,0x6FE3 2>&1 \
+    eps=$(qmicli -p -d "$QMI" --uim-read-transparent=0x3F00,0x7FFF,0x6FE3 2>&1 \
           | grep -c ':')
     local ever=no
     [ "$eps" -gt 1 ] && ever=yes
@@ -48,9 +48,9 @@ probe_once() {
     if [ "$ps" = "attached" ]; then
         {
             echo "=== $ts PS ATTACHED — snapshot ==="
-            qmicli -d "$QMI" --nas-get-serving-system 2>&1
-            qmicli -d "$QMI" --nas-get-signal-info 2>&1
-            qmicli -d "$QMI" --nas-get-rf-band-info 2>&1
+            qmicli -p -d "$QMI" --nas-get-serving-system 2>&1
+            qmicli -p -d "$QMI" --nas-get-signal-info 2>&1
+            qmicli -p -d "$QMI" --nas-get-rf-band-info 2>&1
         } >> "${LOG}.attached"
     fi
 }

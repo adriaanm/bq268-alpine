@@ -89,8 +89,8 @@ def modem_info(force=False):
     if not force and time.time() - _modem_cache_time < 10:
         return _modem_cache
 
-    nas = run("qmicli -d msmipc://0 --nas-get-serving-system 2>&1", timeout=4)
-    sig = run("qmicli -d msmipc://0 --nas-get-signal-strength 2>&1", timeout=4)
+    nas = run("qmicli -p -d msmipc://0 --nas-get-serving-system 2>&1", timeout=4)
+    sig = run("qmicli -p -d msmipc://0 --nas-get-signal-strength 2>&1", timeout=4)
 
     registered = "'registered'" in nas
 

@@ -16,9 +16,11 @@ install -D -m 755 "$SCRIPT_DIR/tools/libqmi/qmi-proxy" "$ROOTFS/usr/libexec/qmi-
 # OpenRC init scripts
 install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/rmt-storage" "$ROOTFS/etc/init.d/rmt-storage"
 install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/modem"       "$ROOTFS/etc/init.d/modem"
+install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/qmi-proxy"   "$ROOTFS/etc/init.d/qmi-proxy"
 
 chroot "$ROOTFS" /usr/bin/qemu-arm-static /bin/sh -c '
 rc-update add rmt-storage default
 rc-update add modem default
+rc-update add qmi-proxy default
 '
-echo "  rmt-storage + modem services installed (auto-start in default runlevel)"
+echo "  rmt-storage + modem + qmi-proxy services installed (auto-start in default runlevel)"
