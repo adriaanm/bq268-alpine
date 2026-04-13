@@ -83,8 +83,8 @@ build-wata-metricsd:
 test-wata-metricsd:
     cd tools/wata-metricsd && {{zig}} build test --summary all
 
-# host-side end-to-end smoke test: build native, run with /tmp paths,
-# send 3 ticks, verify JSONL output, clean up
+# host-side end-to-end smoke test: build native, run with /tmp paths and
+# --max-iters=3 (clean exit, no kill), send 3 ticks, verify JSONL output
 smoke-wata-metricsd:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -92,13 +92,11 @@ smoke-wata-metricsd:
     {{zig}} build
     SMOKEDIR=$(mktemp -d -t wata-metricsd-smoke.XXXXXX)
     trap 'rm -rf "$SMOKEDIR"' EXIT
-    ./zig-out/bin/wata-metricsd --tick="$SMOKEDIR/wata.tick" --log="$SMOKEDIR/log" >"$SMOKEDIR/stderr.log" 2>&1 &
+    ./zig-out/bin/wata-metricsd --tick="$SMOKEDIR/wata.tick" --log="$SMOKEDIR/log" --max-iters=3 >"$SMOKEDIR/stderr.log" 2>&1 &
     PID=$!
-    sleep 0.3
-    python3 scripts/send-tick.py --path "$SMOKEDIR/wata.tick" --count 3 --interval-ms 50
     sleep 0.2
-    kill $PID 2>/dev/null || true
-    wait $PID 2>/dev/null || true
+    python3 scripts/send-tick.py --path "$SMOKEDIR/wata.tick" --count 3 --interval-ms 30
+    wait $PID
     LINES=$(wc -l <"$SMOKEDIR/log/current.jsonl")
     echo "got $LINES JSONL lines:"
     cat "$SMOKEDIR/log/current.jsonl"

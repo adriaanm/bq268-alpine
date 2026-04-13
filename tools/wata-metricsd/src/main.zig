@@ -28,6 +28,7 @@ var log_dir_buf: [256:0]u8 = undefined;
 pub fn main(init: std.process.Init.Minimal) !u8 {
     var tick_path: [:0]const u8 = DEFAULT_TICK_PATH;
     var log_dir: [:0]const u8 = DEFAULT_LOG_DIR;
+    var max_iters: u64 = 0; // 0 = unlimited
 
     var it = init.args.iterate();
     _ = it.next(); // skip argv[0]
@@ -36,11 +37,14 @@ pub fn main(init: std.process.Init.Minimal) !u8 {
             tick_path = copyZ(&tick_path_buf, val) orelse return 2;
         } else if (parseFlag(arg, "--log=")) |val| {
             log_dir = copyZ(&log_dir_buf, val) orelse return 2;
+        } else if (parseFlag(arg, "--max-iters=")) |val| {
+            max_iters = std.fmt.parseInt(u64, val, 10) catch return 2;
         } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
             const help =
-                "wata-metricsd [--tick=PATH] [--log=DIR]\n" ++
-                "  --tick PATH  AF_UNIX SOCK_DGRAM heartbeat socket (default /run/wata.tick)\n" ++
-                "  --log DIR    JSONL output directory (default /var/log/metrics)\n";
+                "wata-metricsd [--tick=PATH] [--log=DIR] [--max-iters=N]\n" ++
+                "  --tick PATH       AF_UNIX SOCK_DGRAM heartbeat socket (default /run/wata.tick)\n" ++
+                "  --log DIR         JSONL output directory (default /var/log/metrics)\n" ++
+                "  --max-iters N     stop after N event-loop iterations (0 = unlimited, default)\n";
             _ = linux.write(1, help.ptr, help.len);
             return 0;
         }
@@ -76,8 +80,25 @@ pub fn main(init: std.process.Init.Minimal) !u8 {
     };
     defer _ = linux.close(wd_fd);
 
+    const sig_fd = installSignalfd() catch {
+        const m = "wata-metricsd: signalfd setup failed\n";
+        _ = linux.write(2, m.ptr, m.len);
+        return 22;
+    };
+    defer _ = linux.close(sig_fd);
+
     const sources = Sources{};
-    return runLoop(&sink, sources, tick_fd, wd_fd);
+    return runLoop(&sink, sources, tick_fd, wd_fd, sig_fd, max_iters);
+}
+
+/// Block SIGTERM/SIGINT and route them to a signalfd so the event loop
+/// wakes cleanly via poll() instead of via an async signal handler.
+fn installSignalfd() !linux.fd_t {
+    var mask = posix.sigemptyset();
+    posix.sigaddset(&mask, .TERM);
+    posix.sigaddset(&mask, .INT);
+    posix.sigprocmask(linux.SIG.BLOCK, &mask, null);
+    return try posix.signalfd(-1, &mask, linux.SFD.CLOEXEC | linux.SFD.NONBLOCK);
 }
 
 fn parseFlag(arg: []const u8, prefix: []const u8) ?[]const u8 {
@@ -158,15 +179,24 @@ fn createWatchdog(interval_sec: isize) !linux.fd_t {
     return fd;
 }
 
-fn runLoop(sink: *Sink, sources: Sources, tick_fd: linux.fd_t, wd_fd: linux.fd_t) !u8 {
+fn runLoop(
+    sink: *Sink,
+    sources: Sources,
+    tick_fd: linux.fd_t,
+    wd_fd: linux.fd_t,
+    sig_fd: linux.fd_t,
+    max_iters: u64,
+) !u8 {
     var fds = [_]linux.pollfd{
         .{ .fd = tick_fd, .events = linux.POLL.IN, .revents = 0 },
         .{ .fd = wd_fd, .events = linux.POLL.IN, .revents = 0 },
+        .{ .fd = sig_fd, .events = linux.POLL.IN, .revents = 0 },
     };
 
     var seq: u32 = 0;
     var prev_mono: u64 = 0;
     var line_buf: [1024]u8 = undefined;
+    var iters: u64 = 0;
 
     while (true) {
         const pr = linux.poll(&fds, fds.len, -1);
@@ -174,6 +204,12 @@ fn runLoop(sink: *Sink, sources: Sources, tick_fd: linux.fd_t, wd_fd: linux.fd_t
             .SUCCESS => {},
             .INTR => continue,
             else => return 30,
+        }
+
+        if (fds[2].revents & linux.POLL.IN != 0) {
+            const m = "wata-metricsd: caught signal, exiting cleanly\n";
+            _ = linux.write(2, m.ptr, m.len);
+            return 0;
         }
 
         var ticks: u32 = 0;
@@ -230,5 +266,8 @@ fn runLoop(sink: *Sink, sources: Sources, tick_fd: linux.fd_t, wd_fd: linux.fd_t
 
         const line = jsonl.format(&line_buf, rec) catch continue;
         sink.write(line) catch continue;
+
+        iters += 1;
+        if (max_iters != 0 and iters >= max_iters) return 0;
     }
 }
