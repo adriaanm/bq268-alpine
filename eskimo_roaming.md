@@ -1,3 +1,16 @@
+# Eskimo eSIM roaming partners
+
+Source: https://www.eskimo.travel/en/network-coverage (extracted 2026-04-13).
+
+Eskimo is an MVNO on Singtel (home IMSI 525-01). Each country lists the
+single approved partner network and the maximum RAT advertised. Consumed
+by `tools/gen-roaming-partners.py`, which joins each entry with
+`tools/data/mcc-mnc-list.json` (vendored `pbakondy/mcc-mnc-list`) to
+produce `rootfs/files/etc/cellular/roaming-partners` with real MCC/MNC
+pairs. Re-run `just gen-roaming-partners` after editing this file.
+
+## Partners
+
 - Albania
   - Vodafone 4G
 - Anguilla

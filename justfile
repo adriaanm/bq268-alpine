@@ -125,6 +125,12 @@ build-rootfs: extract-firmware patch-modem build-tools
 
 # ── Cellular ─────────────────────────────────────────────────────────────
 
+# Regenerate rootfs/files/etc/cellular/roaming-partners from
+# eskimo_roaming.md + tools/data/mcc-mnc-list.json. Re-run after
+# editing the Eskimo list or bumping the vendored MCC/MNC database.
+gen-roaming-partners:
+    python3 tools/gen-roaming-partners.py
+
 # Push the current cell-data.sh to the device in-place (no rebuild).
 push-cell-data:
     scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data

@@ -1,134 +1,177 @@
-# Approved roaming partners for the device's home SIM.
+# Approved roaming partners — AUTO-GENERATED, DO NOT EDIT.
 #
-# Format:  MCC MNC  COUNTRY  OPERATOR  [PRIORITY]
+# Regenerate with: just gen-roaming-partners
+# (runs tools/gen-roaming-partners.py)
 #
-# MCC/MNC are the visited network identifiers as reported by
-# `qmicli --nas-get-serving-system` and `--nas-network-scan=lte`.
-# COUNTRY is an ISO-3166-1 alpha-2 code, used only to group the
-# list for humans; the script matches purely on MCC/MNC.
-# PRIORITY (optional, lower = tried first) orders partners when
-# multiple are visible on the same scan. Defaults to 100.
+# Provenance:
+#   - Partner list:  eskimo_roaming.md (extracted from
+#                    https://www.eskimo.travel/en/network-coverage)
+#   - MCC/MNC db:    tools/data/mcc-mnc-list.json
+#                    (vendored pbakondy/mcc-mnc-list)
+#   - Home SIM:      Eskimo eSIM, MVNO on Singtel IMSI 525-01
 #
-# When `cell-data wake` cannot attach in automatic mode within its
-# budget, it does a `nas-network-scan=lte` and tries manual attach
-# to each visible partner in priority order. Entries not in this
-# file are never tried (prevents accidental roaming on networks
-# without a billing agreement).
+# Format: MCC MNC COUNTRY OPERATOR PRIORITY
+# PRIORITY is fixed at 10 (unused — Eskimo names one partner
+# per country; multiple MCC/MNC rows mean the brand spans
+# several network codes and we try all of them).
 #
-# Home SIM: Singtel SG (MCC=525 MNC=01) — Singtel ReadyRoam partner
-# list, LTE-only. Source: https://www.singtel.com/ (verify before
-# each trip — agreements change).
+# cell-data wake uses this as a fallback after automatic
+# attach fails: `nas-network-scan=lte`, filter visible
+# networks against the pairs below, attach manually in
+# order. Non-partner networks are never tried.
 
-# MCC MNC COUNTRY OPERATOR                  PRIORITY
-
-# Singapore (home)
-525  01  SG  Singtel                         1
-
-# Switzerland
-228  02  CH  Sunrise                         10
-
-# France
-208  01  FR  Orange                          10
-208  10  FR  SFR                             20
-208  20  FR  Bouygues                        30
-
-# Germany
-262  01  DE  Telekom                         10
-262  02  DE  Vodafone                        20
-262  03  DE  Telefonica-O2                   30
-
-# United Kingdom
-234  10  GB  O2                              10
-234  15  GB  Vodafone                        20
-234  30  GB  EE                              30
-
-# Italy
-222  01  IT  TIM                             10
-222  10  IT  Vodafone                        20
-
-# Spain
-214  01  ES  Vodafone                        10
-214  03  ES  Orange                          20
-214  07  ES  Movistar                        30
-
-# Netherlands
-204  08  NL  KPN                             10
-204  04  NL  Vodafone                        20
-
-# Belgium
-206  01  BE  Proximus                        10
-206  10  BE  Orange                          20
-
-# Austria
-232  01  AT  A1                              10
-232  03  AT  Magenta                         20
-
-# Ireland
-272  01  IE  Vodafone                        10
-272  02  IE  Three                           20
-
-# Portugal
-268  06  PT  Vodafone                        10
-268  01  PT  MEO                             20
-
-# Denmark
-238  01  DK  TDC                             10
-238  20  DK  Telia                           20
-
-# Sweden
-240  01  SE  Telia                           10
-240  07  SE  Tele2                           20
-
-# Norway
-242  01  NO  Telenor                         10
-242  02  NO  Telia                           20
-
-# Finland
-244  91  FI  Telia                           10
-244  05  FI  Elisa                           20
-
-# Poland
-260  01  PL  Plus                            10
-260  02  PL  T-Mobile                        20
-260  03  PL  Orange                          30
-
-# Czech Republic
-230  01  CZ  T-Mobile                        10
-230  02  CZ  O2                              20
-
-# United States
-310  260 US  T-Mobile                        10
-310  410 US  AT-T                            20
-
-# Canada
-302  220 CA  Telus                           10
-302  610 CA  Bell                            20
-302  720 CA  Rogers                          30
-
-# Australia
-505  01  AU  Telstra                         10
-505  02  AU  Optus                           20
-
-# Malaysia
-502  12  MY  Maxis                           10
-502  13  MY  Celcom                          20
-
-# Indonesia
-510  10  ID  Telkomsel                       10
-510  11  ID  XL                              20
-
-# Thailand
-520  03  TH  AIS                             10
-520  00  TH  TrueMove                        20
-
-# Hong Kong
-454  00  HK  CSL                             10
-454  03  HK  3                               20
-
-# Japan
-440  10  JP  NTT-DoCoMo                      10
-440  20  JP  SoftBank                        20
-
-# South Korea
-450  05  KR  SKT                             10
-450  08  KR  KT                              20
+# MCC MNC COUNTRY OPERATOR                   PRIORITY
+424  03  AE  du                             10
+344  920 AG  FLOW                           10
+365  840 AI  FLOW                           10
+276  01  AL  ONE                            10
+276  02  AL  Vodafone                       10
+283  01  AM  Beeline                        10
+722  010 AR  Movistar                       10
+232  03  AT  Magenta                        10
+505  02  AU  Optus                          10
+505  17  AU  Optus                          10
+363  02  AW  Digicel                        10
+400  02  AZ  Bakcell                        10
+218  90  BA  BH-Mobile                      10
+470  03  BD  Banglalink                     10
+206  01  BE  Proximus                       10
+613  02  BF  Orange                         10
+426  01  BH  Batelco                        10
+616  03  BJ  MTN                            10
+528  11  BN  DST                            10
+724  06  BR  Vivo                           10
+724  10  BR  Vivo                           10
+724  11  BR  Vivo                           10
+724  23  BR  Vivo                           10
+652  01  BW  Mascom                         10
+302  720 CA  Rogers-Wireless                10
+629  01  CG  Airtel                         10
+228  02  CH  Sunrise                        10
+730  02  CL  Movistar                       10
+624  01  CM  MTN-Cameroon                   10
+460  00  CN  China-Mobile                   10
+460  01  CN  China-Unicom                   10
+460  11  CN  China-Telecom                  10
+460  15  CN  China-Broadnet                 10
+732  123 CO  Movistar                       10
+230  01  CZ  T-Mobile                       10
+230  07  CZ  T-Mobile                       10
+262  02  DE  Vodafone                       10
+262  09  DE  Vodafone                       10
+238  20  DK  Telia                          10
+370  01  DO  Altice                         10
+740  00  EC  Movistar                       10
+248  01  EE  Telia                          10
+602  01  EG  Orange                         10
+214  07  ES  Movistar                       10
+244  36  FI  Telia-/-DNA                    10
+244  91  FI  Telia                          10
+542  01  FJ  Vodafone                       10
+208  20  FR  Bouygues                       10
+208  88  FR  Bouygues                       10
+628  03  GA  Airtel                         10
+234  03  GB  Airtel-Vodafone                10
+234  15  GB  Vodafone-UK                    10
+282  04  GE  Beeline                        10
+234  55  GG  Sure-Mobile                    10
+620  02  GH  Vodafone                       10
+266  01  GI  GibTel                         10
+202  01  GR  Cosmote                        10
+202  02  GR  Cosmote                        10
+454  12  HK  CMCC-HK                        10
+219  01  HR  HT-HR                          10
+216  30  HU  Telekom                        10
+510  10  ID  Telkomsel                      10
+272  01  IE  Vodafone                       10
+425  02  IL  Cellcom                        10
+234  58  IM  Pronto-GSM                     10
+405  840 IN  Jio                            10
+405  854 IN  Jio                            10
+405  855 IN  Jio                            10
+405  856 IN  Jio                            10
+274  01  IS  Síminn                         10
+222  88  IT  WINDTRE                        10
+222  99  IT  WINDTRE                        10
+234  03  JE  Airtel-Vodafone                10
+234  50  JE  JT                             10
+234  55  JE  Sure-Mobile                    10
+416  01  JO  zain-JO                        10
+440  20  JP  SoftBank                       10
+440  21  JP  SoftBank                       10
+441  01  JP  SoftBank                       10
+639  03  KE  Airtel                         10
+437  01  KG  Beeline                        10
+437  09  KG  O!                             10
+456  01  KH  Cellcard                       10
+456  18  KH  Cellcard                       10
+450  05  KR  SKTelecom                      10
+450  12  KR  SKTelecom                      10
+419  03  KW  Ooredoo                        10
+401  01  KZ  Beeline                        10
+457  01  LA  LaoTel                         10
+295  05  LI  FL1                            10
+413  01  LK  SLTMobitel                     10
+413  12  LK  SLTMobitel                     10
+246  01  LT  Telia                          10
+270  01  LU  POST                           10
+247  01  LV  LMT                            10
+259  01  MD  Orange                         10
+297  02  ME  telekom.me                     10
+646  01  MG  Airtel                         10
+294  03  MK  A1-MK                          10
+428  99  MN  Mobicom                        10
+278  01  MT  Epic                           10
+617  10  MU  Emtel                          10
+472  01  MV  Dhiraagu                       10
+650  10  MW  Airtel                         10
+334  050 MX  ATandT-/-Unefon                10
+334  090 MX  ATandT                         10
+502  13  MY  Celcom                         10
+502  16  MY  DiGi                           10
+502  19  MY  Celcom                         10
+643  04  MZ  Vodacom                        10
+621  20  NG  Airtel                         10
+204  04  NL  Vodafone                       10
+242  02  NO  Telia                          10
+429  02  NP  Ncell                          10
+530  01  NZ  Vodafone                       10
+422  02  OM  Omantel                        10
+422  06  OM  Vodafone                       10
+714  01  PA  Cable-and-Wireless             10
+716  06  PE  Movistar                       10
+537  03  PG  Digicel                        10
+515  02  PH  Globe                          10
+410  06  PK  Telenor                        10
+260  02  PL  T-Mobile                       10
+260  34  PL  NetWorkS!                      10
+330  110 PR  Claro-Puerto-Rico              10
+268  01  PT  Vodafone                       10
+427  02  QA  Vodafone                       10
+226  01  RO  Vodafone                       10
+250  01  RU  MTS                            10
+633  10  SC  Airtel                         10
+240  01  SE  Telia                          10
+525  01  SG  SingTel                        10
+293  40  SI  A1-SI                          10
+231  02  SK  Telekom                        10
+706  04  SV  Movistar                       10
+653  10  SZ  MTN-Eswatini                   10
+622  01  TD  Airtel                         10
+520  03  TH  AIS                            10
+520  15  TH  AIS-T-/-NT-Mobile              10
+436  01  TJ  Tcell                          10
+436  02  TJ  Tcell                          10
+605  03  TN  Ooredoo                        10
+286  02  TR  Vodafone                       10
+286  03  TR  Türk-Telekom                   10
+466  92  TW  Chunghwa                       10
+640  05  TZ  Airtel                         10
+255  02  UA  Kyivstar                       10
+255  03  UA  Kyivstar                       10
+310  410 US  ATandT                         10
+313  100 US  FirstNet                       10
+748  07  UY  Movistar                       10
+434  04  UZ  Beeline                        10
+655  01  ZA  Vodacom                        10
+645  01  ZM  Airtel                         10
