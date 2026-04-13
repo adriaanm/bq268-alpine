@@ -97,8 +97,8 @@ Install as `/usr/sbin/wata-metricsd` via `build-rootfs.sh`. OpenRC service in `r
 | `screen_on`    | derived: `bl > 0 && bl_power == 0`                 |  |
 | `wlan_up`      | `/sys/class/net/wlan0/operstate == "up"`           |  |
 | `wlan_rx/tx`   | `/sys/class/net/wlan0/statistics/{rx,tx}_bytes`    | cumulative |
-| `rmnet_up`     | `/sys/class/net/rmnet_data0/operstate`             | exact iface name TBC |
-| `rmnet_rx/tx`  | same pattern                                       | cumulative |
+| `cell_up`      | `/sys/class/net/ppp0/operstate == "up"`            | PPP over SMD, not rmnet |
+| `cell_rx/tx`   | `/sys/class/net/ppp0/statistics/{rx,tx}_bytes`     | cumulative |
 | `ts_mono_ns`   | `clock_gettime(CLOCK_BOOTTIME)`                    | for dt integration |
 | `ts_wall`      | `clock_gettime(CLOCK_REALTIME)`                    | for human correlation |
 
@@ -112,7 +112,7 @@ Byte counters are logged raw and cumulative; the analyzer computes per-interval 
  "v_uv":3821000, "i_ua":0, "capacity":67, "batt_status":"Discharging",
  "bl":40, "screen_on":true,
  "wlan_up":true, "wlan_rx":1234567, "wlan_tx":89012,
- "rmnet_up":true, "rmnet_rx":9876, "rmnet_tx":4321}
+ "cell_up":true, "cell_rx":9876, "cell_tx":4321}
 ```
 
 - `src`: `"tick"` when woken by wata, `"watchdog"` when woken by timerfd, `"both"` if both fds were ready in the same `poll()`.
@@ -145,7 +145,7 @@ Byte counters are logged raw and cumulative; the analyzer computes per-interval 
 
 ## Open questions
 
-- Exact rmnet interface name — check on a device with PPP up.
+- ~~Exact rmnet interface name~~ — resolved: **no rmnet on this hardware**. Cellular is PPP over SMD (see `docs/modem_data.md`), iface is `ppp0`. Sources default `cell_iface = "ppp0"`.
 - Do we want `phase=1` (post-render) ticks from wata later? Defer until v1 data shows whether the post-poll-only cadence smears render-vs-network too much.
 - If wata starts *before* the sampler, its `sendto()` gets `ECONNREFUSED` and drops ticks until the sampler is up. Acceptable for v1; the sampler should start early in the OpenRC ordering regardless.
 

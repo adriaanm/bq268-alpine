@@ -22,7 +22,7 @@
   - [ ] On-device cellular validation: requires `cell-data up` to actually attach (modem was `not-registered-searching` during initial test). When `ppp0` exists, re-run smoke and confirm `cell_up`/`cell_rx`/`cell_tx` populate and grow under traffic.
   - [x] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
   - [x] Wire into rootfs build: `rootfs/16-wata-metricsd.sh` installs the binary + service, and `just build-tools` now depends on `build-wata-metricsd` so a full rebuild picks it up automatically
-  - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)
+  - [x] ~~Verify `/sys/class/net/rmnet_data0` is the right iface name on device~~ — resolved: no rmnet on this hardware, cellular is PPP over SMD (`ppp0`). `cell_iface` default is `ppp0`; planning doc + code + schema updated.
   - [x] Fixture-based integration tests for `sources.zig` (3 tests under `/tmp`, exercising the full BQ268-shaped sysfs tree, backlight auto-discovery, and `bl=0 → screen_on=false`). Caught and fixed a latent alignment bug in `findFirstBacklight`'s `getdents64` buffer.
 - [ ] Dedicated `wata` user — wata currently runs as root via system-menu → `/opt/wata/start.sh`. Create an unprivileged `wata` user in the rootfs build and drop privs before `exec`-ing `wata-fb`. Dependency audit for group membership:
   - `video` — `/dev/fb0` (framebuffer writes)
