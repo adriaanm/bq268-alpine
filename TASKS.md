@@ -35,6 +35,20 @@
 - [x] eSIM provisioning — **Complete.** Full pipeline: lpac → lpac-qmi-wrapper → qmi-send-apdu → QMI UIM → eUICC. Eskimo eSIM provisioned, modem registered. All 3 firmware patches required (`tools/patch-modem-b12.py`). See `docs/esim_provision.md`.
 - [ ] Walkie-talkie app — The actual application. LVGL or SDL2 on fbdev, ALSA audio, Opus codec, evdev input, QMI/ModemManager for cellular.
 
+### Cellular data hardening / optimization
+
+Discovered while validating `wata-metricsd` cellular field reads (2026-04-13). The modem hardware and SIM are fine — Swiss LTE coverage is excellent (Swisscom/Salt/Sunrise all `available, roaming, not-forbidden` on a network scan, RSSI -77 dBm on UMTS-900) — but the modem takes minutes-to-never to attach because of how it's configured.
+
+**Root cause**: the modem's default `system-selection-preference` has acquisition order `cdma-1x, cdma-1xevdo, gsm, umts, lte, td-scdma` — **LTE is last**. The modem finds UMTS-900 first (Salt, MCC=228 MNC=03), gets `WCDMA Status: limited` because the SIM (Singtel, MCC=525 MNC=1) isn't allowed PS attach there, and parks on it without ever trying LTE. The CLAUDE.md hardware spec says "4G LTE data-only" but the actual config doesn't enforce that.
+
+- [ ] **Force LTE-only mode at cellular bringup** — `qmicli -d msmipc://0 --nas-set-system-selection-preference='lte,automatic'` puts mode-pref=lte and acquisition order with LTE first. Tested live: prefs apply immediately but the modem needs a reset for it to take effect (qmicli prints "replug your device"). Wire this into `tools/cell-data.sh` `do_wake` so every wake configures it before waiting for PS attach.
+- [ ] **Persist mode preference across modem resets** — investigate whether mode-pref survives a `dms-set-operating-mode=reset` cycle and across full device reboots, or whether we need to re-apply it every boot from a systemd/openrc oneshot. The "replug your device" hint suggests the QMI setting is volatile until a power cycle.
+- [ ] **Robust modem state-machine in `cell-data.sh`** — `do_wake` got into a `mode=offline / InvalidTransition` corner during testing where `--dms-set-operating-mode=online` kept failing. The script needs: a) detect modem is in `offline` and retry with backoff, b) escalate to `--dms-set-operating-mode=reset` and wait long enough (≥10s) for the modem subsystem to come back, c) bail with a useful error after a bounded attempt count instead of returning a confusing state.
+- [ ] **Roaming detection and logging** — when registered, log MCC/MNC + home network + roaming bool to `/var/log/cellular.log` so we can correlate cellular data-bytes-per-day with roaming periods. The HPLMN check is `nas-get-home-network` vs `nas-get-serving-system MCC/MNC`.
+- [ ] **LTE band preference review** — current default is `1, 3, 5, 7, 8, 20, 28, 39, 40` (+ extended `66, 71, 252, 255`). For European/Swiss roaming the critical bands are B3 (1800), B7 (2600), B20 (800), B28 (700) — all present. For US travel B12/B13/B17/B66 matter; B66 is in the extended list. Consider whether dropping unused bands (e.g. 39, 40 = TD-LTE Asia, 252/255 = misc) speeds up scan time.
+- [ ] **Cellular bringup smoke test** — script: ensure modem online, set mode-pref=lte, wait for `Registration state: registered` + `PS: attached` with a 90 s budget, then `pppd call cellular`, then ping. Run from `just smoke-cellular` against the device. Include in CI for the cellular-ppp branch.
+- [ ] **Document the cellular bringup chain** — `docs/modem_data.md` describes the data path but not the registration prerequisites. Add a section: required QMI prefs, expected serving-system fields, recovery steps when stuck `not-registered-searching` or `WCDMA limited`.
+
 ## Backlog
 
 - [ ] Read-only rootfs — Production hardening. Prevents eMMC wear and corruption from hard power-off. overlayfs on tmpfs for /var, /tmp.
