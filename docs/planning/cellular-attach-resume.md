@@ -93,6 +93,57 @@ so the state machine is correct. The actual attach failure is
 downstream of the script — environmental, agreement-layer, or a
 firmware/kernel problem.
 
+## Session 2026-04-13 (session 4) — MCFG NV dissection + rat_acq_order patch
+
+Decoded the Singtel_Commercial MCFG's NV items (84 total: 22 NV by
+number, 61 NV files, 1 trailer). The key finding: the Orange-FR UMTS
+steering from session 3 is entirely explained by one 10-byte NV file,
+`/sd/rat_acq_order`:
+
+```
+Singtel:    07 03 e7 00 05 09 05 03 02 04   ← UMTS (05) first, LTE (09) second
+EU DT:      07 00 00 00 06 09 05 03 04 02 0b ← LTE (09) first
+CMCC China: 07 03 e7 00 04 09 0b 05 03       ← LTE first (with 5G)
+Singtel^:   07 03 e7 00 09 05 05 03 02 04   ← our patched: LTE first
+```
+
+Wrote `tools/patch-singtel-rat-first.py` — reads the rootfs Singtel
+MBN, byte-swaps the first two RAT values (0x05↔0x09), recomputes the
+hash segment (hash-only MBN per `gen-mcfg-mbn.py`, no signature).
+Modem accepts the patched MBN via `--pdc-load-config` and the
+config ID changes, proving hash integrity is what's validated.
+
+**Behavioural delta**: the UMTS-Orange-FR bias is gone. Unpatched MCFG
+camped on 208/01 UMTS within seconds; patched MCFG never camps on
+any UMTS cell. But it also never camps on any LTE cell — modem stays
+in `not-registered-searching` for the full 45s of polling, then
+enters `power-save`.
+
+So `rat_acq_order` **is** the steering mechanism we thought, but
+there's a **second** gate blocking non-home LTE roaming. The Singtel
+MCFG's 22 NV-by-number items are the likely location — numbers
+include 917575 (Singtel_SG name string), 197463, 262992, 262993,
+131981, 132088, 132089, 199614, 134604, 134605, ... Without the
+Qualcomm NV catalog, we can't tell which one gates LTE roaming. The
+ones with attrib 0x39 are different (rest are 0x19) — those are
+worth looking at first.
+
+**Committed**:
+- `tools/patch-singtel-rat-first.py` — one-shot MBN patcher
+- `rootfs/files/usr/share/cellular-mcfg/singtel_sg.mbn` — now the
+  LTE-first variant (overwrites the original from session 3)
+
+**Next session**:
+1. Decode the 22 NV-by-number items. Attrib 0x39 items first. Try
+   patching each one to 0/1/0xFF and testing attach behaviour —
+   bisection will find the roaming gate if one exists.
+2. Cross-reference against a known-good MCFG that DOES allow LTE
+   roaming for APAC IMSIs. `generic/apac/reliance/commerci/mcfg_sw.mbn`
+   has a different NV signature — worth diffing.
+3. Alternatively, dump `modem.bin` from a current Android phone
+   running an Eskimo eSIM. A newer Singtel MCFG variant may
+   already have the Eskimo-specific roaming gate set.
+
 ## Session 2026-04-13 (session 3) — MCFG-SW carrier profiles
 
 **The biggest finding of the whole investigation**: our modem was
