@@ -195,9 +195,10 @@ fn runLoop(
 
     var seq: u32 = 0;
     var prev_mono: u64 = 0;
-    // Latch a write failure so we warn on stderr once (which OpenRC
-    // routes to syslog) and then stay silent. Reset on next success
-    // so a transient eMMC blip can re-arm the warning.
+    // Latch a write failure so we warn on stderr once (captured by
+    // OpenRC's error_log → /var/log/wata-metricsd.log) and then stay
+    // silent. Reset on next success so a transient eMMC blip can
+    // re-arm the warning.
     var sink_warned: bool = false;
     var line_buf: [1024]u8 = undefined;
     var iters: u64 = 0;
