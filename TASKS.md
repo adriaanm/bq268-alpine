@@ -15,7 +15,8 @@
   - [x] JSONL formatter: pure `format(out, Record)` with tests for mandatory + optional fields
   - [x] Sink module: file-level open/append + size-based rotation with startup rotation for boot-cycle boundaries
   - [x] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
-  - [ ] On-device smoke test: cross-compile, scp, run as root, hit it with a test sender, verify `/var/log/metrics/current.jsonl` grows and rotates
+  - [x] Host-side smoke test (`just smoke-wata-metricsd`) — builds native, runs daemon on a temp dir, sends 3 ticks via `scripts/send-tick.py`, asserts JSONL output. End-to-end loop validated without root or device.
+  - [ ] On-device smoke test: scp, run as root, hit it with `send-tick.py` (or wait for a wata build with the heartbeat), verify `/var/log/metrics/current.jsonl` grows and rotates, confirm sysfs fields populate (battery, backlight, wlan/rmnet)
   - [x] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
   - [x] Wire into rootfs build: `rootfs/16-wata-metricsd.sh` installs the binary + service, and `just build-tools` now depends on `build-wata-metricsd` so a full rebuild picks it up automatically
   - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)

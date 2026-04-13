@@ -17,17 +17,41 @@ const jsonl = @import("jsonl.zig");
 const Sources = @import("sources.zig").Sources;
 const Sink = @import("sink.zig").Sink;
 
-const TICK_PATH: [:0]const u8 = "/run/wata.tick";
-const LOG_DIR: [:0]const u8 = "/var/log/metrics";
+const DEFAULT_TICK_PATH: [:0]const u8 = "/run/wata.tick";
+const DEFAULT_LOG_DIR: [:0]const u8 = "/var/log/metrics";
 const WATCHDOG_INTERVAL_SEC: isize = 30;
 const SOCK_PERMS: linux.mode_t = 0o662;
 
-pub fn main() !u8 {
-    const info_msg = "wata-metricsd starting: tick=" ++ TICK_PATH ++
-        " log=" ++ LOG_DIR ++ "\n";
-    _ = linux.write(2, info_msg.ptr, info_msg.len);
+var tick_path_buf: [256:0]u8 = undefined;
+var log_dir_buf: [256:0]u8 = undefined;
 
-    var sink = Sink.open(LOG_DIR, 1 << 20, 4) catch |err| {
+pub fn main(init: std.process.Init.Minimal) !u8 {
+    var tick_path: [:0]const u8 = DEFAULT_TICK_PATH;
+    var log_dir: [:0]const u8 = DEFAULT_LOG_DIR;
+
+    var it = init.args.iterate();
+    _ = it.next(); // skip argv[0]
+    while (it.next()) |arg| {
+        if (parseFlag(arg, "--tick=")) |val| {
+            tick_path = copyZ(&tick_path_buf, val) orelse return 2;
+        } else if (parseFlag(arg, "--log=")) |val| {
+            log_dir = copyZ(&log_dir_buf, val) orelse return 2;
+        } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
+            const help =
+                "wata-metricsd [--tick=PATH] [--log=DIR]\n" ++
+                "  --tick PATH  AF_UNIX SOCK_DGRAM heartbeat socket (default /run/wata.tick)\n" ++
+                "  --log DIR    JSONL output directory (default /var/log/metrics)\n";
+            _ = linux.write(1, help.ptr, help.len);
+            return 0;
+        }
+    }
+
+    var msg_buf: [512]u8 = undefined;
+    if (std.fmt.bufPrint(&msg_buf, "wata-metricsd: tick={s} log={s}\n", .{ tick_path, log_dir })) |m| {
+        _ = linux.write(2, m.ptr, m.len);
+    } else |_| {}
+
+    var sink = Sink.open(log_dir, 1 << 20, 4) catch |err| {
         const m = "wata-metricsd: sink open failed\n";
         _ = linux.write(2, m.ptr, m.len);
         return @as(u8, switch (err) {
@@ -38,7 +62,7 @@ pub fn main() !u8 {
     };
     defer sink.close();
 
-    const tick_fd = bindTickSocket(TICK_PATH) catch {
+    const tick_fd = bindTickSocket(tick_path) catch {
         const m = "wata-metricsd: tick socket bind failed\n";
         _ = linux.write(2, m.ptr, m.len);
         return 20;
@@ -54,6 +78,18 @@ pub fn main() !u8 {
 
     const sources = Sources{};
     return runLoop(&sink, sources, tick_fd, wd_fd);
+}
+
+fn parseFlag(arg: []const u8, prefix: []const u8) ?[]const u8 {
+    if (!std.mem.startsWith(u8, arg, prefix)) return null;
+    return arg[prefix.len..];
+}
+
+fn copyZ(buf: *[256:0]u8, src: []const u8) ?[:0]const u8 {
+    if (src.len >= buf.len) return null;
+    @memcpy(buf[0..src.len], src);
+    buf[src.len] = 0;
+    return buf[0..src.len :0];
 }
 
 fn bindTickSocket(path: [:0]const u8) !linux.fd_t {
