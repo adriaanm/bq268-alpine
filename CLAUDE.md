@@ -109,6 +109,16 @@ Same discipline as the kernel and lineage repos:
 
 `TASKS.md` is the single source of truth for open work. Update it as tasks are added, completed, or change status. Keep it concise — one line per task, checkbox format.
 
+### Inter-repo agent communication
+
+When work in this repo requires a change in a sibling repo (e.g. wata, libqmi, lpac), don't implement it there directly — hand off a spec the other repo's agent can pick up:
+
+1. Write the spec as a planning doc in the sibling repo under `docs/planning/<feature>.md`. State the origin (this repo), the rationale, the contract, and what the sibling must NOT do. Keep all implementation detail that belongs on *our* side in this repo, not theirs.
+2. Add a one-line task to the sibling's `TASKS.md` pointing at the planning doc.
+3. Track the our-side work in this repo's `TASKS.md` as usual.
+
+This keeps each repo's agent able to work independently from its own `TASKS.md` without needing cross-repo context.
+
 ### Git Notes
 
 - **`experiments`** — build/boot test log attached to the commit that was tested
