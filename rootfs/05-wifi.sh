@@ -10,6 +10,11 @@ install -m 755 "$SCRIPT_DIR/rootfs/files/etc/wpa_supplicant/wpa_cli.sh" "$ROOTFS
 # cell-data: start/stop cellular data session
 install -m 755 "$SCRIPT_DIR/tools/cell-data.sh" "$ROOTFS/usr/sbin/cell-data"
 
+# Approved roaming partners (Singtel ReadyRoam allowlist, LTE-only)
+install -d "$ROOTFS/etc/cellular"
+install -m 644 "$SCRIPT_DIR/rootfs/files/etc/cellular/roaming-partners" \
+    "$ROOTFS/etc/cellular/roaming-partners"
+
 # net-watchdog: catches silent WiFi drops, triggers cellular failover
 install -m 755 "$SCRIPT_DIR/rootfs/files/usr/sbin/net-watchdog" "$ROOTFS/usr/sbin/net-watchdog"
 install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/net-watchdog" "$ROOTFS/etc/init.d/net-watchdog"

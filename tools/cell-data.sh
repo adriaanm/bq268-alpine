@@ -25,10 +25,12 @@ PPP_PEER="cellular"
 STATE_FILE="/run/cell-data.state"
 FORCE_FILE="/run/cell-data.force"
 CELL_LOG="/var/log/cellular.log"
+PARTNERS_FILE="/etc/cellular/roaming-partners"
 
 # Bounded budgets — total wake+attach must fit in ~2 minutes.
 WAKE_BUDGET=20          # seconds to get modem out of transient states
-ATTACH_BUDGET=90        # seconds to wait for PS attach after online
+ATTACH_BUDGET=45        # seconds per automatic-attach attempt
+PARTNER_BUDGET=30       # seconds per manual partner-attach attempt
 PPP_BUDGET=30           # seconds for pppd to bring ppp0 up with an IP
 RESET_SETTLE=10         # seconds to wait after dms reset before polling
 
@@ -42,18 +44,24 @@ modem_mode() {
         sed -n "s/.*Mode: '\([^']*\)'.*/\1/p"
 }
 
-# Ensure LTE-only + automatic network selection. Idempotent: re-applies
-# only when current prefs differ (avoids the "replug your device" reset
-# when already correct).
-ensure_lte_prefs() {
+# Restrict to modern RATs (LTE + UMTS) with LTE preferred and
+# automatic network selection. Idempotent: re-applies only when
+# current prefs differ (avoids the "replug your device" reset when
+# already correct).
+#
+# Putting `lte` first in the qmicli arg flips the acquisition order to
+# `lte, umts, ...` — the default vendor order puts LTE last, which
+# makes the modem park on UMTS and never try LTE (see
+# docs/modem_data.md "Root cause").
+ensure_rat_prefs() {
     local prefs
     prefs=$(qmicli -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
-    if echo "$prefs" | grep -q "Mode preference: 'lte'" && \
+    if echo "$prefs" | grep -q "Mode preference: 'lte, umts'" && \
        echo "$prefs" | grep -q "Network selection preference: 'automatic'"; then
         return 0
     fi
-    log "enforcing LTE-only, automatic network selection"
-    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte,automatic' 2>&1 \
+    log "enforcing lte|umts, automatic network selection"
+    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference='lte|umts,automatic' 2>&1 \
         | logger -t cell-data || true
     # Setting is non-volatile across reboots but needs a modem reset to
     # take effect. Caller should issue a reset and wait.
@@ -145,20 +153,133 @@ log_serving() {
         "$hmcc" "$hmnc" "$roaming" >> "$CELL_LOG"
 }
 
+# Look up MCC/MNC in the approved partners file. Prints the priority
+# (lower = preferred) on match, nothing on miss. Comments and blank
+# lines are skipped. MNC is compared after stripping leading zeros on
+# both sides so "02" matches "2".
+partner_priority() {
+    local want_mcc="$1" want_mnc="$2" mcc mnc prio rest
+    [ -f "$PARTNERS_FILE" ] || return 1
+    # Normalise the lookup key
+    want_mnc=$(printf '%d' "$want_mnc" 2>/dev/null || echo "$want_mnc")
+    while read -r mcc mnc rest; do
+        case "$mcc" in ''|\#*) continue ;; esac
+        mnc=$(printf '%d' "$mnc" 2>/dev/null || echo "$mnc")
+        if [ "$mcc" = "$want_mcc" ] && [ "$mnc" = "$want_mnc" ]; then
+            # rest = "COUNTRY OPERATOR PRIORITY" — priority is the last field
+            prio=$(echo "$rest" | awk '{print $NF}')
+            case "$prio" in ''|*[!0-9]*) prio=100 ;; esac
+            echo "$prio"
+            return 0
+        fi
+    done < "$PARTNERS_FILE"
+    return 1
+}
+
+# Scan LTE, emit "MCC MNC PRIORITY" for each visible network that is in
+# the approved partners file, sorted by priority ascending.
+#
+# qmicli's scan output contains each network 3 times: in the
+# availability block, the RAT block, and the PCS block. We dedupe by
+# extracting unique MCC/MNC pairs with awk.
+approved_lte_candidates() {
+    local scan mcc mnc prio
+    scan=$(qmicli -d "$QMI_DEV" --nas-network-scan=lte 2>&1 || true)
+    echo "$scan" | awk '
+        /MCC:/ { match($0, /'"'"'[^'"'"']+'"'"'/); mcc=substr($0, RSTART+1, RLENGTH-2); next }
+        /MNC:/ {
+            match($0, /'"'"'[^'"'"']+'"'"'/); mnc=substr($0, RSTART+1, RLENGTH-2)
+            if (mcc != "") {
+                key=mcc"-"mnc
+                if (!(key in seen)) { seen[key]=1; print mcc, mnc }
+                mcc=""
+            }
+        }
+    ' | while read -r mcc mnc; do
+        prio=$(partner_priority "$mcc" "$mnc") || continue
+        printf '%s\t%s\t%s\n' "$prio" "$mcc" "$mnc"
+    done | sort -n | while read -r prio mcc mnc; do
+        printf '%s %s %s\n' "$mcc" "$mnc" "$prio"
+    done
+}
+
+try_partner_attach() {
+    local mcc="$1" mnc="$2" mnc_padded target elapsed=0
+    # qmicli's --nas-set-system-selection-preference=manual=MCCMNC
+    # expects MNC zero-padded to at least 2 digits (EU networks) or
+    # 3 (US). printf '%02d' pads shorter values and leaves longer
+    # ones unchanged.
+    mnc_padded=$(printf '%02d' "$mnc")
+    target="${mcc}${mnc_padded}"
+    log "trying manual attach to $mcc/$mnc_padded (${target})"
+    qmicli -d "$QMI_DEV" --nas-set-system-selection-preference="lte,manual=${target}" 2>&1 \
+        | logger -t cell-data || true
+    while [ $elapsed -lt "$PARTNER_BUDGET" ]; do
+        if qmicli -d "$QMI_DEV" --nas-get-serving-system 2>&1 | grep -q "PS: 'attached'"; then
+            return 0
+        fi
+        sleep 3
+        elapsed=$((elapsed + 3))
+    done
+    return 1
+}
+
 do_wake() {
-    # Prefs are persistent in modem NV, so ensure_lte_prefs is usually a
+    # Prefs are persistent in modem NV, so ensure_rat_prefs is usually a
     # no-op and does NOT force a reset. If it did change prefs, set_online
     # + reset escalation below will pick up the new config.
-    ensure_lte_prefs || true
+    ensure_rat_prefs || true
 
     set_online || return 1
 
+    # Phase 1: automatic attach (fast path when the modem picks a
+    # partner on its own — typical for home network and for visits
+    # where the strongest signal belongs to an approved partner).
     if wait_ps_attached "$ATTACH_BUDGET"; then
         log_serving
         return 0
     fi
 
-    log "warning: PS not attached after ${ATTACH_BUDGET}s — check coverage / roaming"
+    # Phase 2: scan visible LTE networks and try approved partners in
+    # priority order. Prevents accidental attach to non-partner
+    # networks (which either refuse registration outright or attach
+    # with "WCDMA limited" and block PS traffic).
+    log "automatic attach failed after ${ATTACH_BUDGET}s, scanning for approved partners"
+    local candidates
+    candidates=$(approved_lte_candidates)
+    if [ -z "$candidates" ]; then
+        log "no approved partners visible on LTE scan"
+        return 2
+    fi
+    log "approved partners visible:"
+    printf '%s\n' "$candidates" | while read -r mcc mnc prio; do
+        log "  $mcc/$mnc (priority $prio)"
+    done
+
+    # Try each in priority order. IFS-split the newline-separated
+    # candidate list so this loop runs in the current shell and
+    # `return` works from the function scope.
+    local OLDIFS="$IFS"
+    IFS='
+'
+    set -f  # disable glob expansion on positional params
+    for line in $candidates; do
+        set +f
+        IFS="$OLDIFS"
+        # shellcheck disable=SC2086
+        set -- $line
+        if try_partner_attach "$1" "$2"; then
+            log_serving
+            return 0
+        fi
+        IFS='
+'
+        set -f
+    done
+    set +f
+    IFS="$OLDIFS"
+
+    log "warning: PS not attached after automatic + partner fallback"
     return 2
 }
 

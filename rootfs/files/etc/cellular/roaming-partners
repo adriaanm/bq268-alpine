@@ -1,0 +1,134 @@
+# Approved roaming partners for the device's home SIM.
+#
+# Format:  MCC MNC  COUNTRY  OPERATOR  [PRIORITY]
+#
+# MCC/MNC are the visited network identifiers as reported by
+# `qmicli --nas-get-serving-system` and `--nas-network-scan=lte`.
+# COUNTRY is an ISO-3166-1 alpha-2 code, used only to group the
+# list for humans; the script matches purely on MCC/MNC.
+# PRIORITY (optional, lower = tried first) orders partners when
+# multiple are visible on the same scan. Defaults to 100.
+#
+# When `cell-data wake` cannot attach in automatic mode within its
+# budget, it does a `nas-network-scan=lte` and tries manual attach
+# to each visible partner in priority order. Entries not in this
+# file are never tried (prevents accidental roaming on networks
+# without a billing agreement).
+#
+# Home SIM: Singtel SG (MCC=525 MNC=01) — Singtel ReadyRoam partner
+# list, LTE-only. Source: https://www.singtel.com/ (verify before
+# each trip — agreements change).
+
+# MCC MNC COUNTRY OPERATOR                  PRIORITY
+
+# Singapore (home)
+525  01  SG  Singtel                         1
+
+# Switzerland
+228  02  CH  Sunrise                         10
+
+# France
+208  01  FR  Orange                          10
+208  10  FR  SFR                             20
+208  20  FR  Bouygues                        30
+
+# Germany
+262  01  DE  Telekom                         10
+262  02  DE  Vodafone                        20
+262  03  DE  Telefonica-O2                   30
+
+# United Kingdom
+234  10  GB  O2                              10
+234  15  GB  Vodafone                        20
+234  30  GB  EE                              30
+
+# Italy
+222  01  IT  TIM                             10
+222  10  IT  Vodafone                        20
+
+# Spain
+214  01  ES  Vodafone                        10
+214  03  ES  Orange                          20
+214  07  ES  Movistar                        30
+
+# Netherlands
+204  08  NL  KPN                             10
+204  04  NL  Vodafone                        20
+
+# Belgium
+206  01  BE  Proximus                        10
+206  10  BE  Orange                          20
+
+# Austria
+232  01  AT  A1                              10
+232  03  AT  Magenta                         20
+
+# Ireland
+272  01  IE  Vodafone                        10
+272  02  IE  Three                           20
+
+# Portugal
+268  06  PT  Vodafone                        10
+268  01  PT  MEO                             20
+
+# Denmark
+238  01  DK  TDC                             10
+238  20  DK  Telia                           20
+
+# Sweden
+240  01  SE  Telia                           10
+240  07  SE  Tele2                           20
+
+# Norway
+242  01  NO  Telenor                         10
+242  02  NO  Telia                           20
+
+# Finland
+244  91  FI  Telia                           10
+244  05  FI  Elisa                           20
+
+# Poland
+260  01  PL  Plus                            10
+260  02  PL  T-Mobile                        20
+260  03  PL  Orange                          30
+
+# Czech Republic
+230  01  CZ  T-Mobile                        10
+230  02  CZ  O2                              20
+
+# United States
+310  260 US  T-Mobile                        10
+310  410 US  AT-T                            20
+
+# Canada
+302  220 CA  Telus                           10
+302  610 CA  Bell                            20
+302  720 CA  Rogers                          30
+
+# Australia
+505  01  AU  Telstra                         10
+505  02  AU  Optus                           20
+
+# Malaysia
+502  12  MY  Maxis                           10
+502  13  MY  Celcom                          20
+
+# Indonesia
+510  10  ID  Telkomsel                       10
+510  11  ID  XL                              20
+
+# Thailand
+520  03  TH  AIS                             10
+520  00  TH  TrueMove                        20
+
+# Hong Kong
+454  00  HK  CSL                             10
+454  03  HK  3                               20
+
+# Japan
+440  10  JP  NTT-DoCoMo                      10
+440  20  JP  SoftBank                        20
+
+# South Korea
+450  05  KR  SKT                             10
+450  08  KR  KT                              20
