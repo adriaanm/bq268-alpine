@@ -14,7 +14,8 @@
   - [ ] Sources: `batt_status` string reader and backlight auto-discovery (TODO in sources.zig)
   - [x] JSONL formatter: pure `format(out, Record)` with tests for mandatory + optional fields
   - [x] Sink module: file-level open/append + size-based rotation with startup rotation for boot-cycle boundaries
-  - [ ] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
+  - [x] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append
+  - [ ] On-device smoke test: cross-compile, scp, run as root, hit it with a test sender, verify `/var/log/metrics/current.jsonl` grows and rotates
   - [ ] OpenRC service `rootfs/files/etc/init.d/wata-metricsd`
   - [ ] Wire into `build-rootfs.sh` (cross-compile with zig 0.16-dev to `arm-linux-musleabihf`, install to `/usr/sbin/wata-metricsd`)
   - [ ] Verify `/sys/class/net/rmnet_data0` is the right iface name on device (planning doc had it as TBC)
