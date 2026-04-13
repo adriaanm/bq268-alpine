@@ -53,7 +53,7 @@ pub fn format(out: []u8, rec: Record) ![]const u8 {
     try writeOptI64(&w, "v_uv", rec.sample.v_uv);
     try writeOptI64(&w, "i_ua", rec.sample.i_ua);
     try writeOptI64(&w, "capacity", rec.sample.capacity);
-    try writeOptStr(&w, "batt_status", rec.sample.batt_status);
+    try writeOptStr(&w, "batt_status", rec.sample.battStatus());
     try writeOptI64(&w, "bl", rec.sample.bl);
     try writeOptBool(&w, "screen_on", rec.sample.screen_on);
     try writeOptBool(&w, "wlan_up", rec.sample.wlan_up);
@@ -103,23 +103,26 @@ test "format emits mandatory fields and trailing newline" {
 
 test "format emits optional fields when present" {
     var buf: [512]u8 = undefined;
+    var sample = Sample{
+        .ts_mono_ns = 1,
+        .ts_wall_ns = 2,
+        .v_uv = 3821000,
+        .i_ua = 0,
+        .capacity = 67,
+        .bl = 40,
+        .screen_on = true,
+        .wlan_up = true,
+        .wlan_rx = 1234567,
+        .wlan_tx = 89012,
+        .rmnet_up = false,
+        .rmnet_rx = 9876,
+        .rmnet_tx = 4321,
+    };
+    const status = "Discharging";
+    @memcpy(sample.batt_status_buf[0..status.len], status);
+    sample.batt_status_len = status.len;
     const rec = Record{
-        .sample = .{
-            .ts_mono_ns = 1,
-            .ts_wall_ns = 2,
-            .v_uv = 3821000,
-            .i_ua = 0,
-            .capacity = 67,
-            .batt_status = "Discharging",
-            .bl = 40,
-            .screen_on = true,
-            .wlan_up = true,
-            .wlan_rx = 1234567,
-            .wlan_tx = 89012,
-            .rmnet_up = false,
-            .rmnet_rx = 9876,
-            .rmnet_tx = 4321,
-        },
+        .sample = sample,
         .src = .watchdog,
         .seq = 0,
         .ticks_coalesced = 0,

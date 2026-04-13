@@ -11,7 +11,7 @@
 - [ ] Metrics sampler (`wata-metricsd`) — Zig 0.16-dev daemon that ingests a heartbeat from wata on `/run/wata.tick`, samples battery/backlight/wifi/cellular sysfs, and writes JSONL to `/var/log/metrics/`. Aligns wakeups with wata's matrix long-poll so we don't introduce a new tick source on a device that can't suspend. Planning doc: [docs/planning/metrics-sampler.md](docs/planning/metrics-sampler.md) — treat as working document, becomes reference once implemented. Paired spec for wata: `~/wata/docs/planning/metrics-heartbeat-tick.md`. Subtasks:
   - [x] Scaffold project, protocol module with Tick datagram + tests
   - [x] Sources module: battery int fields, net operstate + counters, backlight brightness
-  - [ ] Sources: `batt_status` string reader and backlight auto-discovery (TODO in sources.zig)
+  - [x] Sources: `batt_status` inline string reader (`[16]u8` + len, no allocator) and backlight auto-discovery via `getdents64` on `/sys/class/backlight/`
   - [x] JSONL formatter: pure `format(out, Record)` with tests for mandatory + optional fields
   - [x] Sink module: file-level open/append + size-based rotation with startup rotation for boot-cycle boundaries
   - [x] Event loop in main.zig: SOCK_DGRAM bind on `/run/wata.tick`, `timerfd` 30s watchdog, `poll()` on both, drain + sample + append

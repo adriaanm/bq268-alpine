@@ -1,15 +1,19 @@
 const std = @import("std");
+const linux = std.os.linux;
 const posix = std.posix;
 
-/// One metric sample. All fields except timestamps are optional — a missing
+/// One metric sample. All numeric/bool fields are optional — a missing
 /// sysfs file or a parse failure becomes `null`, never an error.
+/// `batt_status` is stored inline (no allocator) and exposed via
+/// `battStatus()` which returns null when empty.
 pub const Sample = struct {
     ts_mono_ns: u64,
     ts_wall_ns: u64,
     v_uv: ?i64 = null,
     i_ua: ?i64 = null,
     capacity: ?i64 = null,
-    batt_status: ?[]const u8 = null,
+    batt_status_buf: [16]u8 = undefined,
+    batt_status_len: u8 = 0,
     bl: ?i64 = null,
     screen_on: ?bool = null,
     wlan_up: ?bool = null,
@@ -18,6 +22,11 @@ pub const Sample = struct {
     rmnet_up: ?bool = null,
     rmnet_rx: ?u64 = null,
     rmnet_tx: ?u64 = null,
+
+    pub fn battStatus(self: *const Sample) ?[]const u8 {
+        if (self.batt_status_len == 0) return null;
+        return self.batt_status_buf[0..self.batt_status_len];
+    }
 };
 
 /// Configuration for where to read sysfs from. `sysfs_root` is overridable
@@ -41,10 +50,12 @@ pub const Sources = struct {
         s.v_uv = readIntAt(&pb, self.sysfs_root, "class/power_supply/battery/voltage_now");
         s.i_ua = readIntAt(&pb, self.sysfs_root, "class/power_supply/battery/current_now");
         s.capacity = readIntAt(&pb, self.sysfs_root, "class/power_supply/battery/capacity");
-
-        // batt_status and backlight don't fit the int reader; batt_status
-        // and screen_on detection are added in a follow-up with a proper
-        // string reader + auto-discover (tracked in TASKS.md).
+        s.batt_status_len = readStrInto(
+            &pb,
+            self.sysfs_root,
+            "class/power_supply/battery/status",
+            &s.batt_status_buf,
+        );
 
         var iface_buf: [128]u8 = undefined;
 
@@ -62,8 +73,13 @@ pub const Sources = struct {
         const rm_tx_rel = std.fmt.bufPrint(&iface_buf, "class/net/{s}/statistics/tx_bytes", .{self.rmnet_iface}) catch null;
         if (rm_tx_rel) |r| s.rmnet_tx = readUintAt(&pb, self.sysfs_root, r);
 
-        if (self.backlight_name.len > 0) {
-            const bl_rel = std.fmt.bufPrint(&iface_buf, "class/backlight/{s}/brightness", .{self.backlight_name}) catch null;
+        var bl_name_buf: [64]u8 = undefined;
+        const bl_name: ?[]const u8 = if (self.backlight_name.len > 0)
+            self.backlight_name
+        else
+            findFirstBacklight(&pb, self.sysfs_root, &bl_name_buf);
+        if (bl_name) |name| {
+            const bl_rel = std.fmt.bufPrint(&iface_buf, "class/backlight/{s}/brightness", .{name}) catch null;
             if (bl_rel) |r| s.bl = readIntAt(&pb, self.sysfs_root, r);
             if (s.bl) |bl| s.screen_on = bl > 0;
         }
@@ -71,6 +87,42 @@ pub const Sources = struct {
         return s;
     }
 };
+
+/// Read the first directory entry under `<root>/class/backlight/` whose
+/// name doesn't start with '.'. Copies the name into `name_buf` and
+/// returns a slice of it, or null if the dir is missing or empty.
+fn findFirstBacklight(path_buf: []u8, root: []const u8, name_buf: []u8) ?[]const u8 {
+    const dir_path = std.fmt.bufPrintZ(path_buf, "{s}/class/backlight", .{root}) catch return null;
+    const fd = posix.openatZ(
+        posix.AT.FDCWD,
+        dir_path,
+        .{ .ACCMODE = .RDONLY, .DIRECTORY = true },
+        0,
+    ) catch return null;
+    defer _ = linux.close(fd);
+
+    var dbuf: [1024]u8 = undefined;
+    const rc = linux.getdents64(fd, &dbuf, dbuf.len);
+    switch (linux.errno(rc)) {
+        .SUCCESS => {},
+        else => return null,
+    }
+    if (rc == 0) return null;
+
+    var off: usize = 0;
+    while (off < rc) {
+        const ent: *const linux.dirent64 = @ptrCast(@alignCast(&dbuf[off]));
+        const name_off = @offsetOf(linux.dirent64, "name");
+        const name_ptr: [*:0]const u8 = @ptrCast(&dbuf[off + name_off]);
+        const name = std.mem.span(name_ptr);
+        off += ent.reclen;
+        if (name.len == 0 or name[0] == '.') continue;
+        if (name.len > name_buf.len) continue;
+        @memcpy(name_buf[0..name.len], name);
+        return name_buf[0..name.len];
+    }
+    return null;
+}
 
 /// Read a sysfs file into a small stack buffer via `std.posix.open` +
 /// `read`. Returns the trimmed content or null on any error.
@@ -99,6 +151,16 @@ fn readOperstate(path_buf: []u8, root: []const u8, rel: []const u8) ?bool {
     var buf: [32]u8 = undefined;
     const s = readSmall(path_buf, root, rel, &buf) orelse return null;
     return std.mem.eql(u8, s, "up");
+}
+
+/// Read a sysfs string into `out`, returning the number of bytes copied
+/// (after trimming). Returns 0 on any error.
+fn readStrInto(path_buf: []u8, root: []const u8, rel: []const u8, out: []u8) u8 {
+    var tmp: [64]u8 = undefined;
+    const s = readSmall(path_buf, root, rel, &tmp) orelse return 0;
+    const n = @min(s.len, out.len);
+    @memcpy(out[0..n], s[0..n]);
+    return @intCast(n);
 }
 
 fn monoNs() u64 {
@@ -132,5 +194,17 @@ test "Sources against missing tree returns nulls, never errors" {
     const s = src.sample();
     try std.testing.expectEqual(@as(?i64, null), s.v_uv);
     try std.testing.expectEqual(@as(?u64, null), s.wlan_rx);
+    try std.testing.expectEqual(@as(?[]const u8, null), s.battStatus());
     try std.testing.expect(s.ts_mono_ns > 0);
+}
+
+test "Sample.battStatus returns null when empty, slice when populated" {
+    var s = Sample{ .ts_mono_ns = 1, .ts_wall_ns = 2 };
+    try std.testing.expectEqual(@as(?[]const u8, null), s.battStatus());
+
+    const v = "Charging";
+    @memcpy(s.batt_status_buf[0..v.len], v);
+    s.batt_status_len = v.len;
+    try std.testing.expect(s.battStatus() != null);
+    try std.testing.expectEqualStrings("Charging", s.battStatus().?);
 }
