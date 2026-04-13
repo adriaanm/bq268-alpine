@@ -26,6 +26,11 @@ STATE_FILE="/run/cell-data.state"
 FORCE_FILE="/run/cell-data.force"
 CELL_LOG="/var/log/cellular.log"
 PARTNERS_FILE="/etc/cellular/roaming-partners"
+MCFG_DIR="/usr/share/cellular-mcfg"
+# MCFG-SW files shipped with the rootfs. First one is the one we
+# activate (HPLMN-matched); the rest are loaded inactive as fallbacks.
+MCFG_PRIMARY="$MCFG_DIR/singtel_sg.mbn"
+MCFG_FALLBACK="$MCFG_DIR/row_generic.mbn"
 
 # Bounded budgets — total wake+attach must fit in ~2 minutes.
 WAKE_BUDGET=20          # seconds to get modem out of transient states
@@ -42,6 +47,53 @@ log() {
 modem_mode() {
     qmicli -d "$QMI_DEV" --dms-get-operating-mode 2>&1 | \
         sed -n "s/.*Mode: '\([^']*\)'.*/\1/p"
+}
+
+# Load the Singtel carrier MCFG-SW into the modem via PDC and
+# activate it. The modem ships with zero MCFG-SW configs from our
+# side (verified: --pdc-list-configs=software → 0), which puts the
+# NAS into a generic fallback that doesn't complete default-EPS-bearer
+# activation for our Eskimo IMSI. With the Singtel MCFG active, EMM
+# attach succeeds and stays stable (9s+ of EMM-REGISTERED observed,
+# where before we got at most 2s). The MCFG is sourced from the
+# original vendor modem firmware (~/bq268-edl/dump/modem.bin) and
+# shipped in the rootfs under /usr/share/cellular-mcfg.
+#
+# Activating an MCFG-SW triggers an internal modem reset (equivalent
+# to an NAS restart without a full `dms reset`), so this function
+# only does work when the desired config isn't already Active.
+# Persists in modem NV (modemst1/2) across reboots.
+ensure_mcfg() {
+    [ -f "$MCFG_PRIMARY" ] || return 0
+    local list
+    list=$(qmicli -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
+    # Already loaded + active? No-op.
+    if echo "$list" | grep -A1 "Singtel_Commercial" | grep -q "Active"; then
+        return 0
+    fi
+    # Not loaded at all? Upload both files.
+    if ! echo "$list" | grep -q "Singtel_Commercial"; then
+        log "loading MCFG $MCFG_PRIMARY"
+        qmicli -d "$QMI_DEV" --pdc-load-config="$MCFG_PRIMARY" 2>&1 \
+            | tail -2 | logger -t cell-data || true
+        [ -f "$MCFG_FALLBACK" ] && \
+            qmicli -d "$QMI_DEV" --pdc-load-config="$MCFG_FALLBACK" 2>&1 \
+                | tail -2 | logger -t cell-data || true
+        list=$(qmicli -d "$QMI_DEV" --pdc-list-configs=software 2>&1 || true)
+    fi
+    # Activate Singtel by ID (parse from list).
+    local id
+    id=$(echo "$list" | awk '
+        /Singtel_Commercial/ {found=1}
+        found && /ID:/ {print $2; exit}
+    ')
+    [ -z "$id" ] && return 0
+    log "activating Singtel MCFG"
+    qmicli -d "$QMI_DEV" --pdc-activate-config="software,$id" 2>&1 \
+        | tail -2 | logger -t cell-data || true
+    # Activation triggers modem internal reset; let set_online handle
+    # the transient shutting-down state.
+    return 0
 }
 
 # LTE-only with automatic network selection. Idempotent.
@@ -64,22 +116,26 @@ ensure_rat_prefs() {
     return 1
 }
 
-# Profile 1 is the LTE-attach PDN (wds-get-lte-attach-pdn-list = [1])
-# on this modem, so its APN and PDP type are what the UE sends in the
-# initial PDN-CONNECTIVITY-REQUEST. Eskimo's live Android config uses
-# APN 'hicard' with IPv4v6; the vendor shipped profile 1 with empty
-# APN / ipv4 which caused attach to reach EMM-REGISTERED and then get
-# the default bearer torn down in ~2s. Persists in modem NV.
+# Profile 1 is the LTE-attach PDN (wds-get-lte-attach-pdn-list = [1]).
+# With the Singtel_Commercial MCFG-SW active, the modem maintains
+# profile 1 at APN='E-IDEAS' pdp-type=ipv4-or-ipv6 — this is the
+# Singtel default initial-attach APN that the HSS expects in the
+# first PDN-CONNECTIVITY-REQUEST. We do NOT override it.
+#
+# The 'hicard' APN used by Eskimo Android is an overlay APN applied
+# after attach for the actual data session (pppd CGACT sets it). We
+# keep that in profile 2 so it's available for CGACT without
+# touching the attach profile.
 ensure_wds_profile() {
-    local list apn pdp
+    local list apn2 pdp2
     list=$(qmicli -d "$QMI_DEV" --wds-get-profile-list=3gpp 2>&1 || true)
-    apn=$(echo "$list" | sed -n "/\[1\] 3gpp/,/\[2\] 3gpp/ {s/.*APN: '\([^']*\)'.*/\1/p;}" | head -1)
-    pdp=$(echo "$list" | sed -n "/\[1\] 3gpp/,/\[2\] 3gpp/ {s/.*PDP type: '\([^']*\)'.*/\1/p;}" | head -1)
-    if [ "$apn" = "hicard" ] && [ "$pdp" = "ipv4-or-ipv6" ]; then
+    apn2=$(echo "$list" | sed -n "/\[2\] 3gpp/,/\[3\] 3gpp/ {s/.*APN: '\([^']*\)'.*/\1/p;}" | head -1)
+    pdp2=$(echo "$list" | sed -n "/\[2\] 3gpp/,/\[3\] 3gpp/ {s/.*PDP type: '\([^']*\)'.*/\1/p;}" | head -1)
+    if [ "$apn2" = "hicard" ] && [ "$pdp2" = "ipv4-or-ipv6" ]; then
         return 0
     fi
-    log "rewriting WDS profile 1: apn=hicard, pdp=ipv4v6 (was apn='$apn' pdp='$pdp')"
-    qmicli -d "$QMI_DEV" --wds-modify-profile="3gpp,1,apn=hicard,pdp-type=IPV4V6" 2>&1 \
+    log "rewriting WDS profile 2: apn=hicard, pdp=ipv4v6 (was apn='$apn2' pdp='$pdp2')"
+    qmicli -d "$QMI_DEV" --wds-modify-profile="3gpp,2,apn=hicard,pdp-type=IPV4V6" 2>&1 \
         | logger -t cell-data || true
     return 0
 }
@@ -312,6 +368,7 @@ do_wake() {
     # All three ensure_* are persistent in modem NV and normally no-ops.
     # If any changed state, set_online + reset escalation below picks
     # up the new config.
+    ensure_mcfg || true
     ensure_rat_prefs || true
     ensure_wds_profile || true
     ensure_preferred_networks || true

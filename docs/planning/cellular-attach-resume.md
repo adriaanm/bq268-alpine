@@ -93,6 +93,133 @@ so the state machine is correct. The actual attach failure is
 downstream of the script — environmental, agreement-layer, or a
 firmware/kernel problem.
 
+## Session 2026-04-13 (session 3) — MCFG-SW carrier profiles
+
+**The biggest finding of the whole investigation**: our modem was
+running with **zero MCFG-SW carrier profiles loaded**
+(`qmicli --pdc-list-configs=software` → `Total configurations: 0`).
+MCFG-SW is Qualcomm's per-carrier policy bundle: roaming agreements,
+default attach APN, SOR rules, PDN-type enforcement, band
+restrictions, subscription overrides. Without one, the modem's NAS
+layer runs a bare-bones fallback that never completes a default-EPS-
+bearer activation for our Eskimo IMSI. That alone explains 95% of
+the "attach never sticks" symptoms from sessions 1 and 2.
+
+### What we did
+
+1. **Mounted `~/bq268-edl/dump/modem.bin`** as FAT16 — it's the
+   `/firmware` partition from the original vendor Android image.
+   Contains 118 MCFG-SW files under
+   `image/modem_pr/mcfg/configs/mcfg_sw/`, including
+   `generic/sea/singtel/commerci/singapor/mcfg_sw.mbn` and
+   `generic/common/row/commerci/mcfg_sw.mbn`.
+2. **Copied Singtel + ROW MCFGs into the rootfs** at
+   `/usr/share/cellular-mcfg/{singtel_sg.mbn,row_generic.mbn}`
+   and deployed them to the device.
+3. **Loaded and activated via QMI PDC**:
+   `qmicli --pdc-load-config=<path>` uploads in 1024-byte chunks,
+   then `--pdc-activate-config=software,<ID>`. Activation triggers
+   an internal modem reset (NAS restart) as a side effect. Both
+   configs persist in modemst1/2 NV across device reboots.
+4. **Added `ensure_mcfg` as a new bringup step** in
+   `tools/cell-data.sh`: idempotent, loads + activates Singtel
+   MCFG if not already Active. Runs first in `do_wake` so the NAS
+   layer has the right carrier policy before any other ensure_*
+   step touches state.
+5. **Stopped overriding WDS profile 1**. Profile 1 is the
+   LTE-attach PDN, and the Singtel MCFG sets its APN to `E-IDEAS`
+   (Singtel's default initial-attach APN). Eskimo's `hicard` is an
+   overlay APN for the data session, not the initial attach, so we
+   now leave profile 1 alone and rewrite **profile 2** to
+   `hicard / IPV4V6` for use at CGACT time.
+
+### Qualitative change to attach behaviour
+
+Before this session: 0-2 second EMM-REGISTERED flashes, never
+reproducible, no durable attach.
+
+After Singtel MCFG activation + `lte,automatic` + PDC reactivate kick:
+**15.5 seconds of stable `Registration: registered, Status:
+available`**, fully reproducible from any clean modem state. This is
+a qualitative jump.
+
+### The catch
+
+Looking at the serving-system during the 15s stable window:
+
+```
+Registration state: 'registered'
+CS: 'attached'
+PS: 'detached'
+Radio interfaces: '1'
+    [0]: 'umts'
+Roaming status: 'on'
+Current PLMN:
+    MCC: '208'
+    MNC: '1'
+    Description: 'Orange F'
+```
+
+We're **camped on Orange France UMTS in CS-only mode**. CS-only
+attach means voice works, data does not — and since Eskimo is
+data-only, we still can't ping anything. The Singtel MCFG is
+**steering us to Orange FR** because that's Singtel's configured
+European roaming partner for their own direct subscribers. It
+overrides our `lte,automatic` preference through its internal
+SOR/preferred-roaming rules.
+
+Eskimo (as an MVNO on Singtel infrastructure) has a **different**
+roaming partner list — Sunrise in Switzerland — that isn't encoded
+in the Singtel MCFG. Android on the same SIM in the same room
+attaches to Sunrise LTE, so Android either (a) uses an MCFG we
+don't have, or (b) bypasses the Singtel MCFG's steering via
+RIL-level overrides we can't trivially replicate from Linux
+userspace.
+
+We tried two workarounds, both failed:
+
+- **Singtel MCFG + `lte,manual=22802` (force Sunrise)**: modem
+  searches for 25s and gives up — Singtel MCFG's rules block
+  manual attach to Sunrise LTE.
+- **ROW_Commercial MCFG + `lte,automatic`**: modem doesn't attach
+  to anything. ROW has no IMSI routing knowledge for 525/01, so
+  NAS falls back to the same bare fallback as "no MCFG".
+
+### What's committed from this session
+
+- `tools/cell-data.sh` — adds `ensure_mcfg` step that loads +
+  activates Singtel_Commercial MCFG from
+  `/usr/share/cellular-mcfg/singtel_sg.mbn`. New `PRIMARY/FALLBACK`
+  file variables at top. Also revises `ensure_wds_profile` to
+  write `hicard/IPV4V6` to **profile 2** (data session), leaving
+  profile 1 to whatever the MCFG set (currently `E-IDEAS/IPV4V6`
+  as the initial-attach APN).
+- `rootfs/files/usr/share/cellular-mcfg/singtel_sg.mbn`,
+  `row_generic.mbn` — extracted from modem.bin, shipped in the
+  rootfs so a fresh flash picks them up automatically.
+
+### Open next steps (ordered)
+
+1. **Patch Singtel_Commercial MCFG to remove Orange-FR steering**.
+   `tools/patch-mcfg-mbn.py` already exists in the tree. Approach:
+   decode the MCFG's NV items, find the roaming preferred-PLMN /
+   SOR rule that pins Orange-FR, either drop it or add Sunrise
+   228/02 as a higher-priority entry. Re-sign (hash-only, no
+   signature needed per `gen-mcfg-mbn.py` comments). Load via
+   PDC. This is the single highest-leverage thing we can do now —
+   all the infrastructure is already in the tree.
+2. **Dump an Android /firmware partition from a Singtel device
+   that's actually running an Eskimo eSIM**. If Android works
+   with different MCFG, that MCFG is the answer. Needs physical
+   access to such a device.
+3. **Wire up DIAG NAS log subscription** to capture what the modem
+   is actually sending in ATTACH_REQUEST and what the network
+   responds with when we try manual=22802. Still the most
+   informative fallback, but also the largest piece of work.
+4. **Try oFono** as an alternative to our `cell-data.sh`. oFono
+   on AF_MSM_IPC may have different bearer-activation semantics
+   than bare qmicli.
+
 ## Session 2026-04-13 (session 2) — preferred-PLMN list + cell-data.sh hardening
 
 Follow-on session after a device reboot. Focus: mimic what Android is
