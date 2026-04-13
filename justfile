@@ -75,9 +75,9 @@ build-tools: build-wata-metricsd
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
 
-# cross-compile wata-metricsd (Zig 0.16-dev → arm-linux-musleabihf)
+# cross-compile wata-metricsd (Zig 0.16-dev → arm-linux-musleabihf, ReleaseSmall ≈ 65 KB)
 build-wata-metricsd:
-    cd tools/wata-metricsd && {{zig}} build -Dtarget=arm-linux-musleabihf -Doptimize=ReleaseSafe
+    cd tools/wata-metricsd && {{zig}} build -Dtarget=arm-linux-musleabihf -Doptimize=ReleaseSmall
 
 # run wata-metricsd unit tests
 test-wata-metricsd:
