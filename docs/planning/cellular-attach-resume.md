@@ -4,6 +4,204 @@ Scratch doc to restart the cellular-data bringup investigation without
 re-reading the whole session history. Pick up from commits `bd05c19`,
 `efef99c`, `0d2c089` on `main`.
 
+## Overriding ground truth (2026-04-14)
+
+**The same Eskimo eSIM, moved into an Android phone at the same
+physical location, attaches to Sunrise on 4G/5G and passes real data.**
+
+This is not a hypothesis. It rules out, as a class:
+
+- The Eskimo account being unfunded or expired.
+- Eskimo's plan not including data roaming in CH.
+- Sunrise refusing PS for this IMSI.
+- The iPhone reference from earlier sessions being a different SIM —
+  we now have a direct same-SIM-swap comparison.
+- Reception / coverage / cell-tower issues at the test location.
+- The HSS path (Sunrise → Singtel → Eskimo) being broken.
+
+Whatever is keeping the BQ268 off Sunrise-LTE-with-data is
+**BQ268-specific** — kernel, modem firmware, MCFG, NV, or RF
+hardware on this board. Every remaining hypothesis has to be
+compatible with "Android, same SIM, same location, works." That
+cuts a lot of wishful thinking.
+
+## Session 2026-04-14 (session 6) — attach fixes landed, PDP-activation cause identified as Orange F #33
+
+This session moved the story forward in two big ways: the attach-side
+code bugs are fixed and the modem now reliably reaches `PS: attached`
+on *something*, and a direct AT test finally yielded the explicit
+reject cause code that tells us which `something` we need.
+
+### Attach-side: three cell-data bugs, one DIAG tool, one commit cluster
+
+Commits `d06bede` → `0591b6d` → `ff447b8` → `7df1869` → `fcbc82e` →
+`4078320` → `a13246a`.
+
+- **`tools/cell-diag.c`** (new). Opens `/dev/diag`, switches to
+  `MEMORY_DEVICE_MODE`/MPSS, subscribes to the LTE equipment class
+  (`LOG_CONFIG SET_MASK` for `equip_id=0x0B`, items `0xC0..0xFF`),
+  parses inbound `cmd=0x10` log packets, and appends one JSONL line
+  per event to `/var/log/cellular-diag.log`. Also recognises the
+  Qualcomm multi-frame concatenation (several `7e 01 LL LL ... 7e`
+  wireline frames per USER_SPACE_DATA sub-packet) so it doesn't
+  drop events. Wired as `just diag-capture [duration]` which
+  cross-compiles, scps, runs `cell-data wake` on-device against a
+  backgrounded capture, and pulls the log back. First capture during
+  a failing `lte,automatic` wake showed **153 × 0xB0C0 LTE_RRC_OTA
+  events, zero 0xB0E2/0xB0E3 EMM_OTA_IN/OUT** — the modem reads SIBs
+  from LTE cells but never transmits an ATTACH REQUEST, which
+  rewrote the whole investigation (the problem is upstream of NAS).
+- **`cell-data.sh`, three bugs in sequence, all attach-breaking**
+  (commit `7df1869`):
+  1. **`ensure_rat_prefs` was enforcing `lte,automatic` (LTE-only)**
+     because an earlier session feared cross-border UMTS latching.
+     DIAG above showed `lte,automatic` is in fact the *reason* we
+     never reach NAS — the BQ268 can read LTE SIBs but never sends
+     a Connection Request UL, so the modem oscillates searching
+     forever. Switching to `lte|umts,automatic` lets the modem fall
+     back to UMTS, which at the test bench reliably attaches to
+     Orange F within ~40 s. Kept as a temporary workaround with a
+     comment flagging the LTE-attach block as the real bug.
+  2. **`ensure_rat_prefs` grep matched a literal `'lte, umts'`** but
+     the modem reports the mode preference as `'umts, lte'` after a
+     set. With that never matching, `ensure_rat_prefs` re-applied
+     preferences on every `wake`, and each re-apply caused a
+     transient NAS detach, silently dropping whatever session was
+     up. Fix is an `-E` grep accepting both orderings.
+  3. **`ensure_mcfg` used `grep -A1 Singtel_Commercial` + `grep
+     Active`**, but `Status: Active` is ~3 lines below
+     `Description:` in `qmicli --pdc-list-configs` output, so the
+     check *never* matched and the Singtel MCFG was re-activated on
+     every wake. That triggers an internal modem reset and tears
+     down registration mid-flow — a cost we'd been silently eating
+     forever. Fix is `grep -A4` with an anchored `Status: *Active`.
+  With those three fixes applied, `cell-data wake` reaches
+  `PS: attached` on Orange F reliably and stays there across
+  consecutive wakes without dropping the attach.
+- **`rootfs/files/etc/ppp/cellular-chat`** (commit `4078320`)
+  restored to the 2026-04-03 form documented in `docs/modem_data.md`:
+  explicit `AT+CGDCONT=1,"IP","globaldata"` then `ATD*99***1#`. My
+  earlier experiment with `ATD*99***2#` / hicard was a dead end (see
+  AT-level test below — the reject is the same regardless of APN),
+  so the chat now matches the form that is known to work once the
+  modem is camped on a partner that allows data.
+
+### The AT-level test that finally gave us a reject code
+
+All earlier sessions stopped at "PPP IPCP loops with dummy values
+(`ms-dns1 10.11.12.13`, peer `10.64.64.64`)" and had no way to tell
+*why*. The dummy values are a Qualcomm internal fallback when PDP
+context activation fails below IPCP, so the failing layer is inside
+the modem, not on the PPP wire.
+
+Bypassing pppd entirely and driving `/dev/smd7` with raw AT through a
+backgrounded `printf ... > /dev/smd7 &` + `dd if=/dev/smd7` surfaced
+the thing we needed:
+
+```
+AT                                 → OK
+AT+COPS?                           → "Orange F Eskimo",2   (UMTS)
+AT+CGDCONT=1,"IP","globaldata"     → OK
+AT+CGACT=1,1                       → +CME ERROR: requested service
+                                      option not subscribed
+AT+CGPADDR=1                       → +CGPADDR: 1,0.0.0.0
+AT+CEER                            → Requested service option not
+                                      subscribed
+```
+
+That is **3GPP 24.008 cause #33 "requested service option not
+subscribed"** from the Orange F SGSN/GGSN. Tried `globaldata`,
+`hicard`, `internet`, and empty APN — identical reject on all four.
+The specific APN does not matter while we are camped on 208/01.
+
+Note the SPN reported by `COPS`: `"Orange F Eskimo"`. That is the
+Eskimo roaming branding, which means **Eskimo does have a roaming
+agreement with Orange France** — but at the contract level it is
+**signalling-only, not data**. NAS attach completes (the "Orange F
+Eskimo" SPN and `PS: attached` confirm it), and then the data
+bearer is refused. This neatly explains every prior symptom:
+
+- `pppd` LCP+CHAP succeed (those are local to the modem's SMD PPP
+  stub; nothing goes over the air until PDP activation).
+- `qmicli --wds-start-network=apn=...` returns `InvalidOperation`
+  — same `#33` reject, repackaged as a QMI error.
+- No `0xB0E2`/`0xB0E3` EMM_OTA packets in DIAG captures during a
+  data attempt, because we never get to send an ESM REQUEST that
+  the network processes past the subscription check.
+- Retrying different APNs changes nothing, because the check is on
+  IMSI × visited PLMN, not on APN.
+
+Combined with the overriding ground truth at the top of this doc,
+this pins the problem down hard: the BQ268 keeps camping on Orange F
+Eskimo (signalling-only), and when it tries to use Orange F's data
+bearer the GGSN says `#33`. Android with the same SIM picks
+Sunrise-LTE instead, where the same IMSI is on the data allowlist.
+
+### Why we can't just steer to Sunrise today
+
+Tried at runtime:
+
+- `qmicli --nas-set-preferred-networks=22802,all` + reset → modem
+  still comes up on Orange F. The user-controlled preferred PLMN
+  list is a *soft* preference; automatic reselection still picks
+  the strongest matching cell, and Orange F UMTS wins on signal.
+- `--nas-set-preferred-networks=22802,eutran` + `lte|umts,automatic`
+  → same outcome; modem searches LTE briefly, drops to UMTS, Orange.
+- `--nas-set-system-selection-preference="lte|umts,manual=22802"` →
+  `Registration state: not-registered` for ≥120 s while `PS:
+  attached` stays set (a weird split-brain). Modem never completes
+  registration on Sunrise. Matches the April 13 session 5 notes.
+- `--nas-set-system-selection-preference="lte,automatic"` → same
+  April-13 symptom: reads SIBs (DIAG shows `0xB0C0`), no NAS OTA,
+  never attaches, eventually drops to `not-registered-searching`.
+
+The preferred-networks list, the manual-selection path, and
+LTE-only mode all fail to move us off Orange F → Sunrise. We are
+stuck with a block that needs either:
+
+- A hard block on Orange F (write `208/01` into `EF_FPLMN` via
+  `AT+CRSM` or `uim-write-transparent`), so the modem refuses to
+  camp there and automatic reselection has to pick something else.
+  This is a one-shot change to the SIM's forbidden-PLMN file.
+- A fix for the LTE-attach-never-completes problem, so LTE-only
+  mode can actually attach to Sunrise LTE and naturally exclude
+  Orange F UMTS. The April 13 session 5 notes already hypothesise
+  a **B20 UL TX path issue** on the BQ268 PCB (DL RX works — scans
+  see cells — but UL may not). Before spending a session on RF
+  hardware, extend `cell-diag` to parse the `0xB0C0 LTE_RRC_OTA`
+  `pdu_num` field: if `UL_CCCH` (RRC Connection Request) frames
+  never appear during a `lte,automatic` wake, UL is broken; if
+  they do appear, UL is fine and the problem is higher up (SIB
+  reject, TAI block, MCFG policy, etc). That's a ~1 hour parser
+  change that either confirms a hardware bug or kills the
+  hypothesis cheaply.
+
+Both paths are live follow-ups in `TASKS.md`.
+
+### Ugly details worth remembering
+
+- **`[pppd] in D state`**: killing `pppd` mid-IPCP on `/dev/smd7`
+  wedges the kernel's SMD line-discipline teardown (`do_exit` stuck
+  in `smd_close`), leaving a zombie `[pppd]` that only a reboot
+  clears. Happens reliably. This is a CAF 4.4 SMD bug — file under
+  the known SMD cleanup hazards. Worth a `cell-data down` that
+  avoids `SIGKILL` and sends `SIGTERM` only, and a health-check in
+  `wake` that refuses to start if a zombie `[pppd]` is present.
+- **After a `dms reset`, the modem can take 90–120 s to leave
+  `shutting-down` on its own**. `cell-data wake`'s `WAKE_BUDGET=20s`
+  is too short for a post-reboot first-wake; it hits the reset
+  escalation and fails with "modem stuck in shutting-down" even
+  though the modem would have come up a minute later. Bump to 150 s
+  for the post-boot-first-wake path, or detect reboot and take the
+  long budget for the first run only.
+- **Every `dms-set-operating-mode=reset` we issue via `qmicli -p`
+  leaks a `kworker/u8:N` in D-state** and grows `drop_count` on the
+  DIAG ring. Known issue; tracked under the qmi-proxy orphan task.
+- **The `Mode preference` string ordering** (`'umts, lte'` vs
+  `'lte, umts'`) is not stable — see bug 2 above. Any grep on
+  `qmicli --nas-get-system-selection-preference` output that
+  anchors on a specific RAT order is broken waiting to happen.
+
 ## What's done
 
 - **`tools/cell-data.sh`** is the single entry point. `cell-data wake`
@@ -92,6 +290,113 @@ The script's 2-minute budget bounds the failure cleanly (exits 2),
 so the state machine is correct. The actual attach failure is
 downstream of the script — environmental, agreement-layer, or a
 firmware/kernel problem.
+
+## Session 2026-04-13 (session 5) — Android ground truth + RF reality check
+
+Put the SIM in the user's Android phone (MediaTek Dimensity — so the
+phone itself is useless for MCFG extraction, but great as behavioural
+ground truth) and captured what an attached state actually looks like
+on this SIM at this location:
+
+- PLMN: **Sunrise 228/02**, RAT LTE, ROAMING/INTERNATIONAL
+- Primary serving cell: **EARFCN 6200 = B20 (800 MHz DD)**, PCI 76,
+  TAC 42100, BW 10 MHz, RSRP **-100 dBm**
+- Other Sunrise cells seen: EARFCN 1850 (B3 1800) RSRP -116/-124,
+  EARFCN 2850 (B7 2600) RSRP -124
+- APN **hicard** (bearer 1, IPv6-only, `2400:1c00:…`) +
+  separate IMS bearer on IPv4 (irrelevant for BQ268)
+- Also confirmed: attach works fine with APN=`E-IDEAS` too, so the
+  Singtel-default IA APN is not the gate.
+- `apn.settings_default_roaming_protocol_string` empty → Android uses
+  the APN's configured protocol (IPv4v6) but Sunrise grants v6 only.
+
+### Module-level verification on BQ268
+
+Confirmed our MSM8909 variant supports the right bands:
+
+```
+LTE bands capability: 1, 2, 3, 5, 7, 8, 20, 28, 38, 39, 40, 41
+LTE band preference : 1, 3, 5, 7, 8, 20, 28, 39, 40
+```
+
+So B20/B3/B7 — all three bands Android saw Sunrise on — are available
+on our RF. **Band capability is not the gate.**
+
+### The actual gate: ??? — not pure RF, not MCFG, not usage-pref
+
+Symptom: the modem parks on a strong Salt UMTS neighbour in
+`Status: limited` (CS-only; Salt won't grant PS to this IMSI):
+
+```
+PLMN: 22803 (Salt), UARFCN 2938, PSC 80, RSCP -74…-92 dBm, ECIO -3dB
+```
+
+Sunrise LTE cells ARE visible to `--nas-network-scan=lte` (228/02
+appears "available, roaming, not-forbidden" alongside Salt and
+Swisscom) but the modem never completes attach on any of them, and
+with `mode=lte` only it searches ~25s and then gives up into
+power-save. With all RATs enabled, it falls through to the strong
+Salt UMTS cell instead.
+
+**Important correction from user**: the BQ268 has an **external
+antenna**, so the earlier hypothesis that the walkie-talkie internal
+antenna was eating 10-20 dB vs the Android phone is wrong. Sunrise LTE
+RSRP on BQ268 should be comparable to what Android saw here (-100 dBm
+on B20). This puts the problem back in software/firmware/MCFG
+territory or a specific RF-path asymmetry (DL RX works — scans see
+the cells — but UL TX on B20 may not; worth checking whether the B20
+PA/filter is actually populated on this board).
+
+`manual=22802` did not override — modem still ended up on Salt UMTS
+limited.
+
+### Things ruled out this session
+
+- **Usage preference** (voice-centric vs data-centric): we *did* find
+  the modem was voice-centric, which on paper is wrong for a data-only
+  device. Fixed by extending qmicli to accept
+  `usage=data-centric` (libqmi commit d8995d3) and wiring it into
+  `ensure_rat_prefs`. Useful in general, but **did not change the
+  observed behaviour** — cell reselection still hijacks to Salt UMTS.
+- **MCFG policy**: swapped `Singtel_Commercial` for `ROW_Commercial`,
+  same behaviour. Singtel MCFG is not the gate either.
+- **FPLMN block**: EF_FPLMN contains only APAC Singtel-family entries
+  (525/03, 525/05, 502/18, 502/19). No Swiss PLMN is forbidden.
+- **`--nas-reset` + mode cycle**: NAS state refresh doesn't help.
+- **IA APN mismatch**: ruled out by the E-IDEAS-on-Android test.
+
+### Tools & repo state after this session
+
+- `~/libqmi` commit d8995d3 extends `--nas-set-system-selection-preference`
+  parser to accept `usage=data-centric|voice-centric` tokens.
+- `tools/cell-data.sh` `ensure_rat_prefs` now enforces
+  `lte,automatic,usage=data-centric`.
+- Task #8 added: `send_filled_buffers_to_user: Send Failed -3` backlog
+  from unserviced QMI indications. Not fatal yet, but growing.
+- Task #7 (patch Singtel MCFG to allow Sunrise LTE attach) is
+  effectively moot — rat_acq_order isn't the gate, and Singtel vs ROW
+  MCFG make no visible difference for our actual problem (RF/location).
+
+### Next session should
+
+1. **Get ground-truth LTE signal on BQ268 at the stuck location.**
+   `qmicli --nas-get-signal-info` + `--nas-get-cell-location-info`
+   in `mode=lte` only, ideally while the scan is running. If RSRP on
+   B20/B3 is comparable to Android (~-100) then RF is fine and it's
+   a firmware/attach problem. If it's much worse, the RF path is
+   asymmetric and we need hardware inspection (antenna routing, B20
+   PA/filter population).
+2. **Restrict LTE band preference** to force trying B3 only, then B7
+   only, then B20 only. If only some bands can attach, the broken
+   ones point at specific RF-path components. libqmi has
+   `qmi_message_nas_set_system_selection_preference_input_set_lte_band_preference`
+   but qmicli doesn't expose it — another small parser extension
+   needed, similar to the `usage=` one.
+3. **DIAG NAS logs** (task #4). Without them we're guessing at reject
+   causes; with them we'd see exactly why attach fails (EMM cause
+   code, ESM cause code, RACH outcome).
+4. Task #8 (indication backlog) is worth handling either way; it's
+   independent of the attach problem.
 
 ## Session 2026-04-13 (session 4) — MCFG NV dissection + rat_acq_order patch
 
