@@ -160,6 +160,35 @@ diag-capture duration="60":
     echo "--- cell-diag.log (tail) ---"
     tail -n 40 ./cell-diag.log || true
 
+# LTE-only DIAG capture: force lte,automatic before wake so the modem
+# cannot fall back to UMTS. Answers "does the modem ever transmit an
+# RRC Connection Request (UL_CCCH) on LTE?" — key datapoint for the
+# B20 UL-TX hypothesis. Restores lte|umts,automatic on exit.
+#   just diag-capture-lte          # 90s default
+diag-capture-lte duration="90":
+    #!/usr/bin/env bash
+    set -eo pipefail
+    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
+    scp -q tools/cell-diag bq268:/tmp/cell-diag
+    scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
+    ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data'
+    ssh bq268 'chmod +x /tmp/cell-diag && : > /tmp/cell-diag.log && \
+        /tmp/cell-diag -o /tmp/cell-diag.log -d >/tmp/cell-diag.stderr 2>&1 & \
+        echo $! >/tmp/cell-diag.pid; sleep 1; \
+        echo "=== triggering LTE-only wake ==="; CELL_DATA_RAT=lte cell-data wake || true; \
+        sleep {{duration}}; \
+        kill -TERM $(cat /tmp/cell-diag.pid) 2>/dev/null || true; \
+        sleep 1; \
+        echo "=== restoring lte|umts ==="; cell-data wake || true; \
+        echo "=== stderr ==="; tail -n 20 /tmp/cell-diag.stderr; \
+        echo "=== log lines: $(wc -l </tmp/cell-diag.log) ===" '
+    scp -q bq268:/tmp/cell-diag.log ./cell-diag-lte.log
+    echo "--- cell-diag-lte.log (RRC summary) ---"
+    grep RRC_SUMMARY ./cell-diag-lte.log || echo "(no RRC_SUMMARY line — capture aborted?)"
+    echo "--- RRC channel breakdown (parsed events) ---"
+    grep '"event":"LTE_RRC_OTA"' ./cell-diag-lte.log | \
+        sed -n 's/.*"ch_name":"\([^"]*\)".*/\1/p' | sort | uniq -c || true
+
 # End-to-end cellular smoke test against the live device. Bounded at
 # ~2 minutes: wake (LTE-only, automatic, PS attach 90s), pppd up
 # (30s), ping, teardown. Exits non-zero on any failure.

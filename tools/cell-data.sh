@@ -20,6 +20,14 @@
 set -e
 
 QMI_DEV="msmipc://0"
+# Mode preference for ensure_rat_prefs. Default is `lte|umts` (commit
+# 7df1869 — UMTS fallback is required while LTE attach on Sunrise is
+# still broken). Set `CELL_DATA_RAT=lte` in the environment to force
+# LTE-only, used by `just diag-capture-lte` to test the B20 UL TX
+# hypothesis: if no UL_CCCH frames appear during a 90s LTE-only wake,
+# the modem is reading LTE SIBs but never transmitting a Connection
+# Request, which points at an RF / UL path problem.
+CELL_DATA_RAT="${CELL_DATA_RAT:-lte|umts}"
 PPP_IF="ppp0"
 PPP_PEER="cellular"
 STATE_FILE="/run/cell-data.state"
@@ -117,7 +125,13 @@ ensure_rat_prefs() {
     prefs=$(qmicli -p -d "$QMI_DEV" --nas-get-system-selection-preference 2>&1 || true)
     # Modem reports mode preference with an unspecified ordering
     # ('umts, lte' or 'lte, umts'); match either.
-    if echo "$prefs" | grep -Eq "Mode preference: '(lte, umts|umts, lte)'" && \
+    local mode_re
+    case "$CELL_DATA_RAT" in
+        lte) mode_re="Mode preference: 'lte'" ;;
+        umts) mode_re="Mode preference: 'umts'" ;;
+        *) mode_re="Mode preference: '(lte, umts|umts, lte)'" ;;
+    esac
+    if echo "$prefs" | grep -Eq "$mode_re" && \
        echo "$prefs" | grep -q "Network selection preference: 'automatic'" && \
        echo "$prefs" | grep -q "Usage preference: 'data-centric'"; then
         return 0
@@ -127,8 +141,8 @@ ensure_rat_prefs() {
     # domain can't be negotiated, which kills attach on MVNO roaming in
     # markets where 2G/3G is decommissioned. Requires the qmicli usage-pref
     # extension (libqmi commit d8995d3).
-    log "enforcing lte|umts, automatic network selection, data-centric"
-    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference='lte|umts,automatic,usage=data-centric' 2>&1 \
+    log "enforcing ${CELL_DATA_RAT}, automatic network selection, data-centric"
+    qmicli -p -d "$QMI_DEV" --nas-set-system-selection-preference="${CELL_DATA_RAT},automatic,usage=data-centric" 2>&1 \
         | logger -t cell-data || true
     return 1
 }

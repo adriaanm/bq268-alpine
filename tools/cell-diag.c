@@ -74,6 +74,73 @@ static FILE *logf = NULL;
 static int debug = 0;
 static volatile sig_atomic_t stop = 0;
 
+/* Counts per RRC channel type for 0xB0C0 LTE_RRC_OTA, indexed by the
+ * raw pdu_num byte (0..15). Printed at exit so a one-shot capture
+ * immediately answers "did any UL_CCCH frames leave?". */
+static uint32_t rrc_ch_counts[16];
+static uint32_t rrc_total;
+static uint32_t rrc_parse_fail;
+
+static const char *rrc_ch_name(uint8_t n)
+{
+	/* Qualcomm LTE RRC OTA channel-type enum (v9-era).
+	 * Matches what fgsect/scat and MobileInsight decode for
+	 * msm8909/msm8916-era modems. Newer versions shuffle these
+	 * (NR-LTE coexistence slots get inserted); if the counts at
+	 * exit look wrong, cross-check with the raw pdu_num field. */
+	switch (n) {
+	case 1: return "BCCH_BCH";
+	case 2: return "BCCH_DL_SCH";
+	case 3: return "MCCH";
+	case 4: return "PCCH";
+	case 5: return "DL_CCCH";
+	case 6: return "DL_DCCH";
+	case 7: return "UL_CCCH";
+	case 8: return "UL_DCCH";
+	default: return "UNKNOWN";
+	}
+}
+
+/* Parse a 0xB0C0 LTE_RRC_OTA payload. Header layout is
+ * version-dependent; we cover the two shapes seen in the wild on
+ * msm8909-era firmware:
+ *   v<=9:   u8 ver,u8 rrel_maj,u8 rrel_min,u8 rbid,u16 pci,u16 earfcn,u16 sfnsubfn,u8 pdu_num,u16 pdu_len
+ *   v>=13:  u8 ver,u8 rrel_maj,u8 rrel_min,u8 rbid,u16 pci,u32 earfcn,u16 sfnsubfn,u8 pdu_num,u16 pdu_len
+ * Returns 0 and fills *pci, *earfcn, *pdu_num on success, -1 if the
+ * payload looks malformed. */
+static int rrc_ota_parse(const uint8_t *p, int n, uint8_t *ver_out,
+			 uint16_t *pci_out, uint32_t *earfcn_out,
+			 uint8_t *pdu_num_out)
+{
+	if (n < 14) return -1;
+	uint8_t ver = p[0];
+	*ver_out = ver;
+	int off_pci = 4;
+	int off_earfcn = 6;
+	int earfcn_sz = (ver <= 9) ? 2 : 4;
+	int off_sfn = off_earfcn + earfcn_sz;
+	int off_pdu_num = off_sfn + 2;
+	if (off_pdu_num + 3 > n) return -1;
+
+	uint16_t pci = (uint16_t)(p[off_pci] | (p[off_pci + 1] << 8));
+	uint32_t earfcn;
+	if (earfcn_sz == 2)
+		earfcn = (uint32_t)(p[off_earfcn] | (p[off_earfcn + 1] << 8));
+	else
+		earfcn = (uint32_t)p[off_earfcn] |
+			 ((uint32_t)p[off_earfcn + 1] << 8) |
+			 ((uint32_t)p[off_earfcn + 2] << 16) |
+			 ((uint32_t)p[off_earfcn + 3] << 24);
+	uint8_t pdu_num = p[off_pdu_num];
+
+	/* Sanity: channel type 0 or >15 is definitely a mis-parse. */
+	if (pdu_num == 0 || pdu_num > 15) return -1;
+	*pci_out = pci;
+	*earfcn_out = earfcn;
+	*pdu_num_out = pdu_num;
+	return 0;
+}
+
 static void on_signal(int sig) { (void)sig; stop = 1; }
 
 static uint64_t now_ms(void)
@@ -182,6 +249,32 @@ static void handle_one(const uint8_t *p, int n)
 		memcpy(&ts, p + 8, 8);
 		const uint8_t *payload = p + 16;
 		int paylen = n - 16;
+
+		if (log_code == 0xB0C0) {
+			uint8_t ver = 0, pdu_num = 0;
+			uint16_t pci = 0;
+			uint32_t earfcn = 0;
+			rrc_total++;
+			if (rrc_ota_parse(payload, paylen, &ver, &pci,
+					  &earfcn, &pdu_num) == 0) {
+				rrc_ch_counts[pdu_num & 0xF]++;
+				fprintf(logf,
+					"{\"host_ms\":%llu,\"event\":\"LTE_RRC_OTA\",\"log_code\":\"0xB0C0\",\"diag_ts\":%llu,\"ver\":%u,\"pci\":%u,\"earfcn\":%u,\"ch\":%u,\"ch_name\":\"%s\",\"len\":%d}\n",
+					(unsigned long long)now_ms(),
+					(unsigned long long)ts,
+					ver, pci, earfcn, pdu_num,
+					rrc_ch_name(pdu_num), paylen);
+				fflush(logf);
+				if (debug)
+					fprintf(stderr,
+						"RRC_OTA ver=%u pci=%u earfcn=%u ch=%u(%s)\n",
+						ver, pci, earfcn, pdu_num,
+						rrc_ch_name(pdu_num));
+				return;
+			}
+			rrc_parse_fail++;
+			/* Fall through to generic dump so we can diagnose. */
+		}
 
 		const char *ev = "LOG";
 		switch (log_code) {
@@ -405,6 +498,22 @@ int main(int argc, char **argv)
 		if (n > 0)
 			handle_packet(pkt, n);
 	}
+
+	/* RRC channel-type histogram — this is the point of the tool. */
+	fprintf(logf,
+		"{\"host_ms\":%llu,\"event\":\"RRC_SUMMARY\",\"total\":%u,\"parse_fail\":%u,\"bcch_bch\":%u,\"bcch_dl_sch\":%u,\"mcch\":%u,\"pcch\":%u,\"dl_ccch\":%u,\"dl_dcch\":%u,\"ul_ccch\":%u,\"ul_dcch\":%u}\n",
+		(unsigned long long)now_ms(),
+		rrc_total, rrc_parse_fail,
+		rrc_ch_counts[1], rrc_ch_counts[2], rrc_ch_counts[3],
+		rrc_ch_counts[4], rrc_ch_counts[5], rrc_ch_counts[6],
+		rrc_ch_counts[7], rrc_ch_counts[8]);
+	fflush(logf);
+	fprintf(stderr,
+		"RRC_SUMMARY total=%u parse_fail=%u bcch_bch=%u bcch_dl_sch=%u pcch=%u dl_ccch=%u dl_dcch=%u ul_ccch=%u ul_dcch=%u\n",
+		rrc_total, rrc_parse_fail,
+		rrc_ch_counts[1], rrc_ch_counts[2], rrc_ch_counts[4],
+		rrc_ch_counts[5], rrc_ch_counts[6],
+		rrc_ch_counts[7], rrc_ch_counts[8]);
 
 	emit_json("STOP", now_ms(), -1, 0, NULL, 0);
 	fclose(logf);
