@@ -258,12 +258,19 @@ static void handle_one(const uint8_t *p, int n)
 			if (rrc_ota_parse(payload, paylen, &ver, &pci,
 					  &earfcn, &pdu_num) == 0) {
 				rrc_ch_counts[pdu_num & 0xF]++;
+				/* We don't yet trust the pdu_len offset —
+				 * dump the full payload hex and let offline
+				 * tooling figure out the split. */
 				fprintf(logf,
-					"{\"host_ms\":%llu,\"event\":\"LTE_RRC_OTA\",\"log_code\":\"0xB0C0\",\"diag_ts\":%llu,\"ver\":%u,\"pci\":%u,\"earfcn\":%u,\"ch\":%u,\"ch_name\":\"%s\",\"len\":%d}\n",
+					"{\"host_ms\":%llu,\"event\":\"LTE_RRC_OTA\",\"log_code\":\"0xB0C0\",\"diag_ts\":%llu,\"ver\":%u,\"pci\":%u,\"earfcn\":%u,\"ch\":%u,\"ch_name\":\"%s\",\"len\":%d,\"raw\":\"",
 					(unsigned long long)now_ms(),
 					(unsigned long long)ts,
 					ver, pci, earfcn, pdu_num,
 					rrc_ch_name(pdu_num), paylen);
+				int cap = paylen > 512 ? 512 : paylen;
+				for (int i = 0; i < cap; i++)
+					fprintf(logf, "%02x", payload[i]);
+				fprintf(logf, "\"}\n");
 				fflush(logf);
 				if (debug)
 					fprintf(stderr,
@@ -486,7 +493,12 @@ int main(int argc, char **argv)
 
 	uint32_t last = lte_items - 1;
 	if (last > 0xFF) last = 0xFF;
-	if (log_set_mask(LTE_EQUIP_ID, lte_items, 0xC0, last) < 0) {
+	/* Widened from 0xC0..last (session 6) to 0x00..last (session 8):
+	 * session 7 captured 241 RRC OTA events but zero NAS state events
+	 * (0xB0E0 etc), and we want to know whether NAS really isn't
+	 * transitioning or whether the event IDs we care about live below
+	 * 0xC0 on this firmware. */
+	if (log_set_mask(LTE_EQUIP_ID, lte_items, 0x00, last) < 0) {
 		fprintf(stderr, "SET_MASK failed\n");
 		return 1;
 	}

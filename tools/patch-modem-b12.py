@@ -145,6 +145,15 @@ def main():
 
     fw_dir = Path(sys.argv[1])
     check_only = "--check" in sys.argv
+    revert = "--revert" in sys.argv
+    if revert:
+        # Swap 'original' and 'patched' so the existing apply/check
+        # machinery rolls the firmware back. Used by the session 8
+        # kill-switch investigation — run against a temp copy of the
+        # firmware dir, push the rolled-back files to /lib/firmware/
+        # on-device, reboot, and re-test LTE attach.
+        for p in PATCHES_B12 + PATCHES_B14:
+            p["original"], p["patched"] = p["patched"], p["original"]
 
     b01_path = fw_dir / "modem.b01"
     mdt_path = fw_dir / "modem.mdt"
