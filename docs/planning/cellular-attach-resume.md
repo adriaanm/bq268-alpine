@@ -112,30 +112,77 @@ AT+CEER                            → Requested service option not
 That is **3GPP 24.008 cause #33 "requested service option not
 subscribed"** from the Orange F SGSN/GGSN. Tried `globaldata`,
 `hicard`, `internet`, and empty APN — identical reject on all four.
-The specific APN does not matter while we are camped on 208/01.
+The specific APN does not matter while we are camped on 208/01
+*today*, but see the next paragraph for why that is not evidence of
+a contractual block.
 
-Note the SPN reported by `COPS`: `"Orange F Eskimo"`. That is the
-Eskimo roaming branding, which means **Eskimo does have a roaming
-agreement with Orange France** — but at the contract level it is
-**signalling-only, not data**. NAS attach completes (the "Orange F
-Eskimo" SPN and `PS: attached` confirm it), and then the data
-bearer is refused. This neatly explains every prior symptom:
+**Important clarification — Orange F is a working data partner on
+this device.** Orange France (208/01) is in the `eskimo_roaming.md`
+approved partner list and is present in the generated
+`/etc/cellular/roaming-partners`. We have **successfully run data
+over Orange F on this exact BQ268 in previous experiments**; the
+"PPP over SMD works" verification in `docs/modem_data.md` (2026-04-03)
+was against Orange F. The test bench has weak-but-usable Orange F
+coverage — line of sight across the border into France, with the
+nearest tower roughly 10 km away — so the signal is marginal by
+design, not absent.
 
-- `pppd` LCP+CHAP succeed (those are local to the modem's SMD PPP
-  stub; nothing goes over the air until PDP activation).
-- `qmicli --wds-start-network=apn=...` returns `InvalidOperation`
-  — same `#33` reject, repackaged as a QMI error.
-- No `0xB0E2`/`0xB0E3` EMM_OTA packets in DIAG captures during a
-  data attempt, because we never get to send an ESM REQUEST that
-  the network processes past the subscription check.
-- Retrying different APNs changes nothing, because the check is on
-  IMSI × visited PLMN, not on APN.
+So the `#33` we got today is **not** evidence of a signalling-only
+MVNO agreement. The more likely readings are, in rough order:
 
-Combined with the overriding ground truth at the top of this doc,
-this pins the problem down hard: the BQ268 keeps camping on Orange F
-Eskimo (signalling-only), and when it tries to use Orange F's data
-bearer the GGSN says `#33`. Android with the same SIM picks
-Sunrise-LTE instead, where the same IMSI is on the data allowlist.
+1. **Marginal RF → intermittent PDP activation**. `#33` is the cause
+   code you get when the network processes the request but refuses
+   it; the most innocent reason at a 10 km cross-border cell is that
+   the bearer setup timed out at the RNC/SGSN and the reject was
+   returned as "not subscribed" rather than a more specific timing
+   failure. The modem was only at `PS: attached` for a few seconds
+   before we ran the CGACT. Next time, repeat the direct AT test
+   several times over a few minutes and see if the result is stable
+   or flickers between `OK` and `#33`, and record RSSI/RSRP at the
+   same time via `qmicli --nas-get-signal-info`.
+2. **Cell-specific block**. Orange F has many cells at the bench;
+   the specific one we camp on today may be a femto, an emergency-
+   only cell, or a cell whose `accessAllowed` bitmap excludes our
+   IMSI, while the cell we used successfully in April was a
+   different one. Include PCI and ARFCN in the AT-test capture
+   (`AT+QENG` or the equivalent on this firmware, or cross-ref the
+   DIAG `0xB0C0` RRC OTA events for the same window).
+3. **The modem's session / NV state got dirty**. We ran a lot of
+   `dms-reset`, MCFG-activate, and profile-modify calls during the
+   session; any of these can leave the ESM/SM state machine in a
+   half-provisioned state where the first CGACT after the reset is
+   #33 and the second one is `OK`. Try a `dms-reset` + a single
+   clean CGACT before drawing conclusions.
+
+None of those invalidate what the session moved forward — the
+cell-data attach fixes are still correct, `cell-diag` is still the
+right visibility tool, the "never sends EMM_OTA on LTE" DIAG
+finding still stands — but the high-confidence conclusion
+"Orange F Eskimo is signalling-only" is **wrong**. The actual
+status of Orange F as a data partner is **works when the RF is
+good enough**, and today's `#33` is a failure mode we do not
+understand yet rather than a contractual wall.
+
+Combined with the overriding ground truth at the top of this doc
+(Android on the same SIM attaches Sunrise-LTE and carries real
+data at the same location), the remaining hypothesis space is now:
+
+- **A: Sunrise LTE is the path of least resistance**, regardless
+  of what Orange F is doing. Android picks it because LTE
+  reselection prefers stronger LTE cells over UMTS, and the BQ268
+  today cannot complete LTE attach on Sunrise (see the April 13
+  session 5 and the DIAG data in this session). The fix is up in
+  the RRC/NAS stack, not in data-plane routing.
+- **B: Orange F weak-signal PDP failures are a separate
+  intermittent problem**. Worth not attributing to the Sunrise
+  investigation. Repeat the AT test on a day/hour when Orange F
+  signal is slightly better and see if `#33` disappears; if it
+  does, file it as "marginal-coverage data fragility on Orange F"
+  and move on.
+- **C: Some state carried across our reset churn is degrading
+  both paths**. Can be disambiguated by a clean cold-boot test
+  with no intermediate MCFG/profile manipulation — just boot,
+  wake, direct AT CGACT, record result.
 
 ### Why we can't just steer to Sunrise today
 
@@ -155,28 +202,39 @@ Tried at runtime:
   April-13 symptom: reads SIBs (DIAG shows `0xB0C0`), no NAS OTA,
   never attaches, eventually drops to `not-registered-searching`.
 
-The preferred-networks list, the manual-selection path, and
-LTE-only mode all fail to move us off Orange F → Sunrise. We are
-stuck with a block that needs either:
+Preferred-networks, manual-selection and LTE-only all fail to move
+us off Orange F → Sunrise. The primary follow-up is therefore:
 
-- A hard block on Orange F (write `208/01` into `EF_FPLMN` via
-  `AT+CRSM` or `uim-write-transparent`), so the modem refuses to
-  camp there and automatic reselection has to pick something else.
-  This is a one-shot change to the SIM's forbidden-PLMN file.
-- A fix for the LTE-attach-never-completes problem, so LTE-only
-  mode can actually attach to Sunrise LTE and naturally exclude
-  Orange F UMTS. The April 13 session 5 notes already hypothesise
-  a **B20 UL TX path issue** on the BQ268 PCB (DL RX works — scans
-  see cells — but UL may not). Before spending a session on RF
-  hardware, extend `cell-diag` to parse the `0xB0C0 LTE_RRC_OTA`
-  `pdu_num` field: if `UL_CCCH` (RRC Connection Request) frames
-  never appear during a `lte,automatic` wake, UL is broken; if
-  they do appear, UL is fine and the problem is higher up (SIB
-  reject, TAI block, MCFG policy, etc). That's a ~1 hour parser
-  change that either confirms a hardware bug or kills the
-  hypothesis cheaply.
+- **Fix the LTE-attach-never-completes block on Sunrise.** April 13
+  session 5 hypothesises a **B20 UL TX path issue** on the BQ268
+  PCB (DL RX works — scans see cells — but UL may not). Before
+  spending a session on RF hardware, extend `cell-diag` to parse
+  the `0xB0C0 LTE_RRC_OTA` `pdu_num` field: if `UL_CCCH` (RRC
+  Connection Request) frames never appear during a `lte,automatic`
+  wake, UL is broken; if they do appear, UL is fine and the
+  problem is higher up (SIB reject, TAI block, MCFG policy, etc).
+  That's a ~1 hour parser change that either confirms a hardware
+  bug or kills the hypothesis cheaply.
 
-Both paths are live follow-ups in `TASKS.md`.
+Secondary follow-ups, to do *only* if the primary stalls:
+
+- Re-run the direct AT CGACT test against Orange F across several
+  attempts with signal-info logging to see whether today's `#33`
+  is a stable contractual wall or an intermittent marginal-RF /
+  dirty-state thing.
+- If Orange F is stable-working in a clean cold-boot test but
+  reliably `#33` mid-session, something in cell-data's reset /
+  MCFG / profile-modify churn is wedging SM state and we need to
+  stop doing whichever operation is poisoning it.
+- As a *last* resort, if LTE attach on Sunrise turns out to be
+  genuinely unreachable, hard-blocking `208/01` via `EF_FPLMN`
+  (`AT+CRSM` or `uim-write-transparent`) would force the modem
+  onto Salt/Swisscom/Sunrise — but this is a workaround on top of
+  a workaround and only makes sense once we know Orange F is
+  broken *and* Sunrise is unreachable, which this session does
+  not yet establish.
+
+All follow-ups are live in `TASKS.md`.
 
 ### Ugly details worth remembering
 
