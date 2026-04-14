@@ -165,7 +165,22 @@ fn readUintAt(path_buf: []u8, root: []const u8, rel: []const u8) ?u64 {
 fn readOperstate(path_buf: []u8, root: []const u8, rel: []const u8) ?bool {
     var buf: [32]u8 = undefined;
     const s = readSmall(path_buf, root, rel, &buf) orelse return null;
-    return std.mem.eql(u8, s, "up");
+    if (std.mem.eql(u8, s, "up")) return true;
+    // ppp_generic.c doesn't call netif_carrier_on/off so ppp0's
+    // operstate is always "unknown" even when the link is fully up
+    // and packets are flowing. Fall back to the carrier file — which
+    // for PPP is set to 1 by ppp_channel_push once LCP completes and
+    // the unit is attached to a channel. We derive the carrier path
+    // from the operstate path by replacing "operstate" with "carrier".
+    if (std.mem.eql(u8, s, "unknown") and std.mem.endsWith(u8, rel, "/operstate")) {
+        const base = rel[0 .. rel.len - "operstate".len];
+        var carrier_rel_buf: [256]u8 = undefined;
+        const carrier_rel = std.fmt.bufPrint(&carrier_rel_buf, "{s}carrier", .{base}) catch return false;
+        var cbuf: [8]u8 = undefined;
+        const cs = readSmall(path_buf, root, carrier_rel, &cbuf) orelse return false;
+        return std.mem.eql(u8, cs, "1");
+    }
+    return false;
 }
 
 /// Read a sysfs string into `out`, returning the number of bytes copied
@@ -373,6 +388,40 @@ test "Sources fixture: full BQ268-shaped tree populates all fields" {
     try std.testing.expectEqual(@as(?bool, false), s.cell_up);
     try std.testing.expectEqual(@as(?u64, 9876), s.cell_rx);
     try std.testing.expectEqual(@as(?u64, 4321), s.cell_tx);
+}
+
+test "Sources fixture: ppp0 operstate=unknown + carrier=1 → cell_up=true" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    // ppp_generic.c leaves operstate at "unknown" even when the link is
+    // fully up. cell_up should fall back to the carrier file.
+    try fx.writeFile("class/net/ppp0/operstate", "unknown\n");
+    try fx.writeFile("class/net/ppp0/carrier", "1\n");
+    try fx.writeFile("class/net/ppp0/statistics/rx_bytes", "111\n");
+    try fx.writeFile("class/net/ppp0/statistics/tx_bytes", "222\n");
+    try fx.writeFile("class/leds/lcd-bl/brightness", "20\n");
+
+    const sources = Sources{ .sysfs_root = fx.root };
+    const s = sources.sample();
+    try std.testing.expectEqual(@as(?bool, true), s.cell_up);
+    try std.testing.expectEqual(@as(?u64, 111), s.cell_rx);
+    try std.testing.expectEqual(@as(?u64, 222), s.cell_tx);
+}
+
+test "Sources fixture: ppp0 operstate=unknown + carrier=0 → cell_up=false" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    try fx.writeFile("class/net/ppp0/operstate", "unknown\n");
+    try fx.writeFile("class/net/ppp0/carrier", "0\n");
+    try fx.writeFile("class/leds/lcd-bl/brightness", "20\n");
+
+    const sources = Sources{ .sysfs_root = fx.root };
+    const s = sources.sample();
+    try std.testing.expectEqual(@as(?bool, false), s.cell_up);
 }
 
 test "Sources fixture: falls back to /sys/class/leds/lcd-bl when no backlight class" {
