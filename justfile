@@ -120,8 +120,20 @@ build-lpac:
     ls -lhR tools/lpac-esim/
 
 # build Alpine rootfs image (requires sudo)
-# Ensures firmware is extracted and modem patch applied before building.
-build-rootfs: extract-firmware patch-modem build-tools
+#
+# Ships UNPATCHED modem firmware by default. Session 8 (2026-04-14)
+# established that the eSIM-provisioning patches in
+# tools/patch-modem-b12.py silently break LTE attach — the modem
+# decodes SIBs but never transmits an RRC Connection Request. We
+# revert any stale patches in firmware/modem/ so reflashing the
+# device doesn't reintroduce the kill-switch.
+#
+# If you need to do lpac eSIM provisioning, use `just
+# provision-esim-mode` which stages a patched firmware copy
+# on-device for the duration of the provisioning run only. See
+# docs/esim_provision.md and docs/planning/cellular-attach-resume.md
+# "Session 8" for the full story.
+build-rootfs: extract-firmware unpatch-modem build-tools
     sudo bash build-rootfs.sh
 
 # ── Cellular ─────────────────────────────────────────────────────────────
@@ -162,8 +174,13 @@ diag-capture duration="60":
 
 # LTE-only DIAG capture: force lte,automatic before wake so the modem
 # cannot fall back to UMTS. Answers "does the modem ever transmit an
-# RRC Connection Request (UL_CCCH) on LTE?" — key datapoint for the
-# B20 UL-TX hypothesis. Restores lte|umts,automatic on exit.
+# RRC Connection Request (UL_CCCH) on LTE?" — direct readout via
+# RRC_SUMMARY. Pre-flights the modem into `online` (session 7+8 both
+# hit the known trap where `dms-get-operating-mode` returns
+# `shutting-down` for up to ~2 min on fresh boot and cell-data wake's
+# 20s WAKE_BUDGET can't ride it out). Also detaches any stale PS
+# attach from a previous run so LTE-only wake doesn't silently
+# inherit a UMTS attach.
 #   just diag-capture-lte          # 90s default
 diag-capture-lte duration="90":
     #!/usr/bin/env bash
@@ -172,6 +189,8 @@ diag-capture-lte duration="90":
     scp -q tools/cell-diag bq268:/tmp/cell-diag
     scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
     ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data'
+    echo "=== pre-flight: ensuring modem is online ==="
+    ssh bq268 'for i in 1 2 3 4 5 6 7 8; do mode=$(qmicli -p -d msmipc://0 --dms-get-operating-mode 2>&1 | sed -n "s/.*Mode: .\\(.*\\)../\\1/p"); echo "  mode=$mode"; case "$mode" in online) break;; shutting-down|resetting) sleep 15;; *) qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 | head -1; sleep 3;; esac; done'
     ssh bq268 'chmod +x /tmp/cell-diag && : > /tmp/cell-diag.log && \
         /tmp/cell-diag -o /tmp/cell-diag.log -d >/tmp/cell-diag.stderr 2>&1 & \
         echo $! >/tmp/cell-diag.pid; sleep 1; \
@@ -248,19 +267,72 @@ flash-rootfs:
     echo "Flashing $img ($(ls -lh "$img" | awk '{print $5}')) → userdata"
     fastboot flash userdata "$img"
 
-# patch modem firmware for eSIM (APDU restriction bypass only)
+# Patch modem firmware for eSIM LPA APDU access (kills LTE attach!).
+# ONLY use this for on-demand eSIM provisioning via `provision-esim-mode`.
+# Do NOT call from build-rootfs — session 8 established that patched
+# firmware silently blocks LTE RRC connection establishment.
 patch-modem:
     python3 tools/patch-modem-b12.py firmware/modem
 
-# check modem patch status without modifying
+# Revert in-tree firmware back to unpatched. Idempotent — if already
+# unpatched, this is a no-op. Called from build-rootfs to make sure
+# we don't bake the LTE kill-switch into the flashed rootfs.
+unpatch-modem:
+    python3 tools/patch-modem-b12.py firmware/modem --revert
+
+# Check in-tree firmware patch status without modifying anything.
 check-modem:
     python3 tools/patch-modem-b12.py firmware/modem --check
 
-# deploy patched modem firmware to device (must be reachable via ssh)
+# Deploy in-tree modem firmware to the live device. Neutral wrt
+# patched/unpatched — deploys whatever's currently in firmware/modem.
+# Use `just check-modem` first if you care which state you're about
+# to ship.
 flash-modem:
     scp firmware/modem/modem.b12 firmware/modem/modem.b14 firmware/modem/modem.b01 firmware/modem/modem.mdt bq268:/lib/firmware/
     ssh bq268 'sync'
     @echo "Firmware deployed. Reboot device to apply."
+
+# eSIM-provisioning mode: temporarily swap in patched modem firmware
+# so lpac can talk to the eUICC's ISD-R channel, then revert and
+# reboot back into the unpatched state. Run this interactively — it
+# waits for user input between the "modem is ready, do your lpac
+# thing" and "done, rolling back" phases.
+#
+# Usage:
+#   just provision-esim-mode
+#   # ... in another terminal on the device:
+#   #     lpac-qmi-wrapper profile list
+#   #     lpac-qmi-wrapper profile download -s <SMDP> -m <activation>
+#   #     ...
+#   # press ENTER in this terminal when done
+#   # the recipe reverts firmware, reboots, and verifies LTE attach
+provision-esim-mode:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    echo "=== staging patched firmware ==="
+    rm -rf /tmp/modem-patched
+    cp -a firmware/modem /tmp/modem-patched
+    python3 tools/patch-modem-b12.py /tmp/modem-patched
+    echo "=== backing up current on-device firmware ==="
+    ssh bq268 'mkdir -p /root/modem-unpatched.bak && cp -a /lib/firmware/modem.b12 /lib/firmware/modem.b14 /lib/firmware/modem.b01 /lib/firmware/modem.mdt /root/modem-unpatched.bak/'
+    echo "=== pushing patched firmware ==="
+    scp -q /tmp/modem-patched/modem.b12 /tmp/modem-patched/modem.b14 /tmp/modem-patched/modem.b01 /tmp/modem-patched/modem.mdt bq268:/lib/firmware/
+    ssh bq268 'sync && reboot'
+    echo "=== waiting for device to come back ==="
+    for i in $(seq 1 24); do ping -c 1 -W 2 -q 192.168.179.37 >/dev/null 2>&1 && break; sleep 5; done
+    ssh bq268 'qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 >/dev/null || true'
+    echo ""
+    echo "=== device is up with PATCHED firmware (LTE will not work) ==="
+    echo "Run lpac commands now on the device. Press ENTER when done."
+    read -r
+    echo "=== restoring unpatched firmware ==="
+    ssh bq268 'cp -a /root/modem-unpatched.bak/modem.b12 /root/modem-unpatched.bak/modem.b14 /root/modem-unpatched.bak/modem.b01 /root/modem-unpatched.bak/modem.mdt /lib/firmware/ && sync && reboot'
+    echo "=== waiting for device to come back ==="
+    for i in $(seq 1 24); do ping -c 1 -W 2 -q 192.168.179.37 >/dev/null 2>&1 && break; sleep 5; done
+    ssh bq268 'qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 >/dev/null || true'
+    echo "=== verifying LTE attach ==="
+    just diag-capture-lte 60 | tail -5 || true
 
 # reboot device from fastboot
 reboot:

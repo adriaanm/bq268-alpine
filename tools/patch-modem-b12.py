@@ -146,6 +146,27 @@ def main():
     fw_dir = Path(sys.argv[1])
     check_only = "--check" in sys.argv
     revert = "--revert" in sys.argv
+
+    # --patches=1,3 selects which patches to apply, 1-based across
+    # the global order [APDU bypass, LPA ISD-R disable, AID corruption].
+    # The unselected patches are *reverted* instead, so you can flip
+    # between patch sets without running --revert first. Session 8
+    # follow-up: test whether 1+3 (dropping the LPA ISD-R disable,
+    # our prime suspect for the LTE kill-switch) is enough for lpac
+    # to reach the eUICC.
+    selected = None
+    for arg in sys.argv:
+        if arg.startswith("--patches="):
+            selected = set(int(x) for x in arg.split("=", 1)[1].split(",") if x)
+    if selected is not None:
+        ordered = PATCHES_B12 + PATCHES_B14  # indices 1,2,3 in docstring order
+        for i, p in enumerate(ordered, start=1):
+            if i not in selected:
+                # Revert this patch: swap original/patched so apply
+                # rolls it back (idempotent via the patched-state
+                # check in apply_patches).
+                p["original"], p["patched"] = p["patched"], p["original"]
+
     if revert:
         # Swap 'original' and 'patched' so the existing apply/check
         # machinery rolls the firmware back. Used by the session 8
