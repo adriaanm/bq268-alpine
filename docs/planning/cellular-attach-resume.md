@@ -25,6 +25,240 @@ hardware on this board. Every remaining hypothesis has to be
 compatible with "Android, same SIM, same location, works." That
 cuts a lot of wishful thinking.
 
+## Session 2026-04-14 (session 8) — 🏆 ROOT CAUSE: eSIM-provisioning firmware patches silently break LTE attach
+
+**First ever successful LTE attach + real data over LTE on the BQ268.**
+Attached to Sunrise (228/02) on LTE, RSRP -111 dBm, SNR 9 dB, PPP up
+with public IPv4 `100.100.105.20`, ping 8.8.8.8 at 0% loss. Fully end
+to end.
+
+### The trigger
+
+After session 7 ruled out (via SIB1 decode of the captured BCCH
+payloads) the idea that cells were barred or operator-reserved — all
+six visible Swiss LTE cells broadcast `cellBarred: notBarred` and
+`intraFreqReselection: allowed`, including the Sunrise B20 cell
+Android attaches to (PCI 76, EARFCN 6200) — the user flagged an
+under-explored hypothesis: **"We patched the modem firmware for
+eSIM provisioning. The patches were accepted, but maybe there's a
+silent kill-switch for patched firmware that's keeping the modem
+from progressing?"**
+
+This was dismissed in earlier sessions because (a) UMTS PS attach
+*does* work on patched firmware, so there's no *blanket* kill-switch
+and (b) the patch script only touches an APDU bitmask and the LPA
+ISD-R registration path, none of which obviously touch LTE
+bringup. But none of our existing evidence had ever tested
+**BQ268 with unpatched firmware on LTE**, so the hypothesis had
+never actually been falsified — we just didn't have the datapoint.
+
+### The experiment
+
+1. `tools/patch-modem-b12.py` grew a `--revert` flag that swaps the
+   `original`/`patched` byte sequences in `PATCHES_B12`/`PATCHES_B14`
+   before invoking the existing `apply_patches` + hash-update logic.
+2. Staged a rolled-back copy of the firmware into
+   `/tmp/modem-unpatched/` and verified with `--check` that all
+   three patches report `ORIGINAL`.
+3. Backed up the patched runtime files on device to
+   `/root/modem-patched.bak/`, scp'd the unpatched
+   `modem.b12/b14/b01/mdt` into `/lib/firmware/`, and rebooted so
+   MBA reloads the segments from disk.
+4. After the device came back, pre-flighted the modem to `online`
+   via `dms-set-operating-mode=online` (the `shutting-down`-on-boot
+   known-issue still bites on the first wake attempt), then ran
+   `just diag-capture-lte 90`.
+
+### The result — the single-run RRC_SUMMARY tells the whole story
+
+**Patched firmware** (session 7, unchanged):
+
+```
+total=241 parse_fail=0
+  bcch_bch=0  bcch_dl_sch=241
+  pcch=0  dl_ccch=0  dl_dcch=0
+  ul_ccch=0  ul_dcch=0
+```
+
+**Unpatched firmware** (this session):
+
+```
+total=213 parse_fail=0
+  bcch_bch=0  bcch_dl_sch=81
+  pcch=67  dl_ccch=1  dl_dcch=14
+  ul_ccch=1  ul_dcch=49
+```
+
+**`ul_ccch` went from 0 → 1** (one RRC Connection Request sent — the
+very thing that was never happening across three entire sessions
+of debugging). `dl_ccch` 0 → 1 (one RRC Connection Setup received).
+`ul_dcch` 0 → 49 and `dl_dcch` 0 → 14 (SRB1/SRB2 signalling
+traffic — NAS ATTACH REQUEST, SECURITY MODE, ATTACH ACCEPT,
+PDN CONNECTIVITY REQUEST/ACCEPT). And `pcch` 0 → 67 (the network
+pages the UE only after registration is complete, so 67 paging
+messages means the device is a first-class participant in the
+cell again).
+
+Immediately after the capture, QMI reported:
+
+```
+Registration state: registered
+CS: attached
+PS: attached
+Radio interfaces: lte
+Current PLMN: MCC 228 MNC 2 (Sunrise)
+LTE: RSSI -77 dBm  RSRQ -10 dB  RSRP -111 dBm  SNR 9.0 dB
+```
+
+and `cell-data up` brought PPP up cleanly:
+
+```
+cell-data: serving plmn=228/2 rat=lte roaming=true (home=525/1)
+cell-data: data path up on ppp0 (100.100.105.20)
+```
+
+followed by a clean `ping -I ppp0 8.8.8.8` at 0% loss and ~180 ms
+RTT. **This is the first real LTE data the BQ268 has ever carried
+in this investigation.**
+
+### What's actually happening
+
+The `tools/patch-modem-b12.py` patches — applied to enable raw
+QMI UIM APDU access for eSIM provisioning via lpac — do more than
+their docstring comment implies. At least one of them (most
+likely Patch 2, the LPA ISD-R disable at `modem.b12 0x619014`
+that rewrites a `call lpa_register` instruction to
+`r0 = #0x1`) has a side-effect that silently blocks LTE NAS from
+progressing past PLMN search. UMTS NAS is unaffected, which is
+why session 3 and onward never noticed — we were camped on
+UMTS Orange F throughout the investigation because that was
+the only thing that worked.
+
+Concretely: on patched firmware, NAS sits in PLMN-search limbo
+(we only saw 10 × 0xB0EE NAS PLMN-op events and zero
+0xB0E0 LTE_NAS_EMM_STATE transitions during the session 7
+capture). NAS never decides to proceed with an attach on any
+LTE PLMN, so it never asks LTE RRC to establish a connection,
+and the 241 BCCH_DL_SCH frames we see are just idle-mode cell
+measurement activity. On unpatched firmware that same idle-mode
+measurement completes normally and NAS transitions through
+its full attach sequence in <10 s, producing the 213-event
+capture above.
+
+We don't yet know which of the three patches is the
+load-bearing one, or what exact mechanism in Qualcomm's modem
+firmware takes "the LPA didn't register for ISD-R correctly"
+and translates that into "never kick LTE RRC". The experiment
+to narrow it down is to revert the patches one at a time and
+rerun the capture — backlog item in TASKS.md.
+
+### Implications for the rootfs build
+
+- **The currently-shipping `firmware/modem/*.mbn` tree in this
+  repo is patched** (confirmed via
+  `patch-modem-b12.py firmware/modem --check`). Any `just
+  build-rootfs` → flash produces a device that cannot use LTE.
+  That's been the state since we first baked the patched
+  firmware in for eSIM provisioning.
+- **The eSIM is already provisioned and active on the eUICC.**
+  The patches are needed at the LPA APDU path only during
+  profile *management* (add/delete/switch) via lpac. Once a
+  profile is enabled, the modem uses it for authentication
+  without touching ISD-R on the provisioning channel, so the
+  running modem does not need the patches for day-to-day
+  cellular operation.
+- **Proposed path forward**: ship unpatched firmware as the
+  rootfs default, keep patched segments alongside in tree for
+  on-demand use, and add a `just provision-esim` recipe that
+  (a) swaps in patched `b12/b14/b01/mdt`, (b) reboots, (c)
+  runs the lpac provisioning flow, (d) swaps back to unpatched,
+  (e) reboots, (f) verifies LTE attach still works. Tracked as
+  a new task.
+- **Narrower option**: figure out which of the three patches
+  is load-bearing (Patch 1 APDU bitmask is almost certainly
+  orthogonal; the LPA ISD-R disable is the prime suspect) and
+  try a minimal patch set that keeps eSIM provisioning working
+  without killing LTE. If Patch 1 alone is enough for lpac to
+  talk to ISD-R, we ship firmware with only Patch 1.
+
+### Tools landed this session
+
+- `tools/cell-diag.c` RRC OTA decoder now dumps the full payload
+  hex under `"raw"` alongside the parsed `{ver, pci, earfcn,
+  ch, ch_name}`. We previously used a best-guess `pdu_off=15 +
+  u16 len` pair that was off-by-two — the raw-payload-and-slice
+  approach below is more robust.
+- `tools/decode-bcch.py` offline decoder reads
+  `cell-diag-lte.log`, slices `raw[19:]` out of each
+  `BCCH_DL_SCH` event, runs it through
+  `pycrate_asn1dir.RRCLTE.EUTRA_RRC_Definitions.BCCH_DL_SCH_Message`,
+  and emits a per-cell summary of PLMN list, TAC, Cell ID,
+  `cellBarred`, `intraFreqReselection`, `csg-Indication`,
+  `q-RxLevMin`, and `freqBandIndicator`. Needs `pycrate` via
+  `pip3 install --break-system-packages pycrate`. The empirical
+  pdu-offset (19 bytes into the 0xB0C0 payload for ver=13) was
+  reverse-engineered by lining up known fields in the raw hex
+  against the SIB1 ASN.1 schema; it's documented in
+  `decode-bcch.py`'s module docstring.
+- `tools/cell-diag.c` LTE log subscription widened from
+  `0xC0..0xFF` to `0x00..0xFF` within equipment id 0x0B. The
+  wider mask doesn't change the key UL_CCCH finding but does
+  expose 0xB0EE (NAS PLMN op), 0xB0C3/0xB0C4 (serving cell /
+  PLMN search), 0xB063 (ML1 DL bursts), and on unpatched
+  firmware also 0xB0CB (LTE_ML1 serving cell state) — more
+  context for future debugging.
+- `tools/patch-modem-b12.py --revert` flag rolls the patches
+  back in place. Used to stage `/tmp/modem-unpatched/` for the
+  kill-switch experiment.
+
+### SIB1 decode results (session 7 data, analyzed this session)
+
+For the record, here's the per-cell SIB1 summary from
+`decode-bcch.py cell-diag-lte.log` on the session 7 capture —
+all six visible Swiss LTE cells are permissive, which is
+consistent with everything-works-on-Android:
+
+```
+PCI   39 EARFCN  3750 (B8)   PLMN 228/01 Swisscom  notBarred allowed
+PCI   76 EARFCN  6200 (B20)  PLMN 228/02 Sunrise   notBarred allowed  ← Android camps here
+PCI  154 EARFCN    50 (B1)   PLMN 228/02 Sunrise   notBarred allowed
+PCI  210 EARFCN  1850 (B3)   PLMN 228/02 Sunrise   notBarred allowed
+PCI  228 EARFCN  6300 (B20)  PLMN 228/01 Swisscom  notBarred allowed
+PCI  337 EARFCN  9435 (B28)  PLMN 228/01 Swisscom  notBarred allowed
+```
+
+No cellBarred, no cellReservedForOperatorUse, no CSG indication,
+q-RxLevMin uniformly -64 dBm (trivially satisfiable). Nothing
+at the SIB level to explain why the modem refuses to RRC-connect.
+
+This decoder and the captured log are kept for any future
+inspection — if we want to dig further into why patched firmware
+abandons NAS PLMN selection, the raw frames are in
+`cell-diag-lte.log` at the repo root.
+
+### Known traps rediscovered this session
+
+- **`cell-data wake` silently "succeeds" when the modem is
+  already PS-attached** from a previous run. The session 7
+  LTE-only capture's restore step re-attached the modem to
+  UMTS Orange F, so running `just diag-capture-lte` again
+  without a reboot makes the wake a no-op ("serving
+  plmn=208/1 rat=umts"). For the unpatched firmware test we
+  had to reboot for the firmware reload anyway, so the issue
+  didn't bite — but in general, the LTE-only capture recipe
+  should force `dms-set-operating-mode=offline`+`online` or
+  clear PS attach before kicking the wake. Backlog.
+- **The modem peripheral's `state` sysfs says `ONLINE` while
+  `dms-get-operating-mode` says `shutting-down`** for up to
+  ~2 minutes after a fresh boot. The subsys is up, but the
+  QMI DMS state machine hasn't yet processed its own boot
+  transition. Manually issuing `dms-set-operating-mode=online`
+  unsticks it. Session 7 and session 8 both hit this; the
+  session 7 first attempt actually crashed the device mid-wake
+  because `cell-data wake`'s 20 s `WAKE_BUDGET` ran out and
+  escalated to `dms reset` while the modem was mid-boot. The
+  `diag-capture-lte` recipe should pre-flight this.
+
 ## Session 2026-04-14 (session 7) — LTE UL RRC never fires, on any band
 
 Extended `tools/cell-diag.c` to parse the 0xB0C0 LTE_RRC_OTA header
