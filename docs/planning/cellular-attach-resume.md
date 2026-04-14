@@ -25,6 +25,148 @@ hardware on this board. Every remaining hypothesis has to be
 compatible with "Android, same SIM, same location, works." That
 cuts a lot of wishful thinking.
 
+## Session 2026-04-14 (session 7) — LTE UL RRC never fires, on any band
+
+Extended `tools/cell-diag.c` to parse the 0xB0C0 LTE_RRC_OTA header
+(version-dispatch: u16 earfcn for ver≤9, u32 earfcn for ver≥13) and
+emit `{ver, pci, earfcn, ch, ch_name}` per event plus an
+`RRC_SUMMARY` histogram on exit. Added `just diag-capture-lte` which
+runs `cell-diag` while forcing `cell-data wake` into LTE-only mode
+via the new `CELL_DATA_RAT` env override in `tools/cell-data.sh`
+(respected by `ensure_rat_prefs`), then restores `lte|umts` on exit.
+
+**Result of the first 90-second LTE-only capture (RRC_SUMMARY):**
+
+```
+total=241 parse_fail=0
+  bcch_bch=0  bcch_dl_sch=241
+  pcch=0  dl_ccch=0  dl_dcch=0
+  ul_ccch=0  ul_dcch=0
+```
+
+**241 BCCH_DL_SCH frames, zero UL_CCCH, zero anything else.** The
+modem scanned and decoded SIBs on at least six distinct LTE cells
+during the wake, across three different bands:
+
+| PCI | EARFCN | Band |
+|-----|--------|------|
+| 39  | 3750   | B7 (2600 MHz) |
+| 348 | 1300   | B3 (1800 MHz) |
+| 195 | 1601   | B3 (1800 MHz) |
+| 197 | 1601   | B3 (1800 MHz) |
+| 426 | 202    | B1 (2100 MHz) |
+| …   | …      | … |
+
+On all of them the modem completed DL SIB decode successfully
+(all 241 events parse cleanly, ver=13) and then **never transmitted
+a single RRC Connection Request**. Not on B20, not on B3, not on B7,
+not on B1. No random-access Msg3 ever makes it to the RRC layer.
+
+### What this rules out
+
+- **B20-specific UL hardware issue** — dead hypothesis. The April-13
+  session 5 suggestion that the B20 PA/filter population on the
+  BQ268 PCB might be the gate is inconsistent with B1/B3/B7 also
+  failing to emit UL_CCCH. If it were RF-hardware-path the failure
+  pattern would be band-asymmetric.
+- **Cell-reselection camping on the wrong cell** — also dead. The
+  modem is clearly measuring and ranking multiple LTE cells. It
+  just never picks one to attach to.
+- **Android-reference ground truth contradiction** — fully
+  intact: Android on the same SIM at the same location reaches
+  RRC Connection Request on Sunrise B20 within seconds, so the
+  failure is BQ268-specific and software-rooted, not hardware.
+
+### What this points at
+
+The failure is **upstream of RRC connection establishment**. The
+candidates, in rough order of likelihood:
+
+1. **NAS layer refuses to trigger RRC_CONNECTION_REQUEST.** NAS only
+   asks RRC to set up a connection once it has (a) chosen a PLMN and
+   (b) decided to start an ATTACH/SERVICE REQUEST procedure. If
+   NAS's PLMN-selection logic decides none of the visible LTE cells
+   are acceptable — because of SOR/steering rules, forbidden-TAI
+   lists, SIB1 `cellBarred`/`intraFreqReselection`/`csg-Indication`
+   flags, operator-policy blocks in the active MCFG, or a
+   `T3346` / attach-attempt-counter backoff from a previous reject
+   — NAS never kicks RRC. RRC stays in IDLE, keeps decoding SIBs on
+   multiple cells (which is exactly what we see), and never
+   transitions.
+2. **Cell selection criterion S fails on every visible cell.** The
+   modem's cell-selection loop computes `Srxlev = Qrxlevmeas −
+   (Qrxlevmin + Qrxlevminoffset) − Pcompensation`. If `Qrxlevmin`
+   from SIB1 is very high and our measured RSRP is too low for the
+   criterion, the modem treats the cell as "not suitable" and
+   never camps on it. But this normally produces `cell reselection
+   to *** failed`-style events which we would see via 0xB0E0
+   (LTE_NAS_EMM_STATE) — we don't. Also this would be band-sensitive
+   and we're not seeing band asymmetry.
+3. **MCFG-SW policy block**. The currently-active Singtel
+   Commercial MCFG encodes Singtel's preferred-roaming-partner
+   table and SOR rules. If that table marks all visible CH/FR LTE
+   PLMNs as forbidden for PS attach, NAS will drop them out of
+   the candidate set and never kick RRC. Session 4 already
+   established that this MCFG has ~22 NV-by-number items we
+   haven't decoded.
+4. **Attach-attempt-counter / T3346 timer from an earlier failed
+   attempt is still running**. If the modem has retried enough
+   times that NAS has entered "attach attempt counter >= 5" state
+   it will stop trying PLMN selection until a timer expires, a
+   SIM is re-read, or the power is cycled. Would explain why
+   BCCH is decoded (that's just measurement) but no RRC is ever
+   triggered.
+
+### Immediate follow-ups
+
+- **Extend `cell-diag` log subscription to equip_id 0x0B items
+  0xE0..0xEF and 0xE8..0xEB** — covers 0xB0E0 LTE_NAS_EMM_STATE and
+  0xB0E1 FORBIDDEN_TAI. The current mask is 0xC0..0xFF so these
+  *should* already be enabled, but nothing's showing up. Either
+  (a) NAS never transitions state while we're in this stuck
+  condition (plausible if it's camping in "searching, nothing
+  acceptable"), or (b) the bit positions for EMM events don't
+  match the 0xC0..0xFF range on this firmware version. Worth a
+  single separate capture with the mask widened to 0x00..0xFF to
+  see if other NAS events show up.
+- **Add equip_id 0x04 (1X/GSM/WCDMA NAS) and 0x07 (LTE ML1
+  serving/neighbour)** to the subscription. 0xB139/0xB17F ML1
+  serving-cell measurements and LTE NAS GMM/MM events may reveal
+  *why* cells are being rejected.
+- **Dump SIB1 `cellBarred` / `intraFreqReselection` / PLMN-list
+  for each cell** the modem measured. Can be decoded from the
+  241 BCCH_DL_SCH payloads we already captured — each is an
+  ASN.1-encoded RRC PDU, the first SIB is SIB1. Don't need new
+  tooling, just a decoder pass over `cell-diag-lte.log`.
+- **Re-check the attach-attempt counter**. On QMI: try a full
+  `dms-set-operating-mode=offline` → `online` cycle *without*
+  our script's `ensure_rat_prefs` churn, then capture. If the
+  first wake after a clean cycle emits UL_CCCH and subsequent
+  wakes don't, we're fighting NAS state that the script is
+  leaving behind.
+- **Dump active MCFG and diff against what Android uses**. Still
+  the highest-leverage configuration lever that's plausibly
+  different from the Android reference. Session 3 established we
+  know how to decode the NV items; we just haven't done it for
+  the bitmap/SOR entries.
+
+### Known traps rediscovered this session
+
+- **Starting `cell-data wake` on a freshly-booted device with
+  modem in `shutting-down` can crash the device** — a full
+  reboot happened mid-capture (uptime went back to 1 minute
+  between the two runs). Likely the same `[pppd] in D state`
+  SMD teardown hazard, or the `dms-set-operating-mode=reset`
+  kworker leak exceeding a safe ceiling. **Workflow
+  implication**: before running `just diag-capture-lte`, check
+  `qmicli --dms-get-operating-mode` and wait for `online`
+  manually, or `qmicli --dms-set-operating-mode=online` first.
+  A first-boot-safe wake path is a separate task.
+- **Parser decision was correct**: ver=13 uses the u32 earfcn
+  layout, and the `pdu_num` offset (13) with `phy_cell_id` at
+  offset 4 all produced sensible values on first run. The v≤9
+  fallback path is still untested but unused on this firmware.
+
 ## Session 2026-04-14 (session 6) — attach fixes landed, PDP-activation cause identified as Orange F #33
 
 This session moved the story forward in two big ways: the attach-side
