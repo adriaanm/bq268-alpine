@@ -152,6 +152,102 @@ and translates that into "never kick LTE RRC". The experiment
 to narrow it down is to revert the patches one at a time and
 rerun the capture — backlog item in TASKS.md.
 
+### Patch bisection (later in session 8)
+
+Added `tools/patch-modem-b12.py --patches=N[,M,...]` which
+selects a subset of patches to apply (1-based across the global
+order `[APDU restriction bypass, LPA ISD-R disable, AID
+corruption]`) and reverts the rest — so the same invocation
+can flip between any subset cleanly. Ran a bisection of all
+three patches against LTE attach (via `just diag-capture-lte`
+RRC_SUMMARY) and lpac eUICC reachability (via
+`LPAC_APDU=stdio lpac profile list < <(lpac-qmi-wrapper)`,
+which fails at `euicc_init` code `-1` when the LPA intercepts
+the ISD-R channel).
+
+| Patches     | LTE attach | lpac euicc_init | Notes                               |
+|-------------|:----------:|:---------------:|-------------------------------------|
+| *none*      |     ✓      |        ✗        | Session 8 main result               |
+| 1           |     ✗      |        ✗        | Kill-switch trigger                 |
+| 2           |     ✓      |        ✗        |                                     |
+| 3           |     ✓      |        ✗        |                                     |
+| 1+3         |     ✗      |        ✗        |                                     |
+| 2+3         |     ✓      |        ✗        | Our best-hoped-for-minimal, no dice |
+| 1+2+3       |     ✗      |     ✓ (hist)    | Historical; provisioning works      |
+
+The table collapses to one fact: **Patch 1 (APDU restriction
+bypass, `modem.b12` offset `0x121DCC`, 4-byte Hexagon instruction
+`r0 = memw(r1+#0x7B8) → r0 = #0x0`) is simultaneously the LTE
+kill-switch AND required for lpac to reach the eUICC ISD-R
+channel**. There is no subset of the three patches that enables
+provisioning without breaking LTE. The two capabilities are
+genuinely mutually exclusive on this firmware.
+
+Patches 2 and 3 are individually benign for LTE, and their
+combination is also benign. But neither enables provisioning,
+either alone or together — so there is no point shipping them
+in the LTE default. Only one untested combo remains, `1+2`, and
+it's uninteresting: we already know `1` alone breaks LTE, so
+`1+2` can only break LTE too; the one remaining question is
+whether `1+2` is enough for provisioning (avoiding patch 3's
+AID corruption). That question is cosmetic — the `provision-
+esim-mode` recipe already ships the full `1+2+3` set which is
+known to work for provisioning, and provisioning is rare enough
+that a minor patch-count reduction isn't worth another test
+cycle. Left as a backlog nice-to-have.
+
+Best guess at *why* patch 1 kills LTE: the `r0 = memw(r1+#0x7B8)`
+instruction reads a struct field at offset 0x7B8, and whatever
+lives there looks like a per-access-technology capability /
+eligibility bitmap that NAS consults during PLMN selection.
+Zeroing it out ("always allow" for the APDU restriction path)
+also zeroes out the LTE-allowed bit for NAS, causing NAS to
+silently treat LTE as unavailable and never progress past
+idle-mode SIB measurement. UMTS still works because its
+eligibility is in a different field. This is a guess — confirming
+would need Hexagon disassembly of the code at `b12 0x121DCC`
+to see what function the instruction is in, and whether the
+same field is read by NAS code paths. Not worth the dig right
+now unless a future session needs it.
+
+### Workflow in the justfile
+
+- `build-rootfs` now depends on `unpatch-modem`, not `patch-modem`.
+  Every rootfs build produces an LTE-working device by default.
+- `patch-modem` still exists but is no longer called from the
+  build. It's only invoked by `provision-esim-mode`.
+- `provision-esim-mode`: stages patched firmware, backs up the
+  current on-device unpatched segments to
+  `/root/modem-unpatched.bak/`, pushes patched segments, reboots,
+  prompts for the interactive lpac session, then restores
+  unpatched and reboots again and verifies LTE attach with a
+  short `diag-capture-lte`. Intended for a once-every-few-months
+  eSIM profile change.
+- `diag-capture-lte` grew a pre-flight loop that waits for the
+  modem to leave `shutting-down` (up to 8 × 15 s) and forces
+  `dms-set-operating-mode=online` before starting the capture.
+  Both of session 7/8's bounce-cycles on this trap are now
+  handled by the recipe rather than requiring manual
+  intervention.
+
+### Final runtime state
+
+Live device is running **unpatched firmware**, verified end to
+end:
+
+```
+serving: 228/02 Sunrise LTE, roaming
+cell-data up → ppp0 10.192.231.199
+ping -I ppp0 8.8.8.8: 3/3, avg 232 ms
+cell-data down → clean
+```
+
+Still-open cellular tasks are now about productising this path
+(hardening, metrics, the `wata-metricsd` on-device cellular
+validation that couldn't complete during session 3 because
+attach wasn't working) rather than investigating why it
+doesn't work.
+
 ### Implications for the rootfs build
 
 - **The currently-shipping `firmware/modem/*.mbn` tree in this
