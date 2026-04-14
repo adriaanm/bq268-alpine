@@ -466,7 +466,7 @@ qmicli -d msmipc://0 --uim-get-card-status
 ### DIAG kernel status
 
 Kernel #55 has three fixes for DIAG on MSM8909 (see
-`docs/modem_patch_plan.md` "DIAG kernel fixes" section):
+[`docs/diag_kernel_fixes.md`](diag_kernel_fixes.md)):
 1. SMD channel pre-registration (commit `034ada814c88`)
 2. Direct feature mask send (workqueue bypass)
 3. Modem command fallback forwarding

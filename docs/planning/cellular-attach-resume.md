@@ -1200,7 +1200,7 @@ doing by populating the modem's preferred-PLMN list, then hardening
    (#33/#36/#8/#11/#27/#50/#51 all have different fixes) from "NAS
    backoff after earlier rejects". This is the single highest-value
    piece of tooling the project lacks. Starting points:
-   - `modem_decompiled_src/pass7_diag*.c` — already have the DIAG
+   - `~/bq268-modem-fw/decompiled/pass7_diag*.c` — already have the DIAG
      CNTL analysis.
    - `memory/project_diag_state.md` — known state: feature mask
      sends OK but modem port blocks cmd registration. That blocker
@@ -1308,7 +1308,7 @@ importance:
    the session's fixes worked. If we see another ~2s EMM-REGISTERED
    flash and collapse, the IPv4v6 change was not enough and the next
    step is DIAG NAS logging (project, not a one-liner — see
-   `modem_decompiled_src/pass7_diag*.c` as a starting point) to get
+   `~/bq268-modem-fw/decompiled/pass7_diag*.c` as a starting point) to get
    the real ESM cause code.
 5. Once attach sticks, add `ensure_wds_profile` as a new idempotent
    step in `cell-data.sh`: checks profile 1's APN and PDP type and
@@ -1369,7 +1369,7 @@ Most likely causes, in order of probability:
    The cause code narrows down the layer (#11/#13 → roaming
    agreement; #14 → plan-level; #15 → SIB / tracking-area
    mismatch). DIAG is functional — see
-   `modem_decompiled_src/pass7_diag*.c` and `tools/diag-*` for the
+   `~/bq268-modem-fw/decompiled/pass7_diag*.c` and `tools/diag-*` for the
    existing toolchain.
 3. **Cross-check with a different SIM** in the same device:
     - A local Swiss prepaid (Sunrise/Swisscom/Salt) should attach

@@ -26,7 +26,8 @@ prefix filter is then bypassed by using a short 6-byte AID prefix
 
 After patching, updates the SHA-256 hash for b12 in modem.b01 and
 modem.mdt. MBA only checks hashes, not the RSA signature, so no
-re-signing is needed. See docs/modem_patch_plan.md for full analysis.
+re-signing is needed. See ~/bq268-modem-fw/README.md for the full
+firmware-patch analysis (VAs, dispatch chain, candidate replacements).
 
 Usage:
     python3 tools/patch-modem-b12.py firmware/modem
