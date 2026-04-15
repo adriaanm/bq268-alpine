@@ -22,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <poll.h>
 
 /* AF_MSM_IPC = 27 on MSM8909 */
@@ -76,11 +77,64 @@ struct __attribute__((packed)) qmi_svc_hdr {
 
 static int uim_fd = -1;
 static uint16_t txn_id = 1;
-static uint8_t uim_client_id = 1;  /* locally assigned, not from CTL */
 
-/* UIM service: node 0, port 39 (found from qmicli verbose output) */
 static uint32_t uim_node = 0;
-static uint32_t uim_port = 39;
+static uint32_t uim_port = 0;
+
+/* IPC Router service lookup. The UIM service registers a new port_id
+ * whenever the modem restarts, so looking it up at runtime is required —
+ * a hardcoded port will sometimes land on a stale or wrong service and
+ * get rejected with QMI error 50 ("incorrect message id / not supported"). */
+#define IPC_ROUTER_IOCTL_MAGIC 0xC3
+#define IPC_ROUTER_IOCTL_LOOKUP_SERVER  _IOWR(IPC_ROUTER_IOCTL_MAGIC, 2, struct sockaddr_msm_ipc)
+
+struct msm_ipc_server_info {
+    uint32_t node_id;
+    uint32_t port_id;
+    uint32_t service;
+    uint32_t instance;
+};
+
+struct server_lookup_args {
+    struct msm_ipc_port_name port_name;
+    int num_entries_in_array;
+    int num_entries_found;
+    uint32_t lookup_mask;
+    struct msm_ipc_server_info srv_info[0];
+};
+
+static int lookup_uim_service(void)
+{
+    int fd = socket(AF_MSM_IPC, SOCK_DGRAM, 0);
+    if (fd < 0) {
+        perror("socket(AF_MSM_IPC) for lookup");
+        return -1;
+    }
+
+    struct {
+        struct server_lookup_args args;
+        struct msm_ipc_server_info info;
+    } lookup;
+    memset(&lookup, 0, sizeof(lookup));
+    lookup.args.port_name.service = QMI_SVC_UIM;
+    lookup.args.port_name.instance = 0;
+    lookup.args.num_entries_in_array = 1;
+    lookup.args.lookup_mask = 0;
+
+    int rc = ioctl(fd, IPC_ROUTER_IOCTL_LOOKUP_SERVER, &lookup);
+    close(fd);
+    if (rc < 0) {
+        perror("ioctl(LOOKUP_SERVER)");
+        return -1;
+    }
+    if (lookup.args.num_entries_found < 1) {
+        fprintf(stderr, "UIM service not registered with IPC Router\n");
+        return -1;
+    }
+    uim_node = lookup.info.node_id;
+    uim_port = lookup.info.port_id;
+    return 0;
+}
 
 static int hex_to_bytes(const char *hex, uint8_t *out, int max_len)
 {
@@ -107,6 +161,9 @@ static void hex_dump(const char *label, const uint8_t *data, int len)
 
 static int msmipc_connect(void)
 {
+    if (lookup_uim_service() < 0)
+        return -1;
+
     uim_fd = socket(AF_MSM_IPC, SOCK_DGRAM, 0);
     if (uim_fd < 0) {
         perror("socket(AF_MSM_IPC)");
@@ -220,17 +277,14 @@ static int cmd_open(const char *aid_hex)
     uint8_t tlvs[256];
     int toff = 0;
 
-    /* TLV 0x01: Slot = 1 */
-    tlvs[toff++] = 0x01;  /* type */
-    tlvs[toff++] = 0x01;  /* length */
-    tlvs[toff++] = 0x00;  /* length hi */
-    tlvs[toff++] = 0x01;  /* slot 1 */
+    /* TLVs are emitted in descending type-ID order to match libqmi. The
+     * modem's UIM service rejects ascending order with QMI error 50. */
 
     /* TLV 0x10: AID (optional) */
     if (aid_hex && *aid_hex) {
         uint8_t aid[32];
         int aid_len = hex_to_bytes(aid_hex, aid, sizeof(aid));
-        tlvs[toff++] = 0x10;  /* type */
+        tlvs[toff++] = 0x10;
         uint16_t tlv_len = 1 + aid_len;
         *(uint16_t *)(tlvs + toff) = tlv_len;
         toff += 2;
@@ -238,6 +292,12 @@ static int cmd_open(const char *aid_hex)
         memcpy(tlvs + toff, aid, aid_len);
         toff += aid_len;
     }
+
+    /* TLV 0x01: Slot = 1 */
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x00;
+    tlvs[toff++] = 0x01;
 
     printf("Opening logical channel (AID=%s)...\n", aid_hex ?: "none");
     if (qmi_send(QMI_UIM_OPEN_LOGICAL_CHANNEL, tlvs, toff) < 0)
@@ -290,11 +350,15 @@ static int cmd_apdu(int channel, const char *apdu_hex, int include_ch_tlv)
     uint8_t tlvs[1024];
     int toff = 0;
 
-    /* TLV 0x01: Slot = 1 */
-    tlvs[toff++] = 0x01;
-    tlvs[toff++] = 0x01;
-    tlvs[toff++] = 0x00;
-    tlvs[toff++] = 0x01;
+    /* Descending TLV ID order to match libqmi. */
+
+    /* TLV 0x10: Channel ID (optional) */
+    if (include_ch_tlv) {
+        tlvs[toff++] = 0x10;
+        tlvs[toff++] = 0x01;
+        tlvs[toff++] = 0x00;
+        tlvs[toff++] = (uint8_t)channel;
+    }
 
     /* TLV 0x02: APDU data (uint16 len + bytes) */
     tlvs[toff++] = 0x02;
@@ -306,13 +370,11 @@ static int cmd_apdu(int channel, const char *apdu_hex, int include_ch_tlv)
     memcpy(tlvs + toff, apdu, apdu_len);
     toff += apdu_len;
 
-    /* TLV 0x10: Channel ID (optional) */
-    if (include_ch_tlv) {
-        tlvs[toff++] = 0x10;
-        tlvs[toff++] = 0x01;
-        tlvs[toff++] = 0x00;
-        tlvs[toff++] = (uint8_t)channel;
-    }
+    /* TLV 0x01: Slot = 1 */
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x00;
+    tlvs[toff++] = 0x01;
 
     printf("Send APDU (ch=%d, ch_tlv=%s, %d bytes)...\n",
            channel, include_ch_tlv ? "yes" : "no", apdu_len);
@@ -356,17 +418,19 @@ static int cmd_close(int channel)
     uint8_t tlvs[16];
     int toff = 0;
 
-    /* TLV 0x01: Slot = 1 */
-    tlvs[toff++] = 0x01;
-    tlvs[toff++] = 0x01;
-    tlvs[toff++] = 0x00;
-    tlvs[toff++] = 0x01;
+    /* Descending TLV ID order to match libqmi. */
 
     /* TLV 0x10: Channel ID */
     tlvs[toff++] = 0x10;
     tlvs[toff++] = 0x01;
     tlvs[toff++] = 0x00;
     tlvs[toff++] = (uint8_t)channel;
+
+    /* TLV 0x01: Slot = 1 */
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x01;
+    tlvs[toff++] = 0x00;
+    tlvs[toff++] = 0x01;
 
     printf("Closing channel %d...\n", channel);
     if (qmi_send(QMI_UIM_CLOSE_LOGICAL_CHANNEL, tlvs, toff) < 0)
@@ -422,10 +486,9 @@ static int cmd_daemon(void)
             const char *aid = (line[4] == ' ') ? line + 5 : NULL;
             aid = maybe_truncate_aid(aid);
 
-            /* Build open request */
+            /* Build open request — TLVs in descending ID order (AID, Slot). */
             uint8_t tlvs[256];
             int toff = 0;
-            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
             if (aid && *aid) {
                 uint8_t aid_bytes[32];
                 int aid_len = hex_to_bytes(aid, aid_bytes, sizeof(aid_bytes));
@@ -434,6 +497,7 @@ static int cmd_daemon(void)
                 tlvs[toff++] = (uint8_t)aid_len;
                 memcpy(tlvs + toff, aid_bytes, aid_len); toff += aid_len;
             }
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
 
             if (qmi_send(QMI_UIM_OPEN_LOGICAL_CHANNEL, tlvs, toff) < 0) {
                 printf("ERR send failed\n");
@@ -470,15 +534,16 @@ static int cmd_daemon(void)
             uint8_t apdu[512];
             int apdu_len = hex_to_bytes(apdu_hex, apdu, sizeof(apdu));
 
+            /* Descending TLV ID order: Channel (0x10), APDU (0x02), Slot (0x01). */
             uint8_t tlvs[1024];
             int toff = 0;
-            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
+            tlvs[toff++] = 0x10; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00;
+            tlvs[toff++] = (uint8_t)ch;
             tlvs[toff++] = 0x02;
             *(uint16_t *)(tlvs + toff) = 2 + apdu_len; toff += 2;
             *(uint16_t *)(tlvs + toff) = apdu_len; toff += 2;
             memcpy(tlvs + toff, apdu, apdu_len); toff += apdu_len;
-            tlvs[toff++] = 0x10; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00;
-            tlvs[toff++] = (uint8_t)ch;
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
 
             if (qmi_send(QMI_UIM_SEND_APDU, tlvs, toff) < 0) {
                 printf("ERR send failed\n");
@@ -505,10 +570,11 @@ static int cmd_daemon(void)
 
         } else if (strncmp(line, "CLOSE ", 6) == 0) {
             int ch = atoi(line + 6);
+            /* Descending TLV ID order: Channel (0x10), Slot (0x01). */
             uint8_t tlvs[16];
             int toff = 0;
-            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
             tlvs[toff++] = 0x10; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = (uint8_t)ch;
+            tlvs[toff++] = 0x01; tlvs[toff++] = 0x01; tlvs[toff++] = 0x00; tlvs[toff++] = 0x01;
 
             qmi_send(QMI_UIM_CLOSE_LOGICAL_CHANNEL, tlvs, toff);
             uint8_t rsp[256];
