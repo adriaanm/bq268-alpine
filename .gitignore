@@ -8,7 +8,6 @@ out/
 # Compiled tools (rebuild with: just build-tools)
 tools/reboot-bootloader
 tools/rmt_storage
-tools/libqipcrtr4msmipc.so
 tools/libqmi/
 tools/lpac-esim/
 tools/diag-apdu
