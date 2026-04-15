@@ -14,6 +14,7 @@ const Tool = struct {
 
 const tools = [_]Tool{
     .{ .name = "reboot-bootloader", .src = "src/reboot-bootloader.zig" },
+    .{ .name = "rmt_storage", .src = "src/rmt_storage.zig" },
 };
 
 pub fn build(b: *std.Build) void {
