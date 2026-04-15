@@ -5,6 +5,10 @@ firmware/
 out/
 *.img
 
+# Zig build artefacts under tools/
+tools/.zig-cache/
+tools/zig-out/
+
 # Compiled tools (rebuild with: just build-tools)
 tools/reboot-bootloader
 tools/rmt_storage

@@ -64,20 +64,23 @@ task-start pattern:
 
 # ── Rootfs ───────────────────────────────────────────────────────────────
 
-zig         := env("ZIG", home_dir() / "zig-x86_64-linux-0.16.0-dev.3059+42e33db9d/zig")
+zig         := env("ZIG", home_dir() / "zig-x86_64-linux-0.16.0/zig")
 
 # cross-compile tools/ for ARM
-build-tools: build-wata-metricsd
-    arm-linux-gnueabihf-gcc -static -o tools/reboot-bootloader tools/reboot-bootloader.c
+build-tools: build-wata-metricsd build-zig-tools
     arm-linux-gnueabihf-gcc -static -o tools/rmt_storage tools/rmt_storage.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/qmi-send-apdu tools/qmi-send-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
 
-# cross-compile wata-metricsd (Zig 0.16-dev → arm-linux-musleabihf, ReleaseSmall ≈ 65 KB)
+# cross-compile wata-metricsd (Zig 0.16 → arm-linux-musleabihf, ReleaseSmall ≈ 65 KB)
 build-wata-metricsd:
     cd tools/wata-metricsd && {{zig}} build -Dtarget=arm-linux-musleabihf -Doptimize=ReleaseSmall
+
+# cross-compile the Zig-ported tools (reboot-bootloader, …) → tools/<name>
+build-zig-tools:
+    cd tools && {{zig}} build --prefix . -Dtarget=arm-linux-musleabihf -Dcpu=cortex_a7 -Doptimize=ReleaseSafe
 
 # run wata-metricsd unit tests
 test-wata-metricsd:
