@@ -6,8 +6,10 @@
 # driver and translates between lpac's JSON protocol and the daemon's
 # line-based protocol.
 #
-# The daemon automatically truncates ISD-R AIDs to bypass the modem's
-# 7-byte AID filter (see docs/esim_provision.md).
+# The daemon automatically truncates ISD-R AIDs to the 6-byte prefix
+# `a00000055910`, which the modem accepts; the 7-byte prefix
+# `a0000005591010` is rejected by the APDU-restriction filter with
+# AccessDenied (82).
 #
 # Usage: lpac-qmi-wrapper [lpac args...]
 # Environment:

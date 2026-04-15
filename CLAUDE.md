@@ -34,7 +34,7 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 | EDL dumps | `~/bq268-edl/dump` | Full partition dumps from device |
 | libqmi | `~/libqmi` | Custom libqmi with native AF_MSM_IPC support |
 | lpac | `~/lpac` | eSIM LPA (cross-compiled for ARM/musl) |
-| Modem FW workshop | `~/bq268-modem-fw` | Hexagon decompilation + patch-iteration harness for the MPSS firmware — iterate here on a better APDU unlock that doesn't break LTE. |
+| Modem FW workshop | `~/bq268-modem-fw` | Hexagon decompilation of the MPSS firmware. Historically used to iterate firmware patches; bq268-alpine itself no longer ships or needs any modem patches — lpac runs against golden firmware via `tools/qmi-send-apdu.c`. |
 
 ## Key Decisions
 
