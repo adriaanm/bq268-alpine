@@ -68,9 +68,6 @@ zig         := env("ZIG", home_dir() / "zig-x86_64-linux-0.16.0/zig")
 
 # cross-compile tools/ for ARM
 build-tools: build-wata-metricsd build-zig-tools
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
 
 # cross-compile wata-metricsd (Zig 0.16 → arm-linux-musleabihf, ReleaseSmall ≈ 65 KB)
 build-wata-metricsd:
@@ -136,64 +133,7 @@ push-cell-data:
     scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
     ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data && echo ok'
 
-# Build + push cell-diag and run it in the background for DURATION
-# seconds against the live device, then fetch the log. Useful for
-# capturing NAS reject causes during a failing attach attempt.
-#   just diag-capture             # 60s default
-#   just diag-capture 120         # 2 minutes
-diag-capture duration="60":
-    #!/usr/bin/env bash
-    set -eo pipefail
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
-    scp -q tools/cell-diag bq268:/tmp/cell-diag
-    ssh bq268 'chmod +x /tmp/cell-diag && : > /tmp/cell-diag.log && \
-        /tmp/cell-diag -o /tmp/cell-diag.log -d >/tmp/cell-diag.stderr 2>&1 & \
-        echo $! >/tmp/cell-diag.pid; sleep 1; \
-        echo "=== triggering wake ==="; cell-data wake || true; \
-        sleep {{duration}}; \
-        kill -TERM $(cat /tmp/cell-diag.pid) 2>/dev/null || true; \
-        sleep 1; \
-        echo "=== stderr ==="; cat /tmp/cell-diag.stderr; \
-        echo "=== log lines: $(wc -l </tmp/cell-diag.log) ===" '
-    scp -q bq268:/tmp/cell-diag.log ./cell-diag.log
-    echo "--- cell-diag.log (tail) ---"
-    tail -n 40 ./cell-diag.log || true
-
-# LTE-only DIAG capture: force lte,automatic before wake so the modem
-# cannot fall back to UMTS. Answers "does the modem ever transmit an
-# RRC Connection Request (UL_CCCH) on LTE?" — direct readout via
-# RRC_SUMMARY. Pre-flights the modem into `online` (session 7+8 both
-# hit the known trap where `dms-get-operating-mode` returns
-# `shutting-down` for up to ~2 min on fresh boot and cell-data wake's
-# 20s WAKE_BUDGET can't ride it out). Also detaches any stale PS
-# attach from a previous run so LTE-only wake doesn't silently
-# inherit a UMTS attach.
-#   just diag-capture-lte          # 90s default
-diag-capture-lte duration="90":
-    #!/usr/bin/env bash
-    set -eo pipefail
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c
-    scp -q tools/cell-diag bq268:/tmp/cell-diag
-    scp -q tools/cell-data.sh bq268:/usr/sbin/cell-data
-    ssh bq268 'chmod +x /usr/sbin/cell-data && sh -n /usr/sbin/cell-data'
-    echo "=== pre-flight: ensuring modem is online ==="
-    ssh bq268 'for i in 1 2 3 4 5 6 7 8; do mode=$(qmicli -p -d msmipc://0 --dms-get-operating-mode 2>&1 | sed -n "s/.*Mode: .\\(.*\\)../\\1/p"); echo "  mode=$mode"; case "$mode" in online) break;; shutting-down|resetting) sleep 15;; *) qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 | head -1; sleep 3;; esac; done'
-    ssh bq268 'chmod +x /tmp/cell-diag && : > /tmp/cell-diag.log && \
-        /tmp/cell-diag -o /tmp/cell-diag.log -d >/tmp/cell-diag.stderr 2>&1 & \
-        echo $! >/tmp/cell-diag.pid; sleep 1; \
-        echo "=== triggering LTE-only wake ==="; CELL_DATA_RAT=lte cell-data wake || true; \
-        sleep {{duration}}; \
-        kill -TERM $(cat /tmp/cell-diag.pid) 2>/dev/null || true; \
-        sleep 1; \
-        echo "=== restoring lte|umts ==="; cell-data wake || true; \
-        echo "=== stderr ==="; tail -n 20 /tmp/cell-diag.stderr; \
-        echo "=== log lines: $(wc -l </tmp/cell-diag.log) ===" '
-    scp -q bq268:/tmp/cell-diag.log ./cell-diag-lte.log
-    echo "--- cell-diag-lte.log (RRC summary) ---"
-    grep RRC_SUMMARY ./cell-diag-lte.log || echo "(no RRC_SUMMARY line — capture aborted?)"
-    echo "--- RRC channel breakdown (parsed events) ---"
-    grep '"event":"LTE_RRC_OTA"' ./cell-diag-lte.log | \
-        sed -n 's/.*"ch_name":"\([^"]*\)".*/\1/p' | sort | uniq -c || true
+# DIAG capture recipes moved to ~/bq268-modem-diag
 
 # End-to-end cellular smoke test against the live device. Bounded at
 # ~2 minutes: wake (LTE-only, automatic, PS attach 90s), pppd up

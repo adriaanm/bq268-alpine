@@ -80,10 +80,8 @@ Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build 
 - [x] `reboot-bootloader` — trivial syscall, 24→25 LOC. Commit `6ac8401`.
 - [x] `rmt_storage` — 1013 LOC daemon. Verified on device: cold reboot → UIO discovery → modem EFS boot → LTE attach on Sunrise. Earlier reboots were caused by `rc-service modem restart` races, not the daemon itself.
 - [x] `qmi-send-apdu` — 665 LOC QMI UIM client. Verified: byte-identical wire format to C, full eUICC test pass, daemon mode works with lpac.
-- [ ] `cell-diag` — 544 LOC DIAG log subscriber. Needs `std.fs.File` → raw fd rework.
-- [ ] `diag-apdu` — 547 LOC. Extract shared `diag.zig` module with cell-diag.
-- [ ] `diag-efs-write` — 1189 LOC. Largest DIAG tool.
 - [x] `libqipcrtr4msmipc` — deleted (commit `7a77f3e`), custom libqmi has native AF_MSM_IPC.
+- DIAG tools (`cell-diag`, `diag-apdu`, `diag-efs-write`) moved to `~/bq268-modem-diag`.
 
 ## Backlog
 

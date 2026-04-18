@@ -79,14 +79,15 @@ READ, WRITE, PUT are all functional after SPC unlock). PEEKD/POKED —
 the legacy memory-peek / poke commands — are disabled in firmware and
 never respond.
 
-## Consumers in this repo
+## Consumers
 
-- `tools/cell-diag.c` — LTE log subscription for RRC / NAS analysis.
+DIAG tools have moved to `~/bq268-modem-diag`:
+
+- `cell-diag` — LTE log subscription for RRC / NAS analysis.
   Requires all three fixes; without them the log mask SET_MASK is
   accepted silently and no events ever arrive.
-- `tools/diag-apdu.c` — raw APDU send via the DIAG MMGSDI subsystem.
+- `diag-apdu` — raw APDU send via the DIAG MMGSDI subsystem.
   Relies on Fix 3 specifically, since the MMGSDI subsystem never
   registers itself.
-- `tools/qmi-send-apdu.c` — userspace daemon for APDU access over
-  QMI UIM. Not directly dependent on DIAG but was developed in
-  parallel and shares the same debugging workflow.
+- `diag-efs-write` — modem EFS read/write/list via DIAG EFS2.
+  Relies on Fix 3 for command forwarding.

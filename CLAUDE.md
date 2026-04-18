@@ -34,7 +34,8 @@ This repo runs on a headless buildbox. The device is attached directly — `just
 | EDL dumps | `~/bq268-edl/dump` | Full partition dumps from device |
 | libqmi | `~/libqmi` | Custom libqmi with native AF_MSM_IPC support |
 | lpac | `~/lpac` | eSIM LPA (cross-compiled for ARM/musl) |
-| Modem FW workshop | `~/bq268-modem-fw` | Hexagon decompilation of the MPSS firmware. Historically used to iterate firmware patches; bq268-alpine itself no longer ships or needs any modem patches — lpac runs against golden firmware via `tools/qmi-send-apdu.c`. |
+| Modem DIAG tools | `~/bq268-modem-diag` | Qualcomm DIAG tools (cell-diag, diag-apdu, diag-efs-write) — extracted from this repo, being ported to Zig |
+| Modem FW workshop | `~/bq268-modem-fw` | Hexagon decompilation of the MPSS firmware. Historically used to iterate firmware patches; bq268-alpine itself no longer ships or needs any modem patches — lpac runs against golden firmware via `tools/qmi-send-apdu`. |
 
 ## Key Decisions
 
