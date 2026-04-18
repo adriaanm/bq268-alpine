@@ -49,11 +49,9 @@ const MsmIpcAddr = extern struct {
     addr: MsmIpcAddrU,
 };
 
-// Wire layout expected by the CAF 4.4 kernel: u16 family, then MsmIpcAddr,
-// then a trailing reserved byte. The C version uses __attribute__((packed))
-// but the field offsets happen to align naturally (family=0..2, addr at 4..,
-// reserved at 12). We let the compiler align extern struct fields the
-// natural way and it matches what the kernel reads.
+// Wire layout matching the CAF 4.4 kernel uapi/linux/msm_ipc.h. The C
+// structs are NOT packed — natural alignment applies. Verified on device:
+// sizeof=20, addrtype at offset 4, node_id at offset 8.
 const SockaddrMsmIpc = extern struct {
     family: u16,
     address: MsmIpcAddr,
@@ -662,7 +660,15 @@ fn handleRwIovec(sock: linux.fd_t, from: *const SockaddrMsmIpc, from_len: linux.
         // Batch the whole iovec entry (contiguous in both file and shm) into
         // one syscall. This is the main efficiency win over the C version.
         const file_off: u64 = @as(u64, sector_addr) * SECTOR_SIZE;
-        const io_len: usize = @as(usize, num_sector) * SECTOR_SIZE;
+        // Compute io_len in u64 first — on 32-bit ARM, usize is u32 and
+        // num_sector * 512 can overflow, which panics in ReleaseSafe.
+        const io_len_64: u64 = @as(u64, num_sector) * SECTOR_SIZE;
+        if (io_len_64 > std.math.maxInt(usize)) {
+            logMsg("[rmt_storage] iovec too large: {d} sectors\n", .{num_sector});
+            ok = false;
+            break;
+        }
+        const io_len: usize = @intCast(io_len_64);
         const phys: u64 = shmem.phys_addr + phys_offset;
 
         const region = shmSlice(&shmem, phys, io_len) orelse {
@@ -675,7 +681,13 @@ fn handleRwIovec(sock: linux.fd_t, from: *const SockaddrMsmIpc, from_len: linux.
             // modem wrote to shm → flush to partition
             const wrc = linux.pwrite(fd, region.ptr, region.len, @intCast(file_off));
             switch (linux.errno(wrc)) {
-                .SUCCESS => {},
+                .SUCCESS => {
+                    if (wrc != region.len) {
+                        logMsg("[rmt_storage] short pwrite: {d}/{d}\n", .{ wrc, region.len });
+                        ok = false;
+                        break;
+                    }
+                },
                 else => |e| {
                     logMsg("[rmt_storage] pwrite failed: {s}\n", .{@tagName(e)});
                     ok = false;

@@ -77,8 +77,8 @@ Discovered while validating `wata-metricsd` cellular field reads (2026-04-13). T
 Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build umbrella at `tools/build.zig`, cross-compile via `just build-zig-tools`. Patterns established in wata-metricsd: raw `linux.fd_t`, `linux.errno()` switch, `init.args.iterate()`, `posix.openatZ(AT.FDCWD, ...)`.
 
 - [x] `reboot-bootloader` — trivial syscall, 24→25 LOC. Commit `6ac8401`.
-- [ ] `rmt_storage` — 1013 LOC daemon. Draft port committed (`0a23093`), compiles + smoke-tests (UIO+QMI bind OK). **Unverified on device** — 2x reboots during modem bringup. Need persistent logging before retry. C binary canonical.
-- [ ] `qmi-send-apdu` — 665 LOC QMI UIM client. Next port target. Used by lpac for eSIM provisioning.
+- [x] `rmt_storage` — 1013 LOC daemon. Verified on device: cold reboot → UIO discovery → modem EFS boot → LTE attach on Sunrise. Earlier reboots were caused by `rc-service modem restart` races, not the daemon itself.
+- [x] `qmi-send-apdu` — 665 LOC QMI UIM client. Verified: byte-identical wire format to C, full eUICC test pass, daemon mode works with lpac.
 - [ ] `cell-diag` — 544 LOC DIAG log subscriber. Needs `std.fs.File` → raw fd rework.
 - [ ] `diag-apdu` — 547 LOC. Extract shared `diag.zig` module with cell-diag.
 - [ ] `diag-efs-write` — 1189 LOC. Largest DIAG tool.
