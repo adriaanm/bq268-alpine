@@ -12,10 +12,10 @@
 # Prerequisites:
 #   - WiFi connected (for SM-DP+ communication)
 #   - eUICC adapter inserted and detected by modem
-#   - lpac and lpac-qmi-wrapper installed
+#   - lpac and qmi-send-apdu installed
 set -e
 
-WRAPPER=/usr/bin/lpac-qmi-wrapper
+WRAPPER="qmi-send-apdu lpac"
 
 # --- Parse arguments ---
 
@@ -223,7 +223,7 @@ if [ -n "$NEW_ICCID" ]; then
         echo "Profile enabled."
     else
         echo "WARNING: Could not auto-enable profile" >&2
-        echo "  Try manually: lpac-qmi-wrapper profile enable $NEW_ICCID" >&2
+        echo "  Try manually: qmi-send-apdu lpac profile enable $NEW_ICCID" >&2
     fi
 fi
 

@@ -10,6 +10,7 @@
 //!   qmi-send-apdu close CH             Close logical channel
 //!   qmi-send-apdu test                 Full ISD-R test sequence
 //!   qmi-send-apdu daemon               Persistent mode for lpac-qmi-wrapper
+//!   qmi-send-apdu lpac [lpac-args...]  Run lpac with QMI APDU backend
 
 const std = @import("std");
 const linux = std.os.linux;
@@ -614,6 +615,382 @@ fn handleDaemonLine(line: []const u8) void {
     }
 }
 
+// ───── JSON helpers (minimal, for lpac stdio protocol) ─────────────────
+
+/// Find `"key":"value"` or `"key": "value"` in a JSON line, return value.
+fn jsonGetStr(line: []const u8, key: []const u8) ?[]const u8 {
+    // Search for `"key"` then `:` then `"value"`
+    var i: usize = 0;
+    while (i + key.len + 2 < line.len) : (i += 1) {
+        if (line[i] == '"' and i + 1 + key.len < line.len and
+            std.mem.eql(u8, line[i + 1 .. i + 1 + key.len], key) and
+            line[i + 1 + key.len] == '"')
+        {
+            var j = i + 1 + key.len + 1; // after closing quote
+            // skip optional whitespace and colon
+            while (j < line.len and (line[j] == ' ' or line[j] == ':')) j += 1;
+            if (j < line.len and line[j] == '"') {
+                const start = j + 1;
+                const end = std.mem.indexOfScalar(u8, line[start..], '"') orelse return null;
+                return line[start .. start + end];
+            }
+            // Could be a number value (no quotes) — skip
+            return null;
+        }
+    }
+    return null;
+}
+
+/// Write a full line to an fd, retrying on partial writes.
+fn fdWrite(fd: linux.fd_t, data: []const u8) void {
+    var off: usize = 0;
+    while (off < data.len) {
+        const rc = linux.write(fd, data[off..].ptr, data.len - off);
+        switch (linux.errno(rc)) {
+            .SUCCESS => off += @intCast(rc),
+            else => return,
+        }
+    }
+}
+
+/// Read nameservers from /etc/resolv.conf, join with commas.
+/// Returns the number of bytes written into `out`.
+fn readDnsServers(out: []u8) usize {
+    const fd_rc = linux.openat(-100, "/etc/resolv.conf", .{}, 0);
+    switch (linux.errno(fd_rc)) {
+        .SUCCESS => {},
+        else => return 0,
+    }
+    const fd: linux.fd_t = @intCast(fd_rc);
+    defer _ = linux.close(fd);
+
+    var buf: [2048]u8 = undefined;
+    var total: usize = 0;
+    while (true) {
+        const rc = linux.read(fd, buf[total..].ptr, buf.len - total);
+        switch (linux.errno(rc)) {
+            .SUCCESS => {},
+            else => break,
+        }
+        const n: usize = @intCast(rc);
+        if (n == 0) break;
+        total += n;
+        if (total >= buf.len) break;
+    }
+
+    const content = buf[0..total];
+    var out_len: usize = 0;
+    var pos: usize = 0;
+    while (pos < content.len) {
+        const nl = std.mem.indexOfScalar(u8, content[pos..], '\n') orelse (content.len - pos);
+        const line = content[pos .. pos + nl];
+        pos += nl + 1;
+
+        const prefix = "nameserver";
+        if (line.len > prefix.len and std.mem.eql(u8, line[0..prefix.len], prefix)) {
+            var start = prefix.len;
+            while (start < line.len and (line[start] == ' ' or line[start] == '\t')) start += 1;
+            var end = start;
+            while (end < line.len and line[end] != ' ' and line[end] != '\t' and line[end] != '\r') end += 1;
+            if (end > start) {
+                if (out_len > 0 and out_len < out.len) {
+                    out[out_len] = ',';
+                    out_len += 1;
+                }
+                const ns = line[start..end];
+                const copy_len = @min(ns.len, out.len - out_len);
+                @memcpy(out[out_len .. out_len + copy_len], ns[0..copy_len]);
+                out_len += copy_len;
+            }
+        }
+    }
+    return out_len;
+}
+
+// ───── lpac mode ───────────────────────────────────────────────────────
+
+fn lpacQmiOpen(aid_hex: []const u8) i16 {
+    const aid = maybeTruncateAid(aid_hex);
+    var tlvs = TlvBuf{};
+    if (aid.len > 0) {
+        var aid_bytes: [32]u8 = undefined;
+        const aid_len = hexToBytes(aid, &aid_bytes);
+        tlvs.addAid(aid_bytes[0..aid_len]);
+    }
+    tlvs.addSlot();
+
+    qmiSend(QMI_UIM_OPEN_LOGICAL_CHANNEL, tlvs.slice()) catch return -1;
+    var rsp_buf: [512]u8 = undefined;
+    const rsp = qmiRecv(&rsp_buf, 10000) orelse return -1;
+    if (!qmiCheckResult(rsp, "open")) return -1;
+
+    const ch_tlv = findTlv(rsp, 0x10);
+    if (ch_tlv) |tv| {
+        if (tv.len >= 1) return @as(i16, tv[0]);
+    }
+    return -1;
+}
+
+fn lpacQmiClose(channel: u8) void {
+    var tlvs = TlvBuf{};
+    tlvs.addU8(0x10, channel);
+    tlvs.addSlot();
+    qmiSend(QMI_UIM_CLOSE_LOGICAL_CHANNEL, tlvs.slice()) catch {};
+    var rsp_buf: [256]u8 = undefined;
+    _ = qmiRecv(&rsp_buf, 5000);
+}
+
+/// Send APDU on channel, write hex response into `out`. Returns slice or null.
+fn lpacQmiTransmit(channel: u8, apdu_hex: []const u8, out: []u8) ?[]const u8 {
+    var apdu: [512]u8 = undefined;
+    const apdu_len = hexToBytes(apdu_hex, &apdu);
+
+    var tlvs = TlvBuf{};
+    tlvs.addU8(0x10, channel);
+    tlvs.addApdu(apdu[0..apdu_len]);
+    tlvs.addSlot();
+
+    qmiSend(QMI_UIM_SEND_APDU, tlvs.slice()) catch return null;
+    var rsp_buf: [4096]u8 = undefined;
+    const rsp = qmiRecv(&rsp_buf, 10000) orelse return null;
+    if (!qmiCheckResult(rsp, "apdu")) return null;
+
+    // APDU response TLV (0x10): uint16 len + data
+    const tv = findTlv(rsp, 0x10) orelse return null;
+    if (tv.len <= 2) return null;
+    const payload = tv[2..];
+
+    // Encode as hex into out
+    var o: usize = 0;
+    for (payload) |b| {
+        if (o + 2 > out.len) break;
+        const hex_chars = "0123456789ABCDEF";
+        out[o] = hex_chars[b >> 4];
+        out[o + 1] = hex_chars[b & 0x0F];
+        o += 2;
+    }
+    return out[0..o];
+}
+
+fn cmdLpac(args: anytype) u8 {
+    // Collect remaining args for lpac
+    var lpac_argv_buf: [64]?[*:0]const u8 = undefined;
+    lpac_argv_buf[0] = "/usr/bin/lpac";
+    var argc: usize = 1;
+    while (args.next()) |arg| {
+        if (argc < lpac_argv_buf.len - 1) {
+            lpac_argv_buf[argc] = arg.ptr;
+            argc += 1;
+        }
+    }
+    lpac_argv_buf[argc] = null;
+    const lpac_argv: [*:null]const ?[*:0]const u8 = lpac_argv_buf[0..argc :null];
+
+    // Read DNS servers for CURL_DNS_SERVERS
+    var dns_buf: [256]u8 = undefined;
+    const dns_len = readDnsServers(&dns_buf);
+
+    // Build envp
+    var curl_dns_env_buf: [280]u8 = undefined;
+    const curl_dns_env: ?[*:0]const u8 = if (dns_len > 0) blk: {
+        const prefix = "CURL_DNS_SERVERS=";
+        @memcpy(curl_dns_env_buf[0..prefix.len], prefix);
+        @memcpy(curl_dns_env_buf[prefix.len .. prefix.len + dns_len], dns_buf[0..dns_len]);
+        curl_dns_env_buf[prefix.len + dns_len] = 0;
+        break :blk @ptrCast(curl_dns_env_buf[0 .. prefix.len + dns_len :0]);
+    } else null;
+
+    const env_apdu: [*:0]const u8 = "LPAC_APDU=stdio";
+    const env_http: [*:0]const u8 = "LPAC_HTTP=curl";
+    var envp_buf: [4]?[*:0]const u8 = undefined;
+    var envc: usize = 0;
+    envp_buf[envc] = env_apdu;
+    envc += 1;
+    envp_buf[envc] = env_http;
+    envc += 1;
+    if (curl_dns_env) |e| {
+        envp_buf[envc] = e;
+        envc += 1;
+    }
+    envp_buf[envc] = null;
+    const lpac_envp: [*:null]const ?[*:0]const u8 = envp_buf[0..envc :null];
+
+    // Create pipes: parent writes to child stdin, reads from child stdout
+    var stdin_pipe: [2]linux.fd_t = undefined; // [0]=read, [1]=write
+    var stdout_pipe: [2]linux.fd_t = undefined;
+
+    switch (linux.errno(linux.pipe2(&stdin_pipe, .{}))) {
+        .SUCCESS => {},
+        else => |e| {
+            logMsg("pipe2(stdin): {s}\n", .{@tagName(e)});
+            return 1;
+        },
+    }
+    switch (linux.errno(linux.pipe2(&stdout_pipe, .{}))) {
+        .SUCCESS => {},
+        else => |e| {
+            logMsg("pipe2(stdout): {s}\n", .{@tagName(e)});
+            return 1;
+        },
+    }
+
+    const pid_rc = linux.fork();
+    switch (linux.errno(pid_rc)) {
+        .SUCCESS => {},
+        else => |e| {
+            logMsg("fork: {s}\n", .{@tagName(e)});
+            return 1;
+        },
+    }
+
+    const pid: linux.pid_t = @intCast(pid_rc);
+    if (pid == 0) {
+        // Child: wire up pipes and exec lpac
+        _ = linux.dup2(stdin_pipe[0], 0);
+        _ = linux.dup2(stdout_pipe[1], 1);
+        _ = linux.close(stdin_pipe[0]);
+        _ = linux.close(stdin_pipe[1]);
+        _ = linux.close(stdout_pipe[0]);
+        _ = linux.close(stdout_pipe[1]);
+        // Close the QMI socket in child
+        _ = linux.close(uim_fd);
+        _ = linux.execve("/usr/bin/lpac", lpac_argv, lpac_envp);
+        // If execve fails, exit
+        linux.exit(127);
+    }
+
+    // Parent: close unused pipe ends
+    _ = linux.close(stdin_pipe[0]);
+    _ = linux.close(stdout_pipe[1]);
+
+    const child_stdout = stdout_pipe[0];
+    const child_stdin = stdin_pipe[1];
+
+    var current_channel: u8 = 0;
+
+    // Read lines from child stdout
+    var read_buf: [8192]u8 = undefined;
+    var buf_len: usize = 0;
+
+    outer: while (true) {
+        if (buf_len >= read_buf.len) buf_len = 0;
+        const rc = linux.read(child_stdout, read_buf[buf_len..].ptr, read_buf.len - buf_len);
+        switch (linux.errno(rc)) {
+            .SUCCESS => {},
+            else => break,
+        }
+        const n: usize = @intCast(rc);
+        if (n == 0) break; // EOF
+        buf_len += n;
+
+        // Process complete lines
+        while (std.mem.indexOfScalar(u8, read_buf[0..buf_len], '\n')) |nl| {
+            const line = read_buf[0..nl];
+            const consumed = nl + 1;
+            defer {
+                std.mem.copyForwards(u8, &read_buf, read_buf[consumed..buf_len]);
+                buf_len -= consumed;
+            }
+
+            if (line.len == 0) continue;
+
+            const req_type = jsonGetStr(line, "type") orelse {
+                // Unknown line, pass through to stdout
+                fdWrite(1, line);
+                fdWrite(1, "\n");
+                continue;
+            };
+
+            if (std.mem.eql(u8, req_type, "lpa")) {
+                // Result — pass through to stdout
+                fdWrite(1, line);
+                fdWrite(1, "\n");
+                continue;
+            }
+
+            if (std.mem.eql(u8, req_type, "progress")) {
+                // Progress — pass through to stderr
+                fdWrite(2, line);
+                fdWrite(2, "\n");
+                continue;
+            }
+
+            if (!std.mem.eql(u8, req_type, "apdu")) {
+                // Unknown type, pass through
+                fdWrite(1, line);
+                fdWrite(1, "\n");
+                continue;
+            }
+
+            // Handle APDU request
+            const func = jsonGetStr(line, "func") orelse continue;
+            const param = jsonGetStr(line, "param");
+
+            var resp_buf: [4200]u8 = undefined;
+
+            if (std.mem.eql(u8, func, "connect") or std.mem.eql(u8, func, "disconnect")) {
+                logMsg("eUICC: {s}\n", .{func});
+                const resp = "{\"type\":\"apdu\",\"payload\":{\"ecode\":0}}\n";
+                fdWrite(child_stdin, resp);
+            } else if (std.mem.eql(u8, func, "logic_channel_open")) {
+                const aid = param orelse "";
+                logMsg("eUICC: open channel AID={s}\n", .{aid});
+                const ch = lpacQmiOpen(aid);
+                if (ch >= 0) {
+                    current_channel = @intCast(ch);
+                    logMsg("eUICC: channel {d} opened\n", .{ch});
+                    const resp_len = std.fmt.bufPrint(&resp_buf, "{{\"type\":\"apdu\",\"payload\":{{\"ecode\":{d}}}}}\n", .{ch}) catch continue;
+                    fdWrite(child_stdin, resp_len);
+                } else {
+                    fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":-1}}\n");
+                }
+            } else if (std.mem.eql(u8, func, "logic_channel_close")) {
+                const ch_str = param orelse "0";
+                const ch = std.fmt.parseInt(u8, ch_str, 10) catch 0;
+                logMsg("eUICC: close channel {d}\n", .{ch});
+                lpacQmiClose(ch);
+                fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":0}}\n");
+            } else if (std.mem.eql(u8, func, "transmit")) {
+                const apdu_hex = param orelse {
+                    fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":-1}}\n");
+                    continue :outer;
+                };
+                var hex_out: [2048]u8 = undefined;
+                if (lpacQmiTransmit(current_channel, apdu_hex, &hex_out)) |hex_data| {
+                    // Build response: {"type":"apdu","payload":{"ecode":0,"data":"<hex>"}}
+                    const prefix = "{\"type\":\"apdu\",\"payload\":{\"ecode\":0,\"data\":\"";
+                    const suffix = "\"}}\n";
+                    const total = prefix.len + hex_data.len + suffix.len;
+                    if (total <= resp_buf.len) {
+                        @memcpy(resp_buf[0..prefix.len], prefix);
+                        @memcpy(resp_buf[prefix.len .. prefix.len + hex_data.len], hex_data);
+                        @memcpy(resp_buf[prefix.len + hex_data.len .. total], suffix);
+                        fdWrite(child_stdin, resp_buf[0..total]);
+                    } else {
+                        fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":-1}}\n");
+                    }
+                } else {
+                    fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":-1}}\n");
+                }
+            } else {
+                logMsg("Unknown APDU func: {s}\n", .{func});
+                fdWrite(child_stdin, "{\"type\":\"apdu\",\"payload\":{\"ecode\":-1}}\n");
+            }
+        }
+    }
+
+    _ = linux.close(child_stdin);
+    _ = linux.close(child_stdout);
+
+    // Wait for child
+    var status: u32 = 0;
+    _ = linux.waitpid(pid, &status, 0);
+    if (linux.W.IFEXITED(status)) {
+        return linux.W.EXITSTATUS(status);
+    }
+    return 1;
+}
+
 // ───── main ─────────────────────────────────────────────────────────────
 
 fn usage() void {
@@ -625,6 +1002,7 @@ fn usage() void {
         \\  qmi-send-apdu close CH             Close logical channel
         \\  qmi-send-apdu test                 Full ISD-R test sequence
         \\  qmi-send-apdu daemon               Persistent mode for lpac
+        \\  qmi-send-apdu lpac [lpac-args...]  Run lpac with QMI APDU backend
         \\
     , .{});
 }
@@ -639,7 +1017,9 @@ pub fn main(init: std.process.Init.Minimal) !u8 {
 
     msmipcConnect() catch return 1;
 
-    if (std.mem.eql(u8, cmd, "daemon")) {
+    if (std.mem.eql(u8, cmd, "lpac")) {
+        return cmdLpac(&it);
+    } else if (std.mem.eql(u8, cmd, "daemon")) {
         cmdDaemon();
     } else if (std.mem.eql(u8, cmd, "open")) {
         cmdOpen(it.next()) catch return 1;
