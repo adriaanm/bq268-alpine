@@ -69,7 +69,6 @@ zig         := env("ZIG", home_dir() / "zig-x86_64-linux-0.16.0/zig")
 # cross-compile tools/ for ARM
 build-tools: build-wata-metricsd build-zig-tools
     arm-linux-gnueabihf-gcc -static -o tools/rmt_storage tools/rmt_storage.c
-    ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/qmi-send-apdu tools/qmi-send-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-apdu tools/diag-apdu.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -o tools/diag-efs-write tools/diag-efs-write.c
     ~/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc -static -O2 -Wall -o tools/cell-diag tools/cell-diag.c

@@ -72,6 +72,18 @@ Discovered while validating `wata-metricsd` cellular field reads (2026-04-13). T
 - [ ] **QMI-proxy boot-time orphan subscriptions** — libqmi commit fbd4aae + bq268-alpine commit 07921ff wire `qmi-proxy` as a persistent QMI multiplexer and switch every in-tree caller to `qmicli -p`. That halved the leak rate and eliminated per-call growth, but 4 `kworker/u8:N` still pile up in `D` state after every boot and `send_filled_buffers_to_user: Send Failed -3 drop_count=...` still grows at ~10/min, pinning load average around 4. Suspect: the modem init retry loop hammers `qmicli -p --dms-set-operating-mode=online` against the proxy while Q6 DSP isn't ready yet, and *something* in the proxy's first-open-failure path leaks an ipc_router subscription per retry. Fix: have `/etc/init.d/modem` wait for Q6 readiness via `/dev/subsys_modem` / sysfs state (not QMI) and then issue **one** blocking `dms-set-operating-mode=online` once Q6 is up. Validate by rebooting and confirming zero `DW` kworkers + `drop_count` flat. Track via task #8.
 - [ ] ~~LTE band preference review~~ — dropped: `qmicli` has no flag for setting the LTE band list (only mode + network-selection), and the current default (B1/3/5/7/8/20/28 + extended B66/71) already covers EU + common travel. Would require raw QMI TLV construction, not worth it.
 
+### Zig 0.16 tool ports
+
+Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build umbrella at `tools/build.zig`, cross-compile via `just build-zig-tools`. Patterns established in wata-metricsd: raw `linux.fd_t`, `linux.errno()` switch, `init.args.iterate()`, `posix.openatZ(AT.FDCWD, ...)`.
+
+- [x] `reboot-bootloader` — trivial syscall, 24→25 LOC. Commit `6ac8401`.
+- [ ] `rmt_storage` — 1013 LOC daemon. Draft port committed (`0a23093`), compiles + smoke-tests (UIO+QMI bind OK). **Unverified on device** — 2x reboots during modem bringup. Need persistent logging before retry. C binary canonical.
+- [ ] `qmi-send-apdu` — 665 LOC QMI UIM client. Next port target. Used by lpac for eSIM provisioning.
+- [ ] `cell-diag` — 544 LOC DIAG log subscriber. Needs `std.fs.File` → raw fd rework.
+- [ ] `diag-apdu` — 547 LOC. Extract shared `diag.zig` module with cell-diag.
+- [ ] `diag-efs-write` — 1189 LOC. Largest DIAG tool.
+- [x] `libqipcrtr4msmipc` — deleted (commit `7a77f3e`), custom libqmi has native AF_MSM_IPC.
+
 ## Backlog
 
 - [ ] Read-only rootfs — Production hardening. Prevents eMMC wear and corruption from hard power-off. overlayfs on tmpfs for /var, /tmp.
