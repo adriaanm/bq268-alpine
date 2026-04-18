@@ -1,4 +1,4 @@
-# eSIM provisioning support: lpac + qmicli APDU wrapper
+# eSIM provisioning support: lpac + qmi-send-apdu (with integrated lpac mode)
 echo "--- Setting up eSIM support ---"
 
 # Install runtime dependencies (curl for SM-DP+ HTTPS, cJSON for lpac)
@@ -30,9 +30,6 @@ done
 
 # Install QMI APDU daemon (persistent AF_MSM_IPC session, short AID bypass)
 install -m 755 "$SCRIPT_DIR/tools/qmi-send-apdu" "$ROOTFS/usr/bin/qmi-send-apdu"
-
-# Install QMI APDU wrapper (translates lpac stdio ↔ qmi-send-apdu daemon)
-install -m 755 "$SCRIPT_DIR/tools/lpac-qmi-wrapper.sh" "$ROOTFS/usr/bin/lpac-qmi-wrapper"
 
 # Install user-facing provisioning script
 install -m 755 "$SCRIPT_DIR/tools/esim-provision.sh" "$ROOTFS/usr/bin/esim-provision"

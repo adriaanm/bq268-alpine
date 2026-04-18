@@ -9,7 +9,8 @@
 //!   qmi-send-apdu apdu CH APDU_HEX    Send APDU on channel
 //!   qmi-send-apdu close CH             Close logical channel
 //!   qmi-send-apdu test                 Full ISD-R test sequence
-//!   qmi-send-apdu daemon               Persistent mode for lpac-qmi-wrapper
+//!   qmi-send-apdu daemon               Persistent line-based mode
+//!   qmi-send-apdu lpac [lpac-args]    Spawn lpac with integrated APDU backend
 //!   qmi-send-apdu lpac [lpac-args...]  Run lpac with QMI APDU backend
 
 const std = @import("std");
@@ -466,7 +467,7 @@ fn cmdTest() !void {
 
 // ───── daemon mode ──────────────────────────────────────────────────────
 
-/// Line-based protocol for lpac-qmi-wrapper:
+/// Line-based protocol (legacy, kept for manual testing):
 ///   OPEN [AID_HEX]        → OK channel_id [FCI_HEX] | ERR msg
 ///   APDU channel APDU_HEX → OK response_hex | ERR msg
 ///   CLOSE channel          → OK | ERR msg
