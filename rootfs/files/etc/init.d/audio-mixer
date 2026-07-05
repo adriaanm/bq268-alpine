@@ -30,14 +30,13 @@ start() {
     amixer -c 0 cset name="Ext Spk Switch" 1         # 1 = On
     amixer -c 0 cset name="RX2 Digital Volume" 96
 
-    # Q6 ASM per-stream soft volume for MultiMedia1 (hw:0,0).
-    # CAVEAT (verified in msm-pcm-q6-v2.c): the put handler only
-    # applies to an OPEN substream — this boot-time set merely caches
-    # the kcontrol value and is a no-op for later streams. Every
-    # playback client must re-assert it while its stream is open
-    # (wata: after pcm_open; aplay tests: cset mid-stream). Kept here
-    # so the cached value reads as intent, not as a working default.
-    amixer -c 0 cset name="Playback 0 Volume" 8192
+    # NOTE on "Playback 0 Volume" (Q6 ASM per-stream soft volume for
+    # hw:0,0): do NOT set it here. Probe-verified 2026-07-05 (wata
+    # volume-probe): with no substream open the set is a complete
+    # no-op (not even cached), and right after pcm_open it fails
+    # (rc=-1, ASM session not up). It only applies once the stream is
+    # RUNNING — each playback client must set it after its first
+    # period write. See wata/docs/planning/asm-stream-volume.md.
 
     eend $?
 }
