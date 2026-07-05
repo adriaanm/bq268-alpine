@@ -1,0 +1,3565 @@
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress14/state
+[MSM8X16 Compress14 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress13/state
+[MSM8X16 Compress13 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress12/state
+[MSM8X16 Compress12 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress11/state
+[MSM8X16 Compress11 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress10/state
+[MSM8X16 Compress10 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/QCHAT/state
+[QCHAT - Playback]
+State: new
+Backends:
+ No active DSP links
+[QCHAT - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8916 HFP Loopback2/state
+[MSM8916 HFP Loopback2 - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8916 HFP Loopback2 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/VoiceMMode2/state
+[VoiceMMode2 - Playback]
+State: new
+Backends:
+ No active DSP links
+[VoiceMMode2 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/VoiceMMode1/state
+[VoiceMMode1 - Playback]
+State: new
+Backends:
+ No active DSP links
+[VoiceMMode1 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress9/state
+[MSM8X16 Compress9 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress8/state
+[MSM8X16 Compress8 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress7/state
+[MSM8X16 Compress7 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress6/state
+[MSM8X16 Compress6 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress5/state
+[MSM8X16 Compress5 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress4/state
+[MSM8X16 Compress4 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress3/state
+[MSM8X16 Compress3 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/QUAT_MI2S Hostless/state
+[QUAT_MI2S Hostless - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 Compress2/state
+[MSM8X16 Compress2 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Listen 5 Audio Service/state
+[Listen 5 Audio Service - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Listen 4 Audio Service/state
+[Listen 4 Audio Service - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Listen 3 Audio Service/state
+[Listen 3 Audio Service - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Listen 2 Audio Service/state
+[Listen 2 Audio Service - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Listen 1 Audio Service/state
+[Listen 1 Audio Service - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8916 HFP/state
+[MSM8916 HFP - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8916 HFP - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/INT_HFP_BT Hostless/state
+[INT_HFP_BT Hostless - Playback]
+State: new
+Backends:
+ No active DSP links
+[INT_HFP_BT Hostless - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/VoWLAN/state
+[VoWLAN - Playback]
+State: new
+Backends:
+ No active DSP links
+[VoWLAN - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/VoLTE/state
+[VoLTE - Playback]
+State: new
+Backends:
+ No active DSP links
+[VoLTE - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8x16 Media9/state
+[MSM8x16 Media9 - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8x16 Media9 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Voice2/state
+[Voice2 - Playback]
+State: new
+Backends:
+ No active DSP links
+[Voice2 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8x16 LowLatency/state
+[MSM8x16 LowLatency - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8x16 LowLatency - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Tertiary MI2S_TX Hostless/state
+[Tertiary MI2S_TX Hostless - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/AUXPCM Hostless/state
+[AUXPCM Hostless - Playback]
+State: new
+Backends:
+ No active DSP links
+[AUXPCM Hostless - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8952 Compress1/state
+[MSM8952 Compress1 - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/INT_FM Hostless/state
+[INT_FM Hostless - Playback]
+State: new
+Backends:
+ No active DSP links
+[INT_FM Hostless - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Primary MI2S_RX Hostless/state
+[Primary MI2S_RX Hostless - Playback]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8X16 ULL/state
+[MSM8X16 ULL - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8X16 ULL - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM VoIP/state
+[MSM VoIP - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM VoIP - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/Circuit-Switch Voice/state
+[Circuit-Switch Voice - Playback]
+State: new
+Backends:
+ No active DSP links
+[Circuit-Switch Voice - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8952 Media2/state
+[MSM8952 Media2 - Playback]
+State: new
+Backends:
+ No active DSP links
+[MSM8952 Media2 - Capture]
+State: new
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/MSM8952 Media1/PRI_MI2S_RX
+0
+--- /d/asoc/msm8909-snd-card/MSM8952 Media1/state
+[MSM8952 Media1 - Playback]
+State: start
+Hardware Params: Format = S16_LE, Channels = 1, Rate = 48000
+Backends:
+- PRI_MI2S_RX
+   State: start
+   Hardware Params: Format = S16_LE, Channels = 1, Rate = 48000
+[MSM8952 Media1 - Capture]
+State: close
+Backends:
+ No active DSP links
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-pri-auxpcm/dapm/AUX PCM Playback
+AUX PCM Playback: Off  in 0 out 0
+ stream AUX PCM Playback inactive
+ in  "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-pri-auxpcm/dapm/AUX PCM Capture
+AUX PCM Capture: Off  in 0 out 0
+ stream AUX PCM Capture inactive
+ out "static" "AUX_PCM_TX"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-pri-auxpcm/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL1
+MM_DL1: On  in 1 out 1 - R0(0x0) mask 0x1
+ stream MultiMedia1 Playback inactive
+ in  "static" "MultiMedia1 Playback"
+ out "MultiMedia1" "PRI_MI2S_RX Audio Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL2
+MM_DL2: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia2 Playback inactive
+ in  "static" "MultiMedia2 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL3
+MM_DL3: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia3 Playback inactive
+ in  "static" "MultiMedia3 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL4
+MM_DL4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia4 Playback inactive
+ in  "static" "MultiMedia4 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL5
+MM_DL5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia5 Playback inactive
+ in  "static" "MultiMedia5 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL6
+MM_DL6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia6 Playback inactive
+ in  "static" "MultiMedia6 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL7
+MM_DL7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia7 Playback inactive
+ in  "static" "MultiMedia7 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL8
+MM_DL8: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia8 Playback inactive
+ in  "static" "MultiMedia8 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL9
+MM_DL9: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia9 Playback inactive
+ in  "static" "MultiMedia9 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL10
+MM_DL10: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia10 Playback inactive
+ in  "static" "MultiMedia10 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL11
+MM_DL11: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia11 Playback inactive
+ in  "static" "MultiMedia11 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL12
+MM_DL12: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia12 Playback inactive
+ in  "static" "MultiMedia12 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL13
+MM_DL13: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia13 Playback inactive
+ in  "static" "MultiMedia13 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL14
+MM_DL14: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia14 Playback inactive
+ in  "static" "MultiMedia14 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL15
+MM_DL15: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia15 Playback inactive
+ in  "static" "MultiMedia15 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL16
+MM_DL16: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia16 Playback inactive
+ in  "static" "MultiMedia16 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL20
+MM_DL20: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia20 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_DL21
+MM_DL21: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia21 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOIP_DL
+VOIP_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoIP Playback inactive
+ in  "static" "VoIP Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL1
+MM_UL1: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia1 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL1 MUX"
+ in  "static" "MultiMedia1 Mixer"
+ out "static" "MultiMedia1 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL2
+MM_UL2: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia2 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL2 MUX"
+ in  "static" "MultiMedia2 Mixer"
+ out "static" "MultiMedia2 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL3
+MM_UL3: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia3 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL3 MUX"
+ in  "static" "MultiMedia3 Mixer"
+ out "static" "MultiMedia3 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL4
+MM_UL4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia4 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL4 MUX"
+ in  "static" "MultiMedia4 Mixer"
+ out "static" "MultiMedia4 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL5
+MM_UL5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia5 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL5 MUX"
+ in  "static" "MultiMedia5 Mixer"
+ out "static" "MultiMedia5 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL6
+MM_UL6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia6 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL6 MUX"
+ in  "static" "MultiMedia6 Mixer"
+ out "static" "MultiMedia6 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL8
+MM_UL8: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia8 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL8 MUX"
+ in  "static" "MultiMedia8 Mixer"
+ out "static" "MultiMedia8 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL9
+MM_UL9: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia9 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL9 MUX"
+ in  "static" "MultiMedia9 Mixer"
+ out "static" "MultiMedia9 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL17
+MM_UL17: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia17 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL17 MUX"
+ in  "static" "MultiMedia17 Mixer"
+ out "static" "MultiMedia17 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL18
+MM_UL18: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia18 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL18 MUX"
+ in  "static" "MultiMedia18 Mixer"
+ out "static" "MultiMedia18 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL19
+MM_UL19: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia19 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL19 MUX"
+ in  "static" "MultiMedia19 Mixer"
+ out "static" "MultiMedia19 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL20
+MM_UL20: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia20 Capture inactive
+ in  "static" "MultiMedia20 Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL21
+MM_UL21: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia21 Capture inactive
+ in  "static" "MultiMedia21 Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL28
+MM_UL28: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia28 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL28 MUX"
+ in  "static" "MultiMedia28 Mixer"
+ out "static" "MultiMedia28 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MM_UL29
+MM_UL29: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream MultiMedia29 Capture inactive
+ in  "static" "AUDIO_REF_EC_UL29 MUX"
+ in  "static" "MultiMedia29 Mixer"
+ out "static" "MultiMedia29 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/CS-VOICE_DL1
+CS-VOICE_DL1: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream CS-VOICE Playback inactive
+ in  "static" "CS-VOICE Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/CS-VOICE_UL1
+CS-VOICE_UL1: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream CS-VOICE Capture inactive
+ in  "static" "Voice_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "CS-VOICE Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE2_DL
+VOICE2_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Voice2 Playback inactive
+ in  "static" "Voice2 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE2_UL
+VOICE2_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Voice2 Capture inactive
+ in  "static" "Voice2_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "Voice2 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoLTE_DL
+VoLTE_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoLTE Playback inactive
+ in  "static" "VoLTE Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoLTE_UL
+VoLTE_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoLTE Capture inactive
+ in  "static" "VoLTE_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "VoLTE Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoWLAN_DL
+VoWLAN_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoWLAN Playback inactive
+ in  "static" "VoWLAN Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoWLAN_UL
+VoWLAN_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoWLAN Capture inactive
+ in  "static" "VoWLAN_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "VoWLAN Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOIP_UL
+VOIP_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoIP Capture inactive
+ in  "static" "Voip_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "VoIP Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICEMMODE1_DL
+VOICEMMODE1_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoiceMMode1 Playback inactive
+ in  "static" "VoiceMMode1 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICEMMODE1_UL
+VOICEMMODE1_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoiceMMode1 Capture inactive
+ in  "static" "VoiceMMode1_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "VoiceMMode1 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICEMMODE2_DL
+VOICEMMODE2_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoiceMMode2 Playback inactive
+ in  "static" "VoiceMMode2 Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICEMMODE2_UL
+VOICEMMODE2_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VoiceMMode2 Capture inactive
+ in  "static" "VoiceMMode2_Tx Mixer"
+ in  "static" "VOC_EXT_EC MUX"
+ out "static" "VoiceMMode2 Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM0_DL_HL
+SLIM0_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS0_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM0_UL_HL
+SLIM0_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS0_HOSTLESS Capture inactive
+ in  "static" "SLIMBUS_0_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/CPE_LSM_UL_HL
+CPE_LSM_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream CPE LSM capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM1_DL_HL
+SLIM1_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS1_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM1_UL_HL
+SLIM1_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS1_HOSTLESS Capture inactive
+ in  "static" "SLIMBUS_1_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM3_DL_HL
+SLIM3_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS3_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM3_UL_HL
+SLIM3_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS3_HOSTLESS Capture inactive
+ in  "static" "SLIMBUS_3_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM4_DL_HL
+SLIM4_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS4_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM4_UL_HL
+SLIM4_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS4_HOSTLESS Capture inactive
+ in  "static" "SLIMBUS_4_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM6_DL_HL
+SLIM6_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream SLIMBUS6_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTFM_DL_HL
+INTFM_DL_HL: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream INT_FM_HOSTLESS Playback inactive
+ in  "static" "INT_FM_HOSTLESS Playback"
+ out "static" "INT_FM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTFM_UL_HL
+INTFM_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream INT_FM_HOSTLESS Capture inactive
+ in  "static" "INT_FM_TX"
+ out "static" "INT_FM_HOSTLESS Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTHFP_DL_HL
+INTHFP_DL_HL: Off  in 0 out 3 - R0(0x0) mask 0x1
+ stream INT_HFP_BT_HOSTLESS Playback inactive
+ in  "static" "INT_HFP_BT Hostless Playback"
+ out "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTHFP_UL_HL
+INTHFP_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream INT_HFP_BT_HOSTLESS Capture inactive
+ in  "static" "HFP_INT_UL_HL"
+ in  "static" "HFP_AUX_UL_HL"
+ in  "static" "HFP_PRI_AUX_UL_HL"
+ out "static" "INT_HFP_BT Hostless Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HDMI_DL_HL
+HDMI_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream HDMI_HOSTLESS Playback inactive
+ out "static" "HDMI"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_I2S_DL_HL
+SEC_I2S_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream SEC_I2S_RX_HOSTLESS Playback inactive
+ out "static" "SEC_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_DL_HL
+PRI_MI2S_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary MI2S_RX Hostless Playback inactive
+ in  "static" "Primary MI2S_RX Hostless Playback"
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_DL_HL
+SEC_MI2S_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary MI2S_RX Hostless Playback inactive
+ out "static" "SEC_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_DL_HL
+TERT_MI2S_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary MI2S_RX Hostless Playback inactive
+ out "static" "TERT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_DL_HL
+QUAT_MI2S_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary MI2S_RX Hostless Playback inactive
+ in  "static" "Quaternary MI2S_RX Hostless Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUXPCM_DL_HL
+AUXPCM_DL_HL: Off  in 0 out 3 - R0(0x0) mask 0x1
+ stream AUXPCM_HOSTLESS Playback inactive
+ in  "static" "AUXPCM_HOSTLESS Playback"
+ out "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUXPCM_UL_HL
+AUXPCM_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream AUXPCM_HOSTLESS Capture inactive
+ in  "static" "AUX_PCM_TX"
+ out "static" "AUXPCM_HOSTLESS Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUXPCM_DL_HL
+SEC_AUXPCM_DL_HL: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream SEC_AUXPCM_HOSTLESS Playback inactive
+ out "static" "SEC_AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUXPCM_UL_HL
+SEC_AUXPCM_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream SEC_AUXPCM_HOSTLESS Capture inactive
+ in  "static" "SEC_AUX_PCM_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_UL_HL
+MI2S_UL_HL: Off  in 2 out 0 - R0(0x0) mask 0x1
+ stream MI2S_TX_HOSTLESS Capture inactive
+ in  "static" "TERT_MI2S_TX"
+ in  "static" "MI2S_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_UL_HL
+TERT_MI2S_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary MI2S_TX Hostless Capture inactive
+ in  "static" "TERT_MI2S_TX"
+ out "static" "Tertiary MI2S_TX Hostless Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_UL_HL
+SEC_MI2S_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary MI2S_TX Hostless Capture inactive
+ in  "static" "SEC_MI2S_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_UL_HL
+PRI_MI2S_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary MI2S_TX Hostless Capture inactive
+ in  "static" "PRI_MI2S_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_DL_HL
+MI2S_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream MI2S_RX_HOSTLESS Playback inactive
+ out "static" "MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/DTMF_DL_HL
+DTMF_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream DTMF_RX_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_UL_HL
+QUAT_MI2S_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary MI2S_TX Hostless Capture inactive
+ in  "static" "QUAT_MI2S_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_0_DL_HL
+PRI_TDM_RX_0_DL_HL: Off  in 0 out 4 - R0(0x0) mask 0x1
+ stream Primary TDM0 Hostless Playback inactive
+ out "static" "PRI_TDM_RX_3"
+ out "static" "PRI_TDM_RX_2"
+ out "static" "PRI_TDM_RX_1"
+ out "static" "PRI_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_0_UL_HL
+PRI_TDM_TX_0_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM0 Hostless Capture inactive
+ in  "static" "PRI_TDM_TX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_1_DL_HL
+PRI_TDM_RX_1_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_1_UL_HL
+PRI_TDM_TX_1_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM1 Hostless Capture inactive
+ in  "static" "PRI_TDM_TX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_2_DL_HL
+PRI_TDM_RX_2_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_2_UL_HL
+PRI_TDM_TX_2_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM2 Hostless Capture inactive
+ in  "static" "PRI_TDM_TX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_3_DL_HL
+PRI_TDM_RX_3_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_3_UL_HL
+PRI_TDM_TX_3_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM3 Hostless Capture inactive
+ in  "static" "PRI_TDM_TX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_4_DL_HL
+PRI_TDM_RX_4_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_4_UL_HL
+PRI_TDM_TX_4_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_5_DL_HL
+PRI_TDM_RX_5_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_5_UL_HL
+PRI_TDM_TX_5_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_6_DL_HL
+PRI_TDM_RX_6_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_6_UL_HL
+PRI_TDM_TX_6_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_7_DL_HL
+PRI_TDM_RX_7_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_7_UL_HL
+PRI_TDM_TX_7_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_0_DL_HL
+SEC_TDM_RX_0_DL_HL: Off  in 0 out 4 - R0(0x0) mask 0x1
+ stream Secondary TDM0 Hostless Playback inactive
+ out "static" "SEC_TDM_RX_3"
+ out "static" "SEC_TDM_RX_2"
+ out "static" "SEC_TDM_RX_1"
+ out "static" "SEC_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_0_UL_HL
+SEC_TDM_TX_0_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM0 Hostless Capture inactive
+ in  "static" "SEC_TDM_TX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_1_DL_HL
+SEC_TDM_RX_1_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_1_UL_HL
+SEC_TDM_TX_1_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM1 Hostless Capture inactive
+ in  "static" "SEC_TDM_TX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_2_DL_HL
+SEC_TDM_RX_2_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_2_UL_HL
+SEC_TDM_TX_2_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM2 Hostless Capture inactive
+ in  "static" "SEC_TDM_TX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_3_DL_HL
+SEC_TDM_RX_3_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_3_UL_HL
+SEC_TDM_TX_3_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM3 Hostless Capture inactive
+ in  "static" "SEC_TDM_TX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_4_DL_HL
+SEC_TDM_RX_4_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_4_UL_HL
+SEC_TDM_TX_4_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_5_DL_HL
+SEC_TDM_RX_5_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_5_UL_HL
+SEC_TDM_TX_5_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_6_DL_HL
+SEC_TDM_RX_6_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_6_UL_HL
+SEC_TDM_TX_6_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_7_DL_HL
+SEC_TDM_RX_7_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_7_UL_HL
+SEC_TDM_TX_7_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_0_DL_HL
+TERT_TDM_RX_0_DL_HL: Off  in 0 out 4 - R0(0x0) mask 0x1
+ stream Tertiary TDM0 Hostless Playback inactive
+ out "static" "TERT_TDM_RX_3"
+ out "static" "TERT_TDM_RX_2"
+ out "static" "TERT_TDM_RX_1"
+ out "static" "TERT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_0_UL_HL
+TERT_TDM_TX_0_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM0 Hostless Capture inactive
+ in  "static" "TERT_TDM_TX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_1_DL_HL
+TERT_TDM_RX_1_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_1_UL_HL
+TERT_TDM_TX_1_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM1 Hostless Capture inactive
+ in  "static" "TERT_TDM_TX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_2_DL_HL
+TERT_TDM_RX_2_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_2_UL_HL
+TERT_TDM_TX_2_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM2 Hostless Capture inactive
+ in  "static" "TERT_TDM_TX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_3_DL_HL
+TERT_TDM_RX_3_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_3_UL_HL
+TERT_TDM_TX_3_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM3 Hostless Capture inactive
+ in  "static" "TERT_TDM_TX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_4_DL_HL
+TERT_TDM_RX_4_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_4_UL_HL
+TERT_TDM_TX_4_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_5_DL_HL
+TERT_TDM_RX_5_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_5_UL_HL
+TERT_TDM_TX_5_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_6_DL_HL
+TERT_TDM_RX_6_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_6_UL_HL
+TERT_TDM_TX_6_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_7_DL_HL
+TERT_TDM_RX_7_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_7_UL_HL
+TERT_TDM_TX_7_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_0_DL_HL
+QUAT_TDM_RX_0_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM0 Hostless Playback inactive
+ out "static" "QUAT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_0_UL_HL
+QUAT_TDM_TX_0_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM0 Hostless Capture inactive
+ in  "static" "QUAT_TDM_TX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_1_DL_HL
+QUAT_TDM_RX_1_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM1 Hostless Playback inactive
+ out "static" "QUAT_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_1_UL_HL
+QUAT_TDM_TX_1_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM1 Hostless Capture inactive
+ in  "static" "QUAT_TDM_TX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_2_DL_HL
+QUAT_TDM_RX_2_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM2 Hostless Playback inactive
+ out "static" "QUAT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_2_UL_HL
+QUAT_TDM_TX_2_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM2 Hostless Capture inactive
+ in  "static" "QUAT_TDM_TX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_3_DL_HL
+QUAT_TDM_RX_3_DL_HL: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM3 Hostless Playback inactive
+ out "static" "QUAT_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_3_UL_HL
+QUAT_TDM_TX_3_UL_HL: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM3 Hostless Capture inactive
+ in  "static" "QUAT_TDM_TX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_4_DL_HL
+QUAT_TDM_RX_4_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_4_UL_HL
+QUAT_TDM_TX_4_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_5_DL_HL
+QUAT_TDM_RX_5_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_5_UL_HL
+QUAT_TDM_TX_5_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_6_DL_HL
+QUAT_TDM_RX_6_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_6_UL_HL
+QUAT_TDM_TX_6_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_7_DL_HL
+QUAT_TDM_RX_7_DL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_7_UL_HL
+QUAT_TDM_TX_7_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM1_UL_HL
+LSM1_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 1 Audio Service Capture inactive
+ in  "static" "LSM1 Mixer"
+ out "static" "Listen 1 Audio Service Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM2_UL_HL
+LSM2_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 2 Audio Service Capture inactive
+ in  "static" "LSM2 Mixer"
+ out "static" "Listen 2 Audio Service Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM3_UL_HL
+LSM3_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 3 Audio Service Capture inactive
+ in  "static" "LSM3 Mixer"
+ out "static" "Listen 3 Audio Service Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM4_UL_HL
+LSM4_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 4 Audio Service Capture inactive
+ in  "static" "LSM4 Mixer"
+ out "static" "Listen 4 Audio Service Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM5_UL_HL
+LSM5_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 5 Audio Service Capture inactive
+ in  "static" "LSM5 Mixer"
+ out "static" "Listen 5 Audio Service Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM6_UL_HL
+LSM6_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 6 Audio Service Capture inactive
+ in  "static" "LSM6 Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM7_UL_HL
+LSM7_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 7 Audio Service Capture inactive
+ in  "static" "LSM7 Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM8_UL_HL
+LSM8_UL_HL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Listen 8 Audio Service Capture inactive
+ in  "static" "LSM8 Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QCHAT_DL
+QCHAT_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream QCHAT Playback inactive
+ in  "static" "QCHAT Playback"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QCHAT_UL
+QCHAT_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream QCHAT Capture inactive
+ in  "static" "QCHAT_Tx Mixer"
+ out "static" "QCHAT Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_I2S_RX
+PRI_I2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary I2S Playback inactive
+ in  "static" "PRI_RX_Voice Mixer"
+ in  "static" "PRI_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_I2S_RX
+SEC_I2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary I2S Playback inactive
+ in  "static" "SEC_I2S_RX Port Mixer"
+ in  "static" "SEC_I2S_DL_HL"
+ in  "static" "SEC_RX_Voice Mixer"
+ in  "static" "SEC_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SPDIF_RX
+SPDIF_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream SPDIF Playback inactive
+ in  "static" "SPDIF_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_0_RX
+SLIMBUS_0_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Slimbus Playback inactive
+ in  "static" "SLIM0_RX_VI_FB_RCH_MUX"
+ in  "static" "SLIM0_RX_VI_FB_LCH_MUX"
+ in  "static" "SLIMBUS_0_RX Port Mixer"
+ in  "static" "SLIMBUS_DL_HL"
+ in  "static" "SLIM_0_RX_Voice Mixer"
+ in  "static" "SLIMBUS_0_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_5_RX
+SLIMBUS_5_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Slimbus5 Playback inactive
+ in  "static" "SLIMBUS_5_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HDMI
+HDMI: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream HDMI Playback inactive
+ in  "static" "HDMI_RX Port Mixer"
+ in  "static" "HDMI_DL_HL"
+ in  "static" "HDMI_RX_Voice Mixer"
+ in  "static" "HDMI Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_RX
+MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream MI2S Playback inactive
+ in  "static" "MI2S_RX Port Mixer"
+ in  "static" "MI2S_DL_HL"
+ in  "static" "MI2S_RX_Voice Mixer"
+ in  "static" "MI2S_RX_Voice Mixer"
+ in  "static" "MI2S_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_RX
+QUAT_MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary MI2S Playback inactive
+ in  "static" "QUAT_MI2S_RX Port Mixer"
+ in  "static" "QUAT_MI2S_RX_DL_HL"
+ in  "static" "QUAT_MI2S_RX_Voice Mixer"
+ in  "static" "QUAT_MI2S_RX Audio Mixer"
+ out "static" "Quaternary MI2S Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_RX
+TERT_MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary MI2S Playback inactive
+ in  "static" "TERT_MI2S_RX Port Mixer"
+ in  "static" "TERT_MI2S_DL_HL"
+ in  "static" "TERT_MI2S_RX_DL_HL"
+ in  "static" "TERT_MI2S_RX_Voice Mixer"
+ in  "static" "TERT_MI2S_RX Audio Mixer"
+ out "static" "Tertiary MI2S Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX
+SEC_MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary MI2S Playback inactive
+ in  "static" "SEC_MI2S_RX Port Mixer"
+ in  "static" "SEC_MI2S_DL_HL"
+ in  "static" "SEC_MI2S_RX_DL_HL"
+ in  "static" "SEC_MI2S_RX_Voice Mixer"
+ in  "static" "SEC_MI2S_RX Audio Mixer"
+ out "static" "Secondary MI2S Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX_SD1
+SEC_MI2S_RX_SD1: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary MI2S Playback SD1 inactive
+ in  "static" "SEC_MI2S_RX_SD1 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX
+PRI_MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary MI2S Playback inactive
+ in  "static" "PRI_MI2S_RX_VI_FB_MUX"
+ in  "static" "PRI_MI2S_RX Port Mixer"
+ in  "static" "PRI_MI2S_DL_HL"
+ in  "static" "PRI_MI2S_RX_DL_HL"
+ in  "static" "PRI_MI2S_RX_Voice Mixer"
+ in  "static" "PRI_MI2S_RX Audio Mixer"
+ out "static" "Primary MI2S Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUIN_MI2S_RX
+QUIN_MI2S_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quinary MI2S Playback inactive
+ in  "static" "QUIN_MI2S_RX_Voice Mixer"
+ in  "static" "QUIN_MI2S_RX Audio Mixer"
+ out "static" "Quinary MI2S Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_I2S_TX
+PRI_I2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary I2S Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_TX
+MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream MI2S Capture inactive
+ in  "static" "BE_IN"
+ out "static" "MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_TX
+QUAT_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary MI2S Capture inactive
+ in  "static" "Quaternary MI2S Capture"
+ in  "static" "BE_IN"
+ out "static" "QUAT_MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_TX
+PRI_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary MI2S Capture inactive
+ in  "static" "Primary MI2S Capture"
+ in  "static" "BE_IN"
+ out "static" "PRI_MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_TX
+TERT_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary MI2S Capture inactive
+ in  "static" "Tertiary MI2S Capture"
+ in  "static" "BE_IN"
+ out "static" "TERT_MI2S_UL_HL"
+ out "static" "MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_TX
+SEC_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary MI2S Capture inactive
+ in  "static" "Secondary MI2S Capture"
+ in  "static" "BE_IN"
+ out "static" "SEC_MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_0_TX
+SLIMBUS_0_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SLIM0_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_2_TX
+SLIMBUS_2_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus2 Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUIN_MI2S_TX
+QUIN_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quinary MI2S Capture inactive
+ in  "static" "Quinary MI2S Capture"
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SENARY_MI2S_TX
+SENARY_MI2S_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Senary MI2S Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INT_BT_SCO_RX
+INT_BT_SCO_RX: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream Internal BT-SCO Playback inactive
+ in  "static" "INTERNAL_BT_SCO_RX Port Mixer"
+ in  "static" "INTERNAL_BT_SCO_RX_Voice Mixer"
+ in  "static" "INTERNAL_BT_SCO_RX Audio Mixer"
+ out "static" "Internal BT-SCO Playback"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INT_BT_SCO_TX
+INT_BT_SCO_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Internal BT-SCO Capture inactive
+ in  "static" "Internal BT-SCO Capture"
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INT_BT_A2DP_RX
+INT_BT_A2DP_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Internal BT-A2DP Playback inactive
+ in  "static" "INTERNAL_A2DP_RX Audio Mixer"
+ out "static" "Internal BT-A2DP Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INT_FM_RX
+INT_FM_RX: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream Internal FM Playback inactive
+ in  "static" "INTFM_DL_HL"
+ in  "static" "INTERNAL_FM_RX Audio Mixer"
+ out "static" "Internal FM Playback"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INT_FM_TX
+INT_FM_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Internal FM Capture inactive
+ in  "static" "Internal FM Capture"
+ in  "static" "BE_IN"
+ out "static" "INTFM_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PCM_RX
+PCM_RX: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream AFE Playback inactive
+ in  "static" "AFE_PCM_RX Port Mixer"
+ in  "static" "PCM_RX_DL_HL"
+ in  "static" "AFE_PCM_RX_Voice Mixer"
+ in  "static" "AFE_PCM_RX Audio Mixer"
+ out "static" "AFE Playback"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PCM_TX
+PCM_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream AFE Capture inactive
+ in  "static" "AFE Capture"
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_0
+PRI_TDM_RX_0: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary TDM0 Playback inactive
+ in  "static" "PRI_TDM_RX_0 Port Mixer"
+ in  "static" "PRI_TDM_RX_0_DL_HL"
+ in  "static" "PRI_TDM_RX_0 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_0
+PRI_TDM_TX_0: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM0 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "PRI_TDM_TX_0_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_1
+PRI_TDM_RX_1: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary TDM1 Playback inactive
+ in  "static" "PRI_TDM_RX_1 Port Mixer"
+ in  "static" "PRI_TDM_RX_0_DL_HL"
+ in  "static" "PRI_TDM_RX_1 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_1
+PRI_TDM_TX_1: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM1 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "PRI_TDM_TX_1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_2
+PRI_TDM_RX_2: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary TDM2 Playback inactive
+ in  "static" "PRI_TDM_RX_2 Port Mixer"
+ in  "static" "PRI_TDM_RX_0_DL_HL"
+ in  "static" "PRI_TDM_RX_2 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_2
+PRI_TDM_TX_2: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM2 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "PRI_TDM_TX_2_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_3
+PRI_TDM_RX_3: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Primary TDM3 Playback inactive
+ in  "static" "PRI_TDM_RX_3 Port Mixer"
+ in  "static" "PRI_TDM_RX_0_DL_HL"
+ in  "static" "PRI_TDM_RX_3 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_3
+PRI_TDM_TX_3: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM3 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "PRI_TDM_TX_3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_4
+PRI_TDM_RX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM4 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_4
+PRI_TDM_TX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM4 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_5
+PRI_TDM_RX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM5 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_5
+PRI_TDM_TX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM5 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_6
+PRI_TDM_RX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM6 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_6
+PRI_TDM_TX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM6 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_7
+PRI_TDM_RX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM7 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_TX_7
+PRI_TDM_TX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Primary TDM7 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_0
+SEC_TDM_RX_0: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary TDM0 Playback inactive
+ in  "static" "SEC_TDM_RX_0 Port Mixer"
+ in  "static" "SEC_TDM_RX_0_DL_HL"
+ in  "static" "SEC_TDM_RX_0 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_0
+SEC_TDM_TX_0: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM0 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SEC_TDM_TX_0_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_1
+SEC_TDM_RX_1: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary TDM1 Playback inactive
+ in  "static" "SEC_TDM_RX_1 Port Mixer"
+ in  "static" "SEC_TDM_RX_0_DL_HL"
+ in  "static" "SEC_TDM_RX_1 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_1
+SEC_TDM_TX_1: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM1 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SEC_TDM_TX_1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_2
+SEC_TDM_RX_2: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary TDM2 Playback inactive
+ in  "static" "SEC_TDM_RX_2 Port Mixer"
+ in  "static" "SEC_TDM_RX_0_DL_HL"
+ in  "static" "SEC_TDM_RX_2 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_2
+SEC_TDM_TX_2: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM2 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SEC_TDM_TX_2_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_3
+SEC_TDM_RX_3: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Secondary TDM3 Playback inactive
+ in  "static" "SEC_TDM_RX_3 Port Mixer"
+ in  "static" "SEC_TDM_RX_0_DL_HL"
+ in  "static" "SEC_TDM_RX_3 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_3
+SEC_TDM_TX_3: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM3 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SEC_TDM_TX_3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_4
+SEC_TDM_RX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM4 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_4
+SEC_TDM_TX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM4 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_5
+SEC_TDM_RX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM5 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_5
+SEC_TDM_TX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM5 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_6
+SEC_TDM_RX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM6 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_6
+SEC_TDM_TX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM6 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_7
+SEC_TDM_RX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM7 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_TX_7
+SEC_TDM_TX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Secondary TDM7 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_0
+TERT_TDM_RX_0: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary TDM0 Playback inactive
+ in  "static" "TERT_TDM_RX_0 Port Mixer"
+ in  "static" "TERT_TDM_RX_0_DL_HL"
+ in  "static" "TERT_TDM_RX_0 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_0
+TERT_TDM_TX_0: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM0 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "TERT_TDM_TX_0_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_1
+TERT_TDM_RX_1: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary TDM1 Playback inactive
+ in  "static" "TERT_TDM_RX_1 Port Mixer"
+ in  "static" "TERT_TDM_RX_0_DL_HL"
+ in  "static" "TERT_TDM_RX_1 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_1
+TERT_TDM_TX_1: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM1 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "TERT_TDM_TX_1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_2
+TERT_TDM_RX_2: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary TDM2 Playback inactive
+ in  "static" "TERT_TDM_RX_2 Port Mixer"
+ in  "static" "TERT_TDM_RX_0_DL_HL"
+ in  "static" "TERT_TDM_RX_2 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_2
+TERT_TDM_TX_2: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM2 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "TERT_TDM_TX_2_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_3
+TERT_TDM_RX_3: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary TDM3 Playback inactive
+ in  "static" "TERT_TDM_RX_3 Port Mixer"
+ in  "static" "TERT_TDM_RX_0_DL_HL"
+ in  "static" "TERT_TDM_RX_3 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_3
+TERT_TDM_TX_3: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM3 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "TERT_TDM_TX_3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_4
+TERT_TDM_RX_4: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Tertiary TDM4 Playback inactive
+ in  "static" "TERT_TDM_RX_4 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_4
+TERT_TDM_TX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM4 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_5
+TERT_TDM_RX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM5 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_5
+TERT_TDM_TX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM5 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_6
+TERT_TDM_RX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM6 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_6
+TERT_TDM_TX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM6 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_7
+TERT_TDM_RX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM7 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_TX_7
+TERT_TDM_TX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Tertiary TDM7 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_0
+QUAT_TDM_RX_0: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM0 Playback inactive
+ in  "static" "QUAT_TDM_RX_0 Port Mixer"
+ in  "static" "QUAT_TDM_RX_0_DL_HL"
+ in  "static" "QUAT_TDM_RX_0 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_0
+QUAT_TDM_TX_0: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM0 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "QUAT_TDM_TX_0_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_1
+QUAT_TDM_RX_1: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM1 Playback inactive
+ in  "static" "QUAT_TDM_RX_1 Port Mixer"
+ in  "static" "QUAT_TDM_RX_1_DL_HL"
+ in  "static" "QUAT_TDM_RX_1 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_1
+QUAT_TDM_TX_1: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM1 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "QUAT_TDM_TX_1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_2
+QUAT_TDM_RX_2: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM2 Playback inactive
+ in  "static" "QUAT_TDM_RX_2 Port Mixer"
+ in  "static" "QUAT_TDM_RX_2_DL_HL"
+ in  "static" "QUAT_TDM_RX_2_Voice Mixer"
+ in  "static" "QUAT_TDM_RX_2 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_2
+QUAT_TDM_TX_2: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM2 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "QUAT_TDM_TX_2_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_3
+QUAT_TDM_RX_3: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Quaternary TDM3 Playback inactive
+ in  "static" "QUAT_TDM_RX_3 Port Mixer"
+ in  "static" "QUAT_TDM_RX_3_DL_HL"
+ in  "static" "QUAT_TDM_RX_3 Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_3
+QUAT_TDM_TX_3: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM3 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "QUAT_TDM_TX_3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_4
+QUAT_TDM_RX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM4 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_4
+QUAT_TDM_TX_4: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM4 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_5
+QUAT_TDM_RX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM5 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_5
+QUAT_TDM_TX_5: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM5 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_6
+QUAT_TDM_RX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM6 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_6
+QUAT_TDM_TX_6: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM6 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_7
+QUAT_TDM_RX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM7 Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_TX_7
+QUAT_TDM_TX_7: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Quaternary TDM7 Capture inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE_PLAYBACK_TX
+VOICE_PLAYBACK_TX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Voice Farend Playback inactive
+ in  "static" "Incall_Music Audio Mixer"
+ out "static" "Voice Farend Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE2_PLAYBACK_TX
+VOICE2_PLAYBACK_TX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Voice2 Farend Playback inactive
+ in  "static" "Incall_Music_2 Audio Mixer"
+ out "static" "Voice2 Farend Playback"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_4_RX
+SLIMBUS_4_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Slimbus4 Playback inactive
+ in  "static" "SLIMBUS4_DL_HL"
+ in  "static" "SLIMBUS_4_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INCALL_RECORD_TX
+INCALL_RECORD_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Voice Uplink Capture inactive
+ in  "static" "Voice Uplink Capture"
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INCALL_RECORD_RX
+INCALL_RECORD_RX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Voice Downlink Capture inactive
+ in  "static" "Voice Downlink Capture"
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_4_TX
+SLIMBUS_4_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus4 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SLIM4_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SENARY_TX
+SENARY_TX: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream Senary_mi2s Capture inactive
+ in  "static" "Senary_mi2s Capture"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_5_TX
+SLIMBUS_5_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus5 Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUX_PCM_RX
+AUX_PCM_RX: Off  in 0 out 3 - R0(0x0) mask 0x1
+ stream AUX PCM Playback inactive
+ in  "static" "AUX_PCM_RX Port Mixer"
+ in  "static" "INTHFP_DL_HL"
+ in  "static" "AUXPCM_DL_HL"
+ in  "static" "AUX_PCM_RX_Voice Mixer"
+ in  "static" "AUX_PCM_RX Audio Mixer"
+ out "static" "AUX PCM Playback"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUX_PCM_TX
+AUX_PCM_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream AUX PCM Capture inactive
+ in  "static" "AUX PCM Capture"
+ in  "static" "BE_IN"
+ out "static" "AUXPCM_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUX_PCM_RX
+SEC_AUX_PCM_RX: Off  in 0 out 2 - R0(0x0) mask 0x1
+ stream Sec AUX PCM Playback inactive
+ in  "static" "SEC_AUXPCM_RX Port Mixer"
+ in  "static" "SEC_AUXPCM_DL_HL"
+ in  "static" "SEC_AUX_PCM_RX_Voice Mixer"
+ in  "static" "SEC_AUX_PCM_RX Audio Mixer"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUX_PCM_TX
+SEC_AUX_PCM_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Sec AUX PCM Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SEC_AUXPCM_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE_STUB_DL
+VOICE_STUB_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOICE_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE_STUB_UL
+VOICE_STUB_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOICE_STUB Capture inactive
+ in  "static" "Voice Stub Tx Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE2_STUB_DL
+VOICE2_STUB_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOICE2_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOICE2_STUB_UL
+VOICE2_STUB_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOICE2_STUB Capture inactive
+ in  "static" "Voice2 Stub Tx Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOLTE_STUB_DL
+VOLTE_STUB_DL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOLTE_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOLTE_STUB_UL
+VOLTE_STUB_UL: Off  in 0 out 0 - R0(0x0) mask 0x1
+ stream VOLTE_STUB Capture inactive
+ in  "static" "VoLTE Stub Tx Mixer"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/STUB_RX
+STUB_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Stub Playback inactive
+ in  "static" "STUB_RX Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/STUB_TX
+STUB_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Stub Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_1_RX
+SLIMBUS_1_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Slimbus1 Playback inactive
+ in  "static" "SLIMBUS_1_RX Port Mixer"
+ in  "static" "SLIMBUS_1_RX Mixer"
+ in  "static" "SLIMBUS1_DL_HL"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_1_TX
+SLIMBUS_1_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus1 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SLIM1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/STUB_1_TX
+STUB_1_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Stub1 Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_3_RX
+SLIMBUS_3_RX: Off  in 0 out 4 - R0(0x0) mask 0x1
+ stream Slimbus3 Playback inactive
+ in  "static" "SLIMBUS_3_RX Port Mixer"
+ in  "static" "SLIMBUS_3_RX_Voice Mixer"
+ in  "static" "SLIMBUS3_DL_HL"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_3_TX
+SLIMBUS_3_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus3 Capture inactive
+ in  "static" "BE_IN"
+ out "static" "SLIM3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_6_RX
+SLIMBUS_6_RX: Off  in 0 out 1 - R0(0x0) mask 0x1
+ stream Slimbus6 Playback inactive
+ in  "static" "SLIMBUS_6_RX Port Mixer"
+ in  "static" "SLIMBUS6_DL_HL"
+ in  "static" "SLIM_6_RX_Voice Mixer"
+ in  "static" "SLIMBUS_6_RX Audio Mixer"
+ out "static" "BE_OUT"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_6_TX
+SLIMBUS_6_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream Slimbus6 Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AFE_LOOPBACK_TX
+AFE_LOOPBACK_TX: Off  in 1 out 0 - R0(0x0) mask 0x1
+ stream AFE Loopback Capture inactive
+ in  "static" "BE_IN"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_DL_HL
+SLIMBUS_DL_HL: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS1_DL_HL
+SLIMBUS1_DL_HL: Off  in 0 out 1
+ out "static" "SLIMBUS_1_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS3_DL_HL
+SLIMBUS3_DL_HL: Off  in 0 out 4
+ out "static" "SLIMBUS_3_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS4_DL_HL
+SLIMBUS4_DL_HL: Off  in 0 out 1
+ out "static" "SLIMBUS_4_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS6_DL_HL
+SLIMBUS6_DL_HL: Off  in 0 out 1
+ out "static" "SLIMBUS_6_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PCM_RX_DL_HL
+PCM_RX_DL_HL: Off  in 0 out 2
+ out "static" "PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX_DL_HL
+PRI_MI2S_RX_DL_HL: Off  in 0 out 1
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX_DL_HL
+SEC_MI2S_RX_DL_HL: Off  in 0 out 1
+ out "static" "SEC_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_RX_DL_HL
+TERT_MI2S_RX_DL_HL: Off  in 0 out 1
+ out "static" "TERT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_RX_DL_HL
+QUAT_MI2S_RX_DL_HL: Off  in 0 out 1
+ out "static" "QUAT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HFP_PRI_AUX_UL_HL
+HFP_PRI_AUX_UL_HL: Off  in 0 out 0
+ out "static" "INTHFP_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HFP_AUX_UL_HL
+HFP_AUX_UL_HL: Off  in 0 out 0
+ out "static" "INTHFP_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HFP_INT_UL_HL
+HFP_INT_UL_HL: Off  in 0 out 0
+ out "static" "INTHFP_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_RX Audio Mixer
+PRI_RX Audio Mixer: Off  in 0 out 1
+ out "static" "PRI_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_RX Audio Mixer
+SEC_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_0_RX Audio Mixer
+SLIMBUS_0_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_5_RX Audio Mixer
+SLIMBUS_5_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_5_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HDMI Mixer
+HDMI Mixer: Off  in 0 out 1
+ out "static" "HDMI"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SPDIF_RX Audio Mixer
+SPDIF_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SPDIF_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_RX Audio Mixer
+MI2S_RX Audio Mixer: Off  in 0 out 1
+ out "static" "MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_RX Audio Mixer
+QUAT_MI2S_RX Audio Mixer: Off  in 0 out 1
+ out "static" "QUAT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_RX Audio Mixer
+TERT_MI2S_RX Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX Audio Mixer
+SEC_MI2S_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX_SD1 Audio Mixer
+SEC_MI2S_RX_SD1 Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_MI2S_RX_SD1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX Audio Mixer
+PRI_MI2S_RX Audio Mixer: Off  in 0 out 1
+ in  "MultiMedia1" "MM_DL1"
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUIN_MI2S_RX Audio Mixer
+QUIN_MI2S_RX Audio Mixer: Off  in 0 out 1
+ out "static" "QUIN_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_0 Audio Mixer
+PRI_TDM_RX_0 Audio Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_1 Audio Mixer
+PRI_TDM_RX_1 Audio Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_2 Audio Mixer
+PRI_TDM_RX_2 Audio Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_3 Audio Mixer
+PRI_TDM_RX_3 Audio Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_0 Audio Mixer
+SEC_TDM_RX_0 Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_1 Audio Mixer
+SEC_TDM_RX_1 Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_2 Audio Mixer
+SEC_TDM_RX_2 Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_3 Audio Mixer
+SEC_TDM_RX_3 Audio Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_0 Audio Mixer
+TERT_TDM_RX_0 Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_1 Audio Mixer
+TERT_TDM_RX_1 Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_2 Audio Mixer
+TERT_TDM_RX_2 Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_3 Audio Mixer
+TERT_TDM_RX_3 Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_4 Audio Mixer
+TERT_TDM_RX_4 Audio Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_4"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_0 Audio Mixer
+QUAT_TDM_RX_0 Audio Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_1 Audio Mixer
+QUAT_TDM_RX_1 Audio Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_2 Audio Mixer
+QUAT_TDM_RX_2 Audio Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_3 Audio Mixer
+QUAT_TDM_RX_3 Audio Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia1 Mixer
+MultiMedia1 Mixer: Off  in 0 out 0
+ out "static" "MM_UL1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia2 Mixer
+MultiMedia2 Mixer: Off  in 0 out 0
+ out "static" "MM_UL2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia3 Mixer
+MultiMedia3 Mixer: Off  in 0 out 0
+ out "static" "MM_UL3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia4 Mixer
+MultiMedia4 Mixer: Off  in 0 out 0
+ out "static" "MM_UL4"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia5 Mixer
+MultiMedia5 Mixer: Off  in 0 out 0
+ out "static" "MM_UL5"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia6 Mixer
+MultiMedia6 Mixer: Off  in 0 out 0
+ out "static" "MM_UL6"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia8 Mixer
+MultiMedia8 Mixer: Off  in 0 out 0
+ out "static" "MM_UL8"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia9 Mixer
+MultiMedia9 Mixer: Off  in 0 out 0
+ out "static" "MM_UL9"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia17 Mixer
+MultiMedia17 Mixer: Off  in 0 out 0
+ out "static" "MM_UL17"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia18 Mixer
+MultiMedia18 Mixer: Off  in 0 out 0
+ out "static" "MM_UL18"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia19 Mixer
+MultiMedia19 Mixer: Off  in 0 out 0
+ out "static" "MM_UL19"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia20 Mixer
+MultiMedia20 Mixer: Off  in 0 out 0
+ out "static" "MM_UL20"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia21 Mixer
+MultiMedia21 Mixer: Off  in 0 out 0
+ out "static" "MM_UL21"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia28 Mixer
+MultiMedia28 Mixer: Off  in 0 out 0
+ out "static" "MM_UL28"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MultiMedia29 Mixer
+MultiMedia29 Mixer: Off  in 0 out 0
+ out "static" "MM_UL29"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUX_PCM_RX Audio Mixer
+AUX_PCM_RX Audio Mixer: Off  in 0 out 3
+ out "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUX_PCM_RX Audio Mixer
+SEC_AUX_PCM_RX Audio Mixer: Off  in 0 out 2
+ out "static" "SEC_AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Incall_Music Audio Mixer
+Incall_Music Audio Mixer: Off  in 0 out 1
+ out "static" "VOICE_PLAYBACK_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Incall_Music_2 Audio Mixer
+Incall_Music_2 Audio Mixer: Off  in 0 out 1
+ out "static" "VOICE2_PLAYBACK_TX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_4_RX Audio Mixer
+SLIMBUS_4_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_4_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_6_RX Audio Mixer
+SLIMBUS_6_RX Audio Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_6_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_RX_Voice Mixer
+PRI_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "PRI_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_RX_Voice Mixer
+SEC_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "SEC_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX_Voice Mixer
+SEC_MI2S_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "SEC_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM_0_RX_Voice Mixer
+SLIM_0_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTERNAL_BT_SCO_RX_Voice Mixer
+INTERNAL_BT_SCO_RX_Voice Mixer: Off  in 0 out 2
+ out "static" "INT_BT_SCO_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AFE_PCM_RX_Voice Mixer
+AFE_PCM_RX_Voice Mixer: Off  in 0 out 2
+ out "static" "PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUX_PCM_RX_Voice Mixer
+AUX_PCM_RX_Voice Mixer: Off  in 0 out 3
+ out "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUX_PCM_RX_Voice Mixer
+SEC_AUX_PCM_RX_Voice Mixer: Off  in 0 out 2
+ out "static" "SEC_AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HDMI_RX_Voice Mixer
+HDMI_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "HDMI"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_RX_Voice Mixer
+MI2S_RX_Voice Mixer: Off  in 0 out 2
+ out "static" "MI2S_RX"
+ out "static" "MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX_Voice Mixer
+PRI_MI2S_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_RX_Voice Mixer
+TERT_MI2S_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "TERT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_RX_Voice Mixer
+QUAT_MI2S_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "QUAT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUIN_MI2S_RX_Voice Mixer
+QUIN_MI2S_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "QUIN_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_2_Voice Mixer
+QUAT_TDM_RX_2_Voice Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Voice_Tx Mixer
+Voice_Tx Mixer: Off  in 0 out 0
+ out "static" "CS-VOICE_UL1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Voice2_Tx Mixer
+Voice2_Tx Mixer: Off  in 0 out 0
+ out "static" "VOICE2_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Voip_Tx Mixer
+Voip_Tx Mixer: Off  in 0 out 0
+ out "static" "VOIP_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoLTE_Tx Mixer
+VoLTE_Tx Mixer: Off  in 0 out 0
+ out "static" "VoLTE_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoWLAN_Tx Mixer
+VoWLAN_Tx Mixer: Off  in 0 out 0
+ out "static" "VoWLAN_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoiceMMode1_Tx Mixer
+VoiceMMode1_Tx Mixer: Off  in 0 out 0
+ out "static" "VOICEMMODE1_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoiceMMode2_Tx Mixer
+VoiceMMode2_Tx Mixer: Off  in 0 out 0
+ out "static" "VOICEMMODE2_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTERNAL_BT_SCO_RX Audio Mixer
+INTERNAL_BT_SCO_RX Audio Mixer: Off  in 0 out 2
+ out "static" "INT_BT_SCO_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTERNAL_A2DP_RX Audio Mixer
+INTERNAL_A2DP_RX Audio Mixer: Off  in 0 out 1
+ out "static" "INT_BT_A2DP_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTERNAL_FM_RX Audio Mixer
+INTERNAL_FM_RX Audio Mixer: Off  in 0 out 2
+ out "static" "INT_FM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AFE_PCM_RX Audio Mixer
+AFE_PCM_RX Audio Mixer: Off  in 0 out 2
+ out "static" "PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Voice Stub Tx Mixer
+Voice Stub Tx Mixer: Off  in 0 out 0
+ out "static" "VOICE_STUB_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/Voice2 Stub Tx Mixer
+Voice2 Stub Tx Mixer: Off  in 0 out 0
+ out "static" "VOICE2_STUB_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VoLTE Stub Tx Mixer
+VoLTE Stub Tx Mixer: Off  in 0 out 0
+ out "static" "VOLTE_STUB_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/STUB_RX Mixer
+STUB_RX Mixer: Off  in 0 out 1
+ out "static" "STUB_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_1_RX Mixer
+SLIMBUS_1_RX Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_1_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_3_RX_Voice Mixer
+SLIMBUS_3_RX_Voice Mixer: Off  in 0 out 4
+ out "static" "SLIMBUS_3_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM_6_RX_Voice Mixer
+SLIM_6_RX_Voice Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_6_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_0_RX Port Mixer
+SLIMBUS_0_RX Port Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUX_PCM_RX Port Mixer
+AUX_PCM_RX Port Mixer: Off  in 0 out 3
+ out "static" "AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_AUXPCM_RX Port Mixer
+SEC_AUXPCM_RX Port Mixer: Off  in 0 out 2
+ out "static" "SEC_AUX_PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_1_RX Port Mixer
+SLIMBUS_1_RX Port Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_1_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/INTERNAL_BT_SCO_RX Port Mixer
+INTERNAL_BT_SCO_RX Port Mixer: Off  in 0 out 2
+ out "static" "INT_BT_SCO_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AFE_PCM_RX Port Mixer
+AFE_PCM_RX Port Mixer: Off  in 0 out 2
+ out "static" "PCM_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/HDMI_RX Port Mixer
+HDMI_RX Port Mixer: Off  in 0 out 1
+ out "static" "HDMI"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_I2S_RX Port Mixer
+SEC_I2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "SEC_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_3_RX Port Mixer
+SLIMBUS_3_RX Port Mixer: Off  in 0 out 4
+ out "static" "SLIMBUS_3_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIMBUS_6_RX Port Mixer
+SLIMBUS_6_RX Port Mixer: Off  in 0 out 1
+ out "static" "SLIMBUS_6_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/MI2S_RX Port Mixer
+MI2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX Port Mixer
+PRI_MI2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_MI2S_RX Port Mixer
+SEC_MI2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "SEC_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_MI2S_RX Port Mixer
+TERT_MI2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "TERT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_MI2S_RX Port Mixer
+QUAT_MI2S_RX Port Mixer: Off  in 0 out 1
+ out "static" "QUAT_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_0 Port Mixer
+PRI_TDM_RX_0 Port Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_1 Port Mixer
+PRI_TDM_RX_1 Port Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_2 Port Mixer
+PRI_TDM_RX_2 Port Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_TDM_RX_3 Port Mixer
+PRI_TDM_RX_3 Port Mixer: Off  in 0 out 1
+ out "static" "PRI_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_0 Port Mixer
+SEC_TDM_RX_0 Port Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_1 Port Mixer
+SEC_TDM_RX_1 Port Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_2 Port Mixer
+SEC_TDM_RX_2 Port Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SEC_TDM_RX_3 Port Mixer
+SEC_TDM_RX_3 Port Mixer: Off  in 0 out 1
+ out "static" "SEC_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_0 Port Mixer
+TERT_TDM_RX_0 Port Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_1 Port Mixer
+TERT_TDM_RX_1 Port Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_2 Port Mixer
+TERT_TDM_RX_2 Port Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/TERT_TDM_RX_3 Port Mixer
+TERT_TDM_RX_3 Port Mixer: Off  in 0 out 1
+ out "static" "TERT_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_0 Port Mixer
+QUAT_TDM_RX_0 Port Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_0"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_1 Port Mixer
+QUAT_TDM_RX_1 Port Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_2 Port Mixer
+QUAT_TDM_RX_2 Port Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QUAT_TDM_RX_3 Port Mixer
+QUAT_TDM_RX_3 Port Mixer: Off  in 0 out 1
+ out "static" "QUAT_TDM_RX_3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/QCHAT_Tx Mixer
+QCHAT_Tx Mixer: Off  in 0 out 0
+ out "static" "QCHAT_UL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM1 Mixer
+LSM1 Mixer: Off  in 0 out 0
+ out "static" "LSM1_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM2 Mixer
+LSM2 Mixer: Off  in 0 out 0
+ out "static" "LSM2_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM3 Mixer
+LSM3 Mixer: Off  in 0 out 0
+ out "static" "LSM3_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM4 Mixer
+LSM4 Mixer: Off  in 0 out 0
+ out "static" "LSM4_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM5 Mixer
+LSM5 Mixer: Off  in 0 out 0
+ out "static" "LSM5_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM6 Mixer
+LSM6 Mixer: Off  in 0 out 0
+ out "static" "LSM6_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM7 Mixer
+LSM7 Mixer: Off  in 0 out 0
+ out "static" "LSM7_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/LSM8 Mixer
+LSM8 Mixer: Off  in 0 out 0
+ out "static" "LSM8_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/BE_OUT
+BE_OUT: Off  in 0 out 1
+ in  "static" "AUX_PCM_RX"
+ in  "static" "STUB_RX"
+ in  "static" "SLIMBUS_3_RX"
+ in  "static" "QUAT_TDM_RX_3"
+ in  "static" "QUAT_TDM_RX_2"
+ in  "static" "QUAT_TDM_RX_1"
+ in  "static" "QUAT_TDM_RX_0"
+ in  "static" "TERT_TDM_RX_4"
+ in  "static" "TERT_TDM_RX_3"
+ in  "static" "TERT_TDM_RX_2"
+ in  "static" "TERT_TDM_RX_1"
+ in  "static" "TERT_TDM_RX_0"
+ in  "static" "SEC_TDM_RX_3"
+ in  "static" "SEC_TDM_RX_2"
+ in  "static" "SEC_TDM_RX_1"
+ in  "static" "SEC_TDM_RX_0"
+ in  "static" "PRI_TDM_RX_3"
+ in  "static" "PRI_TDM_RX_2"
+ in  "static" "PRI_TDM_RX_1"
+ in  "static" "PRI_TDM_RX_0"
+ in  "static" "VOICE2_PLAYBACK_TX"
+ in  "static" "VOICE_PLAYBACK_TX"
+ in  "static" "SEC_AUX_PCM_RX"
+ in  "static" "AUX_PCM_RX"
+ in  "static" "SLIMBUS_3_RX"
+ in  "static" "PCM_RX"
+ in  "static" "INT_FM_RX"
+ in  "static" "INT_BT_SCO_RX"
+ in  "static" "SEC_AUX_PCM_RX"
+ in  "static" "AUX_PCM_RX"
+ in  "static" "SLIMBUS_3_RX"
+ in  "static" "PCM_RX"
+ in  "static" "INT_FM_RX"
+ in  "static" "INT_BT_A2DP_RX"
+ in  "static" "INT_BT_SCO_RX"
+ in  "static" "PRI_MI2S_RX"
+ in  "static" "SEC_MI2S_RX_SD1"
+ in  "static" "SEC_MI2S_RX"
+ in  "static" "TERT_MI2S_RX"
+ in  "static" "QUIN_MI2S_RX"
+ in  "static" "QUAT_MI2S_RX"
+ in  "static" "MI2S_RX"
+ in  "static" "SPDIF_RX"
+ in  "static" "HDMI"
+ in  "static" "SLIMBUS_6_RX"
+ in  "static" "SLIMBUS_5_RX"
+ in  "static" "SLIMBUS_4_RX"
+ in  "static" "SLIMBUS_3_RX"
+ in  "static" "SLIMBUS_1_RX"
+ in  "static" "SLIMBUS_0_RX"
+ in  "static" "SEC_I2S_RX"
+ in  "static" "PRI_I2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/BE_IN
+BE_IN: Off  in 1 out 0
+ out "static" "AFE_LOOPBACK_TX"
+ out "static" "QUAT_TDM_TX_3"
+ out "static" "QUAT_TDM_TX_2"
+ out "static" "QUAT_TDM_TX_1"
+ out "static" "QUAT_TDM_TX_0"
+ out "static" "TERT_TDM_TX_3"
+ out "static" "TERT_TDM_TX_2"
+ out "static" "TERT_TDM_TX_1"
+ out "static" "TERT_TDM_TX_0"
+ out "static" "SEC_TDM_TX_3"
+ out "static" "SEC_TDM_TX_2"
+ out "static" "SEC_TDM_TX_1"
+ out "static" "SEC_TDM_TX_0"
+ out "static" "PRI_TDM_TX_3"
+ out "static" "PRI_TDM_TX_2"
+ out "static" "PRI_TDM_TX_1"
+ out "static" "PRI_TDM_TX_0"
+ out "static" "INCALL_RECORD_RX"
+ out "static" "INCALL_RECORD_TX"
+ out "static" "SEC_AUX_PCM_TX"
+ out "static" "AUX_PCM_TX"
+ out "static" "STUB_1_TX"
+ out "static" "STUB_TX"
+ out "static" "PCM_TX"
+ out "static" "INT_FM_TX"
+ out "static" "INT_BT_SCO_TX"
+ out "static" "SLIMBUS_6_TX"
+ out "static" "SLIMBUS_5_TX"
+ out "static" "SLIMBUS_4_TX"
+ out "static" "SLIMBUS_3_TX"
+ out "static" "SLIMBUS_2_TX"
+ out "static" "SLIMBUS_1_TX"
+ out "static" "SLIMBUS_0_TX"
+ out "static" "SENARY_MI2S_TX"
+ out "static" "SEC_MI2S_TX"
+ out "static" "TERT_MI2S_TX"
+ out "static" "PRI_MI2S_TX"
+ out "static" "QUIN_MI2S_TX"
+ out "static" "QUAT_MI2S_TX"
+ out "static" "MI2S_TX"
+ out "static" "PRI_I2S_TX"
+ out "static" "CPE_LSM_UL_HL"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM0_RX_VI_FB_LCH_MUX
+SLIM0_RX_VI_FB_LCH_MUX: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/SLIM0_RX_VI_FB_RCH_MUX
+SLIM0_RX_VI_FB_RCH_MUX: Off  in 0 out 1
+ out "static" "SLIMBUS_0_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/PRI_MI2S_RX_VI_FB_MUX
+PRI_MI2S_RX_VI_FB_MUX: Off  in 0 out 1
+ out "static" "PRI_MI2S_RX"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/VOC_EXT_EC MUX
+VOC_EXT_EC MUX: Off  in 0 out 0
+ out "static" "VOICEMMODE2_UL"
+ out "static" "VOICEMMODE1_UL"
+ out "static" "VoWLAN_UL"
+ out "static" "VOICE2_UL"
+ out "static" "VoLTE_UL"
+ out "static" "VOIP_UL"
+ out "static" "CS-VOICE_UL1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL1 MUX
+AUDIO_REF_EC_UL1 MUX: Off  in 0 out 0
+ out "static" "MM_UL1"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL2 MUX
+AUDIO_REF_EC_UL2 MUX: Off  in 0 out 0
+ out "static" "MM_UL2"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL3 MUX
+AUDIO_REF_EC_UL3 MUX: Off  in 0 out 0
+ out "static" "MM_UL3"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL4 MUX
+AUDIO_REF_EC_UL4 MUX: Off  in 0 out 0
+ out "static" "MM_UL4"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL5 MUX
+AUDIO_REF_EC_UL5 MUX: Off  in 0 out 0
+ out "static" "MM_UL5"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL6 MUX
+AUDIO_REF_EC_UL6 MUX: Off  in 0 out 0
+ out "static" "MM_UL6"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL8 MUX
+AUDIO_REF_EC_UL8 MUX: Off  in 0 out 0
+ out "static" "MM_UL8"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL9 MUX
+AUDIO_REF_EC_UL9 MUX: Off  in 0 out 0
+ out "static" "MM_UL9"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL17 MUX
+AUDIO_REF_EC_UL17 MUX: Off  in 0 out 0
+ out "static" "MM_UL17"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL18 MUX
+AUDIO_REF_EC_UL18 MUX: Off  in 0 out 0
+ out "static" "MM_UL18"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL19 MUX
+AUDIO_REF_EC_UL19 MUX: Off  in 0 out 0
+ out "static" "MM_UL19"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL28 MUX
+AUDIO_REF_EC_UL28 MUX: Off  in 0 out 0
+ out "static" "MM_UL28"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/AUDIO_REF_EC_UL29 MUX
+AUDIO_REF_EC_UL29 MUX: Off  in 0 out 0
+ out "static" "MM_UL29"
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-routing/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/codec_reg
+0000: 00
+0001: 00
+0004: 23
+0005: 02
+0010: 00
+0011: fd
+0012: fd
+0013: 00
+0014: 00
+0015: 00
+0016: 48
+0018: 00
+0019: 00
+001a: 00
+001b: 00
+0040: 00
+0041: 01
+0042: 00
+0043: 08
+0044: 00
+0046: 80
+0048: 00
+0049: 00
+004a: 08
+0050: 02
+0051: 02
+0052: 01
+0053: 00
+0054: 00
+0055: 00
+0056: 00
+0058: 7c
+0059: 7c
+005a: 7c
+005b: 00
+005c: 00
+005d: 00
+005e: 00
+0068: 00
+0070: 00
+0071: 00
+0072: 00
+00d0: 00
+00da: 0f
+0100: 00
+0101: 00
+0102: 01
+0103: 00
+0104: 23
+0105: 0a
+0110: 00
+0111: 3f
+0112: 3f
+0113: 00
+0114: 00
+0115: 00
+0116: 00
+0118: 00
+0119: 00
+011a: 00
+011b: 00
+0140: 00
+0141: 20
+0142: 00
+0143: 49
+0144: 20
+0145: 00
+0146: 30
+0147: b5
+0150: f1
+0151: b0
+0152: 68
+0153: 18
+0154: 30
+0155: 48
+0156: 91
+0157: a0
+0158: 00
+0159: 10
+0160: 23
+0161: 23
+0162: bf
+0163: 8c
+0164: 00
+0165: 4c
+0166: 51
+0167: 22
+0180: 26
+0181: 23
+0182: 5b
+0183: 28
+0184: 29
+0185: 24
+0186: 00
+0187: 00
+0190: e8
+0191: 12
+0192: ff
+0193: 18
+0194: 5a
+0195: 69
+0196: 29
+0197: 80
+0198: da
+0199: 16
+019a: 00
+019b: 20
+019c: 00
+019d: 20
+019e: 12
+019f: 00
+01a0: 0c
+01a1: 00
+01ac: 00
+01ad: 00
+01b0: 03
+01b1: 91
+01b2: 29
+01b3: 4d
+01b4: e1
+01b5: 1e
+01b6: cb
+01b7: 01
+01c0: 00
+01c1: 14
+01c2: 00
+01c3: 00
+01c4: 8c
+01c5: c0
+01c6: 00
+01c7: 00
+01c8: 2c
+01c9: 80
+01ce: 00
+01cf: 00
+01d0: 00
+0200: 00
+0204: 00
+0208: 00
+020c: 23
+0210: 03
+0214: 00
+0218: 00
+021c: 00
+0220: 00
+0224: 01
+0228: 00
+022c: 00
+0230: 00
+0240: 00
+0244: 00
+0248: 00
+024c: 00
+0250: 68
+0254: 00
+0258: 00
+025c: 00
+0260: 00
+0264: 00
+0268: 00
+026c: 00
+0270: 68
+0274: 00
+0278: 00
+027c: 00
+0280: 00
+0284: 00
+0288: 00
+028c: 00
+0290: 68
+0294: 01
+0298: 00
+029c: 00
+02a0: 00
+02a4: 01
+02e0: 00
+02e4: 00
+02e8: 00
+02ec: 00
+02f0: 00
+0300: 00
+0304: 00
+0308: 00
+030c: 00
+0310: 00
+0314: 00
+0318: 00
+031c: 00
+0320: 40
+0324: 00
+0328: 63
+032c: 00
+0340: 00
+0344: 00
+0348: 00
+034c: 00
+0350: 00
+0354: 00
+0358: 00
+035c: 00
+0360: 40
+0364: 00
+0368: 63
+036c: 00
+0380: 00
+0384: 00
+0388: 00
+038c: 03
+0390: 00
+0394: 00
+0398: 00
+039c: 00
+03a0: 00
+03a8: 00
+03ac: 00
+03b0: 00
+03b4: 00
+03b8: 00
+03bc: 00
+03c0: 00
+03c4: 00
+03c8: 00
+0480: 00
+0484: 00
+0488: 00
+048c: 00
+0490: 03
+0494: 00
+04a0: 00
+04a4: 00
+04a8: 00
+04ac: 00
+04b0: 03
+04b4: 00
+04c0: 00
+04c4: 00
+04c8: 00
+04cc: 00
+04d0: 03
+04d4: 00
+04e0: 00
+04e4: 00
+04e8: 00
+04ec: 00
+04f0: 03
+04f4: 00
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/cache_sync
+N
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MCLK
+MCLK: Off  in 0 out 0
+ out "static" "INT_LDO_H"
+ out "static" "SPK_RX_BIAS"
+ out "static" "RX_BIAS"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Handset Mic
+Handset Mic: Off  in 1 out 0
+ out "static" "MIC BIAS Internal1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Headset Mic
+Headset Mic: Off  in 1 out 0
+ out "static" "MIC BIAS Internal2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Secondary Mic
+Secondary Mic: Off  in 1 out 0
+ out "static" "MIC BIAS Internal1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Digital Mic1
+Digital Mic1: Off  in 1 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Digital Mic2
+Digital Mic2: Off  in 1 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/VDD_WSA_SWITCH
+VDD_WSA_SWITCH: Off  in 0 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/EAR
+EAR: Off  in 0 out 1
+ in  "static" "EAR_S"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/WSA_SPK OUT
+WSA_SPK OUT: Off  in 0 out 1
+ in  "static" "LINEOUT PA"
+ in  "static" "WSA Spk Switch"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/EAR PA
+EAR PA: Off  in 0 out 0
+ in  "static" "EAR CP"
+ in  "static" "HPHR DAC"
+ in  "static" "HPHL DAC"
+ in  "static" "RX_BIAS"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/EAR_S
+EAR_S: Off  in 0 out 1
+ out "static" "EAR"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/WSA Spk Switch
+WSA Spk Switch: Off  in 0 out 1
+ out "static" "WSA_SPK OUT"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S RX1
+I2S RX1: Off  in 0 out 2
+ stream AIF1 Playback inactive
+ in  "static" "AIF1 Playback"
+ in  "static" "RX_I2S_CLK"
+ out "RX1" "RX2 MIX1 INP1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S RX2
+I2S RX2: Off  in 0 out 0
+ stream AIF1 Playback inactive
+ in  "static" "AIF1 Playback"
+ in  "static" "RX_I2S_CLK"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S RX3
+I2S RX3: Off  in 0 out 0
+ stream AIF1 Playback inactive
+ in  "static" "AIF1 Playback"
+ in  "static" "RX_I2S_CLK"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/INT_LDO_H
+INT_LDO_H: Off  in 0 out 0
+ in  "static" "MCLK"
+ out "static" "MIC BIAS External2"
+ out "static" "MIC BIAS External"
+ out "static" "MIC BIAS Internal2"
+ out "static" "MIC BIAS Internal1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Ext Spk
+Ext Spk: Off  in 0 out 1
+ in  "static" "Ext Spk Switch"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HEADPHONE
+HEADPHONE: Off  in 0 out 1
+ in  "static" "HPHR PA"
+ in  "static" "HPHL PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHL PA
+HPHL PA: Off  in 0 out 2 - R407(0x197) mask 0x20
+ in  "static" "RX_BIAS"
+ in  "static" "CP"
+ in  "static" "HPHL"
+ out "On" "Ext Spk Switch"
+ out "static" "HEADPHONE"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHL
+HPHL: Off  in 0 out 2
+ out "static" "HPHL PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHL DAC
+HPHL DAC: Off  in 0 out 0 - R411(0x19b) mask 0x8
+ in  "static" "RX1 CHAIN"
+ out "static" "EAR PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHR PA
+HPHR PA: Off  in 0 out 2 - R407(0x197) mask 0x10
+ in  "static" "RX_BIAS"
+ in  "static" "CP"
+ in  "static" "HPHR"
+ out "On" "Ext Spk Switch"
+ out "static" "HEADPHONE"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHR
+HPHR: Off  in 0 out 2
+ in  "Switch" "HPHR DAC"
+ out "static" "HPHR PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/HPHR DAC
+HPHR DAC: Off  in 0 out 2 - R413(0x19d) mask 0x8
+ in  "static" "RDAC2 MUX"
+ out "Switch" "HPHR"
+ out "static" "EAR PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/SPK
+SPK: Off  in 0 out 1
+ out "static" "SPK PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/SPK DAC
+SPK DAC: Off  in 0 out 0 - R432(0x1b0) mask 0x80
+ in  "static" "VDD_SPKDRV"
+ in  "static" "RX3 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/LINE_OUT
+LINE_OUT: Off  in 0 out 2
+ out "static" "LINEOUT PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/LINEOUT DAC
+LINEOUT DAC: Off  in 0 out 0
+ in  "static" "RX3 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/SPK_OUT
+SPK_OUT: Off  in 0 out 1
+ in  "static" "SPK PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/LINEOUT
+LINEOUT: Off  in 0 out 1
+ in  "static" "LINEOUT PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/SPK PA
+SPK PA: Off  in 0 out 1 - R434(0x1b2) mask 0x40
+ in  "static" "SPK"
+ in  "static" "SPK_RX_BIAS"
+ out "static" "SPK_OUT"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/LINEOUT PA
+LINEOUT PA: Off  in 0 out 2 - R429(0x1ad) mask 0x20
+ in  "static" "LINE_OUT"
+ in  "static" "SPK_RX_BIAS"
+ out "static" "WSA_SPK OUT"
+ out "static" "LINEOUT"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/VDD_SPKDRV
+VDD_SPKDRV: Off  in 0 out 0
+ out "static" "SPK DAC"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/Ext Spk Switch
+Ext Spk Switch: Off  in 0 out 1
+ in  "On" "HPHR PA"
+ in  "On" "HPHL PA"
+ out "static" "Ext Spk"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX1
+RX1 MIX1: Off  in 0 out 0
+ in  "static" "RX1 MIX1 INP3"
+ in  "static" "RX1 MIX1 INP2"
+ in  "static" "RX1 MIX1 INP1"
+ out "static" "RX1 MIX2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX1
+RX2 MIX1: Off  in 0 out 2
+ in  "static" "RX2 MIX1 INP2"
+ in  "static" "RX2 MIX1 INP1"
+ out "static" "RX2 MIX2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX2
+RX1 MIX2: Off  in 0 out 0 - R544(0x220) mask 0x1
+ in  "static" "RX1 MIX2 INP1"
+ in  "static" "RX1 MIX1"
+ out "static" "RX1 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX2
+RX2 MIX2: Off  in 0 out 2 - R544(0x220) mask 0x2
+ in  "static" "RX2 MIX2 INP1"
+ in  "static" "RX2 MIX1"
+ out "static" "RX2 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 MIX1
+RX3 MIX1: Off  in 0 out 0 - R544(0x220) mask 0x4
+ in  "static" "RX3 MIX1 INP2"
+ in  "static" "RX3 MIX1 INP1"
+ out "static" "RX3 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 CLK
+RX1 CLK: Off  in 0 out 0 - R74(0x4a) mask 0x1
+ out "static" "RX1 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 CLK
+RX2 CLK: Off  in 0 out 0 - R74(0x4a) mask 0x2
+ out "static" "RX2 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 CLK
+RX3 CLK: Off  in 0 out 0 - R74(0x4a) mask 0x4
+ out "static" "RX3 CHAIN"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 CHAIN
+RX1 CHAIN: Off  in 0 out 0 - R596(0x254) mask 0x1
+ in  "static" "RX1 MIX2"
+ in  "static" "RX1 CLK"
+ out "static" "HPHL DAC"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 CHAIN
+RX2 CHAIN: Off  in 0 out 2 - R628(0x274) mask 0x1
+ in  "static" "RX2 MIX2"
+ in  "static" "RX2 CLK"
+ out "RX2" "RDAC2 MUX"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 CHAIN
+RX3 CHAIN: Off  in 0 out 0 - R660(0x294) mask 0x1
+ in  "static" "RX3 MIX1"
+ in  "static" "RX3 CLK"
+ out "static" "LINEOUT DAC"
+ out "static" "SPK DAC"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX1 INP1
+RX1 MIX1 INP1: Off  in 0 out 0
+ out "static" "RX1 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX1 INP2
+RX1 MIX1 INP2: Off  in 0 out 0
+ out "static" "RX1 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX1 INP3
+RX1 MIX1 INP3: Off  in 0 out 0
+ out "static" "RX1 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX1 INP1
+RX2 MIX1 INP1: Off  in 0 out 2
+ in  "RX1" "I2S RX1"
+ out "static" "RX2 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX1 INP2
+RX2 MIX1 INP2: Off  in 0 out 2
+ out "static" "RX2 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX1 INP3
+RX2 MIX1 INP3: Off  in 0 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 MIX1 INP1
+RX3 MIX1 INP1: Off  in 0 out 0
+ out "static" "RX3 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 MIX1 INP2
+RX3 MIX1 INP2: Off  in 0 out 0
+ out "static" "RX3 MIX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX3 MIX1 INP3
+RX3 MIX1 INP3: Off  in 0 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX1 MIX2 INP1
+RX1 MIX2 INP1: Off  in 0 out 0
+ out "static" "RX1 MIX2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX2 MIX2 INP1
+RX2 MIX2 INP1: Off  in 0 out 2
+ out "static" "RX2 MIX2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MICBIAS_REGULATOR
+MICBIAS_REGULATOR: Off  in 0 out 0
+ out "static" "MIC BIAS External2"
+ out "static" "MIC BIAS External"
+ out "static" "MIC BIAS Internal2"
+ out "static" "MIC BIAS Internal1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/CP
+CP: Off  in 0 out 0 - R384(0x180) mask 0x1
+ out "static" "HPHR PA"
+ out "static" "HPHL PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/EAR CP
+EAR CP: Off  in 0 out 0 - R384(0x180) mask 0x10
+ out "static" "EAR PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX_BIAS
+RX_BIAS: Off  in 0 out 0
+ in  "static" "MCLK"
+ out "static" "HPHR PA"
+ out "static" "HPHL PA"
+ out "static" "EAR PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/SPK_RX_BIAS
+SPK_RX_BIAS: Off  in 0 out 0
+ in  "static" "MCLK"
+ out "static" "LINEOUT PA"
+ out "static" "SPK PA"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/CDC_CONN
+CDC_CONN: Off  in 0 out 0 - R540(0x21c) mask 0x4
+ out "static" "DEC4 MUX"
+ out "static" "DEC3 MUX"
+ out "static" "DEC2 MUX"
+ out "static" "DEC1 MUX"
+ out "static" "RX_I2S_CLK"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AMIC1
+AMIC1: Off  in 2 out 0
+ in  "static" "MIC BIAS Internal1"
+ out "static" "ADC1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MIC BIAS Internal1
+MIC BIAS Internal1: Off  in 2 out 0 - R320(0x140) mask 0x80
+ in  "static" "Secondary Mic"
+ in  "static" "Handset Mic"
+ in  "static" "MICBIAS_REGULATOR"
+ in  "static" "INT_LDO_H"
+ out "static" "AMIC3"
+ out "static" "AMIC1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MIC BIAS Internal2
+MIC BIAS Internal2: Off  in 1 out 0 - R324(0x144) mask 0x80
+ in  "static" "Headset Mic"
+ in  "static" "MICBIAS_REGULATOR"
+ in  "static" "INT_LDO_H"
+ out "static" "AMIC2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MIC BIAS Internal3
+MIC BIAS Internal3: Off  in 0 out 0 - R320(0x140) mask 0x80
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC1
+ADC1: Off  in 2 out 0 - R352(0x160) mask 0x80
+ in  "static" "AMIC1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC2_INP2
+ADC2_INP2: Off  in 1 out 0 - R353(0x161) mask 0x80
+ in  "static" "AMIC2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC2_INP3
+ADC2_INP3: Off  in 2 out 0 - R359(0x167) mask 0x80
+ in  "static" "AMIC3"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC2
+ADC2: Off  in 0 out 0
+ in  "static" "ADC2 MUX"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC3
+ADC3: Off  in 0 out 0
+ in  "static" "ADC2 MUX"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/ADC2 MUX
+ADC2 MUX: Off  in 0 out 0
+ out "static" "ADC3"
+ out "static" "ADC2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MIC BIAS External
+MIC BIAS External: Off  in 0 out 0 - R320(0x140) mask 0x80
+ in  "static" "MICBIAS_REGULATOR"
+ in  "static" "INT_LDO_H"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/MIC BIAS External2
+MIC BIAS External2: Off  in 0 out 0 - R324(0x144) mask 0x80
+ in  "static" "MICBIAS_REGULATOR"
+ in  "static" "INT_LDO_H"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AMIC3
+AMIC3: Off  in 2 out 0
+ in  "static" "MIC BIAS Internal1"
+ out "static" "ADC2_INP3"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DEC1 MUX
+DEC1 MUX: Off  in 0 out 0 - R536(0x218) mask 0x1
+ in  "static" "CDC_CONN"
+ out "static" "I2S TX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DEC2 MUX
+DEC2 MUX: Off  in 0 out 0 - R536(0x218) mask 0x2
+ in  "static" "CDC_CONN"
+ out "static" "I2S TX2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DEC3 MUX
+DEC3 MUX: Off  in 0 out 0 - R536(0x218) mask 0x4
+ in  "static" "CDC_CONN"
+ out "static" "AIF2 VI"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DEC4 MUX
+DEC4 MUX: Off  in 0 out 0 - R536(0x218) mask 0x8
+ in  "static" "CDC_CONN"
+ out "static" "AIF2 VI"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RDAC2 MUX
+RDAC2 MUX: Off  in 0 out 2
+ in  "RX2" "RX2 CHAIN"
+ out "static" "HPHR DAC"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AMIC2
+AMIC2: Off  in 1 out 0
+ in  "static" "MIC BIAS Internal2"
+ out "static" "ADC2_INP2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S TX1
+I2S TX1: Off  in 0 out 0
+ stream AIF1 Capture inactive
+ in  "static" "DEC1 MUX"
+ in  "static" "TX_I2S_CLK"
+ out "static" "AIF1 Capture"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S TX2
+I2S TX2: Off  in 0 out 0
+ stream AIF1 Capture inactive
+ in  "static" "DEC2 MUX"
+ in  "static" "TX_I2S_CLK"
+ out "static" "AIF1 Capture"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/I2S TX3
+I2S TX3: Off  in 0 out 0
+ stream AIF1 Capture inactive
+ out "static" "AIF1 Capture"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AIF2 VI
+AIF2 VI: Off  in 0 out 0
+ stream VIfeed inactive
+ in  "static" "DEC4 MUX"
+ in  "static" "DEC3 MUX"
+ in  "static" "TX_I2S_CLK"
+ out "static" "VIfeed"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DMIC1
+DMIC1: Off  in 0 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DMIC2
+DMIC2: Off  in 0 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DMIC3
+DMIC3: Off  in 1 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/DMIC4
+DMIC4: Off  in 1 out 0
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/IIR1 INP1 MUX
+IIR1 INP1 MUX: Off  in 0 out 0
+ out "static" "IIR1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/IIR1
+IIR1: Off  in 0 out 0 - R556(0x22c) mask 0x1
+ in  "static" "IIR1 INP1 MUX"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/IIR2 INP1 MUX
+IIR2 INP1 MUX: Off  in 0 out 0
+ out "static" "IIR2"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/IIR2
+IIR2: Off  in 0 out 0 - R556(0x22c) mask 0x2
+ in  "static" "IIR2 INP1 MUX"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/RX_I2S_CLK
+RX_I2S_CLK: Off  in 0 out 0 - R524(0x20c) mask 0x10
+ in  "static" "CDC_CONN"
+ out "static" "I2S RX3"
+ out "static" "I2S RX2"
+ out "static" "I2S RX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/TX_I2S_CLK
+TX_I2S_CLK: Off  in 0 out 0 - R528(0x210) mask 0x10
+ out "static" "AIF2 VI"
+ out "static" "I2S TX2"
+ out "static" "I2S TX1"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/VIfeed
+VIfeed: Off  in 0 out 0
+ stream VIfeed inactive
+ in  "static" "AIF2 VI"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AIF1 Capture
+AIF1 Capture: Off  in 0 out 0
+ stream AIF1 Capture inactive
+ in  "static" "I2S TX1"
+ in  "static" "I2S TX2"
+ in  "static" "I2S TX3"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/AIF1 Playback
+AIF1 Playback: Off  in 0 out 2
+ stream AIF1 Playback inactive
+ out "static" "I2S RX1"
+ out "static" "I2S RX2"
+ out "static" "I2S RX3"
+--- /d/asoc/msm8909-snd-card/codec:msm8x16_wcd_codec-12/dapm/bias_level
+Standby
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-mi2s:qcom,msm-/dapm/Senary_mi2s Capture
+Senary_mi2s Capture: Off  in 0 out 0
+ stream Senary_mi2s Capture inactive
+ out "static" "SENARY_TX"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-mi2s:qcom,msm-/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-lsm-client/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-loopback/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-low-latency/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-compress-dsp/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-afe/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/codec:soc:qcom,msm-stub-codec/codec_reg
+--- /d/asoc/msm8909-snd-card/codec:soc:qcom,msm-stub-codec/cache_sync
+N
+--- /d/asoc/msm8909-snd-card/codec:soc:qcom,msm-stub-codec/dapm/Record
+Record: Off  in 0 out 0
+ stream Record inactive
+--- /d/asoc/msm8909-snd-card/codec:soc:qcom,msm-stub-codec/dapm/Playback
+Playback: Off  in 0 out 0
+ stream Playback inactive
+--- /d/asoc/msm8909-snd-card/codec:soc:qcom,msm-stub-codec/dapm/bias_level
+Standby
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-q6:qcom,msm-da/dapm/AFE-PROXY RX
+AFE-PROXY RX: Off  in 0 out 0
+ stream AFE-PROXY RX inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-q6:qcom,msm-da/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-hostless/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-ultra-low-latency/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-voip-dsp/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm-voice/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/platform:soc:qcom,msm-pcm/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/codec:snd-soc-dummy/codec_reg
+--- /d/asoc/msm8909-snd-card/codec:snd-soc-dummy/cache_sync
+N
+--- /d/asoc/msm8909-snd-card/codec:snd-soc-dummy/dapm/Playback
+Playback: Off  in 0 out 0
+ stream Playback inactive
+--- /d/asoc/msm8909-snd-card/codec:snd-soc-dummy/dapm/Capture
+Capture: Off  in 0 out 0
+ stream Capture inactive
+--- /d/asoc/msm8909-snd-card/codec:snd-soc-dummy/dapm/bias_level
+Standby
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia29 Capture
+MultiMedia29 Capture: Off  in 0 out 0
+ stream MultiMedia29 Capture inactive
+ in  "static" "MM_UL29"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia28 Capture
+MultiMedia28 Capture: Off  in 0 out 0
+ stream MultiMedia28 Capture inactive
+ in  "static" "MM_UL28"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia21 Playback
+MultiMedia21 Playback: Off  in 0 out 0
+ stream MultiMedia21 Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia21 Capture
+MultiMedia21 Capture: Off  in 0 out 0
+ stream MultiMedia21 Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia20 Playback
+MultiMedia20 Playback: Off  in 0 out 0
+ stream MultiMedia20 Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia20 Capture
+MultiMedia20 Capture: Off  in 0 out 0
+ stream MultiMedia20 Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia19 Capture
+MultiMedia19 Capture: Off  in 0 out 0
+ stream MultiMedia19 Capture inactive
+ in  "static" "MM_UL19"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia18 Capture
+MultiMedia18 Capture: Off  in 0 out 0
+ stream MultiMedia18 Capture inactive
+ in  "static" "MM_UL18"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia17 Capture
+MultiMedia17 Capture: Off  in 0 out 0
+ stream MultiMedia17 Capture inactive
+ in  "static" "MM_UL17"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoiceMMode2 Playback
+VoiceMMode2 Playback: Off  in 0 out 0
+ stream VoiceMMode2 Playback inactive
+ out "static" "VOICEMMODE2_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoiceMMode2 Capture
+VoiceMMode2 Capture: Off  in 0 out 0
+ stream VoiceMMode2 Capture inactive
+ in  "static" "VOICEMMODE2_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoiceMMode1 Playback
+VoiceMMode1 Playback: Off  in 0 out 0
+ stream VoiceMMode1 Playback inactive
+ out "static" "VOICEMMODE1_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoiceMMode1 Capture
+VoiceMMode1 Capture: Off  in 0 out 0
+ stream VoiceMMode1 Capture inactive
+ in  "static" "VOICEMMODE1_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia16 Playback
+MultiMedia16 Playback: Off  in 0 out 0
+ stream MultiMedia16 Playback inactive
+ out "static" "MM_DL16"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia15 Playback
+MultiMedia15 Playback: Off  in 0 out 0
+ stream MultiMedia15 Playback inactive
+ out "static" "MM_DL15"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia14 Playback
+MultiMedia14 Playback: Off  in 0 out 0
+ stream MultiMedia14 Playback inactive
+ out "static" "MM_DL14"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia13 Playback
+MultiMedia13 Playback: Off  in 0 out 0
+ stream MultiMedia13 Playback inactive
+ out "static" "MM_DL13"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia12 Playback
+MultiMedia12 Playback: Off  in 0 out 0
+ stream MultiMedia12 Playback inactive
+ out "static" "MM_DL12"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia11 Playback
+MultiMedia11 Playback: Off  in 0 out 0
+ stream MultiMedia11 Playback inactive
+ out "static" "MM_DL11"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia10 Playback
+MultiMedia10 Playback: Off  in 0 out 0
+ stream MultiMedia10 Playback inactive
+ out "static" "MM_DL10"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoWLAN Playback
+VoWLAN Playback: Off  in 0 out 0
+ stream VoWLAN Playback inactive
+ out "static" "VoWLAN_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoWLAN Capture
+VoWLAN Capture: Off  in 0 out 0
+ stream VoWLAN Capture inactive
+ in  "static" "VoWLAN_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 8 Audio Service Capture
+Listen 8 Audio Service Capture: Off  in 0 out 0
+ stream Listen 8 Audio Service Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 7 Audio Service Capture
+Listen 7 Audio Service Capture: Off  in 0 out 0
+ stream Listen 7 Audio Service Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 6 Audio Service Capture
+Listen 6 Audio Service Capture: Off  in 0 out 0
+ stream Listen 6 Audio Service Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 5 Audio Service Capture
+Listen 5 Audio Service Capture: Off  in 0 out 0
+ stream Listen 5 Audio Service Capture inactive
+ in  "static" "LSM5_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 4 Audio Service Capture
+Listen 4 Audio Service Capture: Off  in 0 out 0
+ stream Listen 4 Audio Service Capture inactive
+ in  "static" "LSM4_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 3 Audio Service Capture
+Listen 3 Audio Service Capture: Off  in 0 out 0
+ stream Listen 3 Audio Service Capture inactive
+ in  "static" "LSM3_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 2 Audio Service Capture
+Listen 2 Audio Service Capture: Off  in 0 out 0
+ stream Listen 2 Audio Service Capture inactive
+ in  "static" "LSM2_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Listen 1 Audio Service Capture
+Listen 1 Audio Service Capture: Off  in 0 out 0
+ stream Listen 1 Audio Service Capture inactive
+ in  "static" "LSM1_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/QCHAT Playback
+QCHAT Playback: Off  in 0 out 0
+ stream QCHAT Playback inactive
+ out "static" "QCHAT_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/QCHAT Capture
+QCHAT Capture: Off  in 0 out 0
+ stream QCHAT Capture inactive
+ in  "static" "QCHAT_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia9 Playback
+MultiMedia9 Playback: Off  in 0 out 0
+ stream MultiMedia9 Playback inactive
+ out "static" "MM_DL9"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia9 Capture
+MultiMedia9 Capture: Off  in 0 out 0
+ stream MultiMedia9 Capture inactive
+ in  "static" "MM_UL9"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOICE2_STUB Playback
+VOICE2_STUB Playback: Off  in 0 out 0
+ stream VOICE2_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOICE2_STUB Capture
+VOICE2_STUB Capture: Off  in 0 out 0
+ stream VOICE2_STUB Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOLTE_STUB Playback
+VOLTE_STUB Playback: Off  in 0 out 0
+ stream VOLTE_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOLTE_STUB Capture
+VOLTE_STUB Capture: Off  in 0 out 0
+ stream VOLTE_STUB Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/CPE Listen Audio capture
+CPE Listen Audio capture: Off  in 0 out 0
+ stream CPE Listen Audio capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/DTMF_RX_HOSTLESS Playback
+DTMF_RX_HOSTLESS Playback: Off  in 0 out 0
+ stream DTMF_RX_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Pseudo Playback
+Pseudo Playback: Off  in 0 out 0
+ stream Pseudo Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Pseudo Capture
+Pseudo Capture: Off  in 0 out 0
+ stream Pseudo Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Voice2 Playback
+Voice2 Playback: Off  in 0 out 0
+ stream Voice2 Playback inactive
+ out "static" "VOICE2_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Voice2 Capture
+Voice2 Capture: Off  in 0 out 0
+ stream Voice2 Capture inactive
+ in  "static" "VOICE2_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM7 Hostless Playback
+Quaternary TDM7 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM7 Hostless Capture
+Quaternary TDM7 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM6 Hostless Playback
+Quaternary TDM6 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM6 Hostless Capture
+Quaternary TDM6 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM5 Hostless Playback
+Quaternary TDM5 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM5 Hostless Capture
+Quaternary TDM5 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM4 Hostless Playback
+Quaternary TDM4 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM4 Hostless Capture
+Quaternary TDM4 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM3 Hostless Playback
+Quaternary TDM3 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM3 Hostless Capture
+Quaternary TDM3 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM3 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM2 Hostless Playback
+Quaternary TDM2 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM2 Hostless Capture
+Quaternary TDM2 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM2 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM1 Hostless Playback
+Quaternary TDM1 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM1 Hostless Capture
+Quaternary TDM1 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM1 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM0 Hostless Playback
+Quaternary TDM0 Hostless Playback: Off  in 0 out 0
+ stream Quaternary TDM0 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary TDM0 Hostless Capture
+Quaternary TDM0 Hostless Capture: Off  in 0 out 0
+ stream Quaternary TDM0 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM7 Hostless Playback
+Tertiary TDM7 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM7 Hostless Capture
+Tertiary TDM7 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM6 Hostless Playback
+Tertiary TDM6 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM6 Hostless Capture
+Tertiary TDM6 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM5 Hostless Playback
+Tertiary TDM5 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM5 Hostless Capture
+Tertiary TDM5 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM4 Hostless Playback
+Tertiary TDM4 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM4 Hostless Capture
+Tertiary TDM4 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM3 Hostless Playback
+Tertiary TDM3 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM3 Hostless Capture
+Tertiary TDM3 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM3 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM2 Hostless Playback
+Tertiary TDM2 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM2 Hostless Capture
+Tertiary TDM2 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM2 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM1 Hostless Playback
+Tertiary TDM1 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM1 Hostless Capture
+Tertiary TDM1 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM1 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM0 Hostless Playback
+Tertiary TDM0 Hostless Playback: Off  in 0 out 0
+ stream Tertiary TDM0 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary TDM0 Hostless Capture
+Tertiary TDM0 Hostless Capture: Off  in 0 out 0
+ stream Tertiary TDM0 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM7 Hostless Playback
+Secondary TDM7 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM7 Hostless Capture
+Secondary TDM7 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM6 Hostless Playback
+Secondary TDM6 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM6 Hostless Capture
+Secondary TDM6 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM5 Hostless Playback
+Secondary TDM5 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM5 Hostless Capture
+Secondary TDM5 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM4 Hostless Playback
+Secondary TDM4 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM4 Hostless Capture
+Secondary TDM4 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM3 Hostless Playback
+Secondary TDM3 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM3 Hostless Capture
+Secondary TDM3 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM3 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM2 Hostless Playback
+Secondary TDM2 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM2 Hostless Capture
+Secondary TDM2 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM2 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM1 Hostless Playback
+Secondary TDM1 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM1 Hostless Capture
+Secondary TDM1 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM1 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM0 Hostless Playback
+Secondary TDM0 Hostless Playback: Off  in 0 out 0
+ stream Secondary TDM0 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary TDM0 Hostless Capture
+Secondary TDM0 Hostless Capture: Off  in 0 out 0
+ stream Secondary TDM0 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM7 Hostless Playback
+Primary TDM7 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM7 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM7 Hostless Capture
+Primary TDM7 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM7 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM6 Hostless Playback
+Primary TDM6 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM6 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM6 Hostless Capture
+Primary TDM6 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM6 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM5 Hostless Playback
+Primary TDM5 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM5 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM5 Hostless Capture
+Primary TDM5 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM5 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM4 Hostless Playback
+Primary TDM4 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM4 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM4 Hostless Capture
+Primary TDM4 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM4 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM3 Hostless Playback
+Primary TDM3 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM3 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM3 Hostless Capture
+Primary TDM3 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM3 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM2 Hostless Playback
+Primary TDM2 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM2 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM2 Hostless Capture
+Primary TDM2 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM2 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM1 Hostless Playback
+Primary TDM1 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM1 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM1 Hostless Capture
+Primary TDM1 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM1 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM0 Hostless Playback
+Primary TDM0 Hostless Playback: Off  in 0 out 0
+ stream Primary TDM0 Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary TDM0 Hostless Capture
+Primary TDM0 Hostless Capture: Off  in 0 out 0
+ stream Primary TDM0 Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary MI2S_RX Hostless Playback
+Quaternary MI2S_RX Hostless Playback: Off  in 0 out 0
+ stream Quaternary MI2S_RX Hostless Playback inactive
+ out "static" "QUAT_MI2S_DL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Quaternary MI2S_TX Hostless Capture
+Quaternary MI2S_TX Hostless Capture: Off  in 0 out 0
+ stream Quaternary MI2S_TX Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary MI2S_RX Hostless Playback
+Tertiary MI2S_RX Hostless Playback: Off  in 0 out 0
+ stream Tertiary MI2S_RX Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Tertiary MI2S_TX Hostless Capture
+Tertiary MI2S_TX Hostless Capture: Off  in 1 out 0
+ stream Tertiary MI2S_TX Hostless Capture inactive
+ in  "static" "TERT_MI2S_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary MI2S_RX Hostless Playback
+Secondary MI2S_RX Hostless Playback: Off  in 0 out 0
+ stream Secondary MI2S_RX Hostless Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Secondary MI2S_TX Hostless Capture
+Secondary MI2S_TX Hostless Capture: Off  in 0 out 0
+ stream Secondary MI2S_TX Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary MI2S_RX Hostless Playback
+Primary MI2S_RX Hostless Playback: Off  in 0 out 1
+ stream Primary MI2S_RX Hostless Playback inactive
+ out "static" "PRI_MI2S_DL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/Primary MI2S_TX Hostless Capture
+Primary MI2S_TX Hostless Capture: Off  in 0 out 0
+ stream Primary MI2S_TX Hostless Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SEC_I2S_RX_HOSTLESS Playback
+SEC_I2S_RX_HOSTLESS Playback: Off  in 0 out 0
+ stream SEC_I2S_RX_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MI2S_RX_HOSTLESS Playback
+MI2S_RX_HOSTLESS Playback: Off  in 0 out 0
+ stream MI2S_RX_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MI2S_TX_HOSTLESS Capture
+MI2S_TX_HOSTLESS Capture: Off  in 0 out 0
+ stream MI2S_TX_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoLTE Playback
+VoLTE Playback: Off  in 0 out 0
+ stream VoLTE Playback inactive
+ out "static" "VoLTE_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoLTE Capture
+VoLTE Capture: Off  in 0 out 0
+ stream VoLTE Capture inactive
+ in  "static" "VoLTE_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOICE_STUB Playback
+VOICE_STUB Playback: Off  in 0 out 0
+ stream VOICE_STUB Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VOICE_STUB Capture
+VOICE_STUB Capture: Off  in 0 out 0
+ stream VOICE_STUB Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SEC_AUXPCM_HOSTLESS Capture
+SEC_AUXPCM_HOSTLESS Capture: Off  in 0 out 0
+ stream SEC_AUXPCM_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SEC_AUXPCM_HOSTLESS Playback
+SEC_AUXPCM_HOSTLESS Playback: Off  in 0 out 0
+ stream SEC_AUXPCM_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/AUXPCM_HOSTLESS Playback
+AUXPCM_HOSTLESS Playback: Off  in 0 out 3
+ stream AUXPCM_HOSTLESS Playback inactive
+ out "static" "AUXPCM_DL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/AUXPCM_HOSTLESS Capture
+AUXPCM_HOSTLESS Capture: Off  in 1 out 0
+ stream AUXPCM_HOSTLESS Capture inactive
+ in  "static" "AUXPCM_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/HDMI_HOSTLESS Playback
+HDMI_HOSTLESS Playback: Off  in 0 out 0
+ stream HDMI_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/AFE Playback
+AFE Playback: Off  in 0 out 0
+ stream AFE Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/AFE Capture
+AFE Capture: Off  in 0 out 0
+ stream AFE Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/INT_HFP_BT Hostless Playback
+INT_HFP_BT Hostless Playback: Off  in 0 out 3
+ stream INT_HFP_BT Hostless Playback inactive
+ out "static" "INTHFP_DL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/INT_HFP_BT Hostless Capture
+INT_HFP_BT Hostless Capture: Off  in 0 out 0
+ stream INT_HFP_BT Hostless Capture inactive
+ in  "static" "INTHFP_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/INT_FM_HOSTLESS Playback
+INT_FM_HOSTLESS Playback: Off  in 0 out 2
+ stream INT_FM_HOSTLESS Playback inactive
+ out "static" "INTFM_DL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/INT_FM_HOSTLESS Capture
+INT_FM_HOSTLESS Capture: Off  in 1 out 0
+ stream INT_FM_HOSTLESS Capture inactive
+ in  "static" "INTFM_UL_HL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS6_HOSTLESS Playback
+SLIMBUS6_HOSTLESS Playback: Off  in 0 out 0
+ stream SLIMBUS6_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS4_HOSTLESS Playback
+SLIMBUS4_HOSTLESS Playback: Off  in 0 out 0
+ stream SLIMBUS4_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS4_HOSTLESS Capture
+SLIMBUS4_HOSTLESS Capture: Off  in 0 out 0
+ stream SLIMBUS4_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS3_HOSTLESS Playback
+SLIMBUS3_HOSTLESS Playback: Off  in 0 out 0
+ stream SLIMBUS3_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS3_HOSTLESS Capture
+SLIMBUS3_HOSTLESS Capture: Off  in 0 out 0
+ stream SLIMBUS3_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS1_HOSTLESS Playback
+SLIMBUS1_HOSTLESS Playback: Off  in 0 out 0
+ stream SLIMBUS1_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS1_HOSTLESS Capture
+SLIMBUS1_HOSTLESS Capture: Off  in 0 out 0
+ stream SLIMBUS1_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS0_HOSTLESS Playback
+SLIMBUS0_HOSTLESS Playback: Off  in 0 out 0
+ stream SLIMBUS0_HOSTLESS Playback inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/SLIMBUS0_HOSTLESS Capture
+SLIMBUS0_HOSTLESS Capture: Off  in 0 out 0
+ stream SLIMBUS0_HOSTLESS Capture inactive
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia8 Playback
+MultiMedia8 Playback: Off  in 0 out 0
+ stream MultiMedia8 Playback inactive
+ out "static" "MM_DL8"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia8 Capture
+MultiMedia8 Capture: Off  in 0 out 0
+ stream MultiMedia8 Capture inactive
+ in  "static" "MM_UL8"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia7 Playback
+MultiMedia7 Playback: Off  in 0 out 0
+ stream MultiMedia7 Playback inactive
+ out "static" "MM_DL7"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia6 Playback
+MultiMedia6 Playback: Off  in 0 out 0
+ stream MultiMedia6 Playback inactive
+ out "static" "MM_DL6"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia6 Capture
+MultiMedia6 Capture: Off  in 0 out 0
+ stream MultiMedia6 Capture inactive
+ in  "static" "MM_UL6"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia5 Playback
+MultiMedia5 Playback: Off  in 0 out 0
+ stream MultiMedia5 Playback inactive
+ out "static" "MM_DL5"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia5 Capture
+MultiMedia5 Capture: Off  in 0 out 0
+ stream MultiMedia5 Capture inactive
+ in  "static" "MM_UL5"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia4 Playback
+MultiMedia4 Playback: Off  in 0 out 0
+ stream MultiMedia4 Playback inactive
+ out "static" "MM_DL4"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia4 Capture
+MultiMedia4 Capture: Off  in 0 out 0
+ stream MultiMedia4 Capture inactive
+ in  "static" "MM_UL4"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia3 Playback
+MultiMedia3 Playback: Off  in 0 out 0
+ stream MultiMedia3 Playback inactive
+ out "static" "MM_DL3"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia3 Capture
+MultiMedia3 Capture: Off  in 0 out 0
+ stream MultiMedia3 Capture inactive
+ in  "static" "MM_UL3"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoIP Playback
+VoIP Playback: Off  in 0 out 0
+ stream VoIP Playback inactive
+ out "static" "VOIP_DL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/VoIP Capture
+VoIP Capture: Off  in 0 out 0
+ stream VoIP Capture inactive
+ in  "static" "VOIP_UL"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/CS-VOICE Playback
+CS-VOICE Playback: Off  in 0 out 0
+ stream CS-VOICE Playback inactive
+ out "static" "CS-VOICE_DL1"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/CS-VOICE Capture
+CS-VOICE Capture: Off  in 0 out 0
+ stream CS-VOICE Capture inactive
+ in  "static" "CS-VOICE_UL1"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia2 Playback
+MultiMedia2 Playback: Off  in 0 out 0
+ stream MultiMedia2 Playback inactive
+ out "static" "MM_DL2"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia2 Capture
+MultiMedia2 Capture: Off  in 0 out 0
+ stream MultiMedia2 Capture inactive
+ in  "static" "MM_UL2"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia1 Playback
+MultiMedia1 Playback: Off  in 0 out 1
+ stream MultiMedia1 Playback inactive
+ out "static" "MM_DL1"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/MultiMedia1 Capture
+MultiMedia1 Capture: Off  in 0 out 0
+ stream MultiMedia1 Capture inactive
+ in  "static" "MM_UL1"
+--- /d/asoc/msm8909-snd-card/soc:qcom,msm-dai-fe/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/dapm/bias_level
+Off
+--- /d/asoc/msm8909-snd-card/dapm_pop_time
+0
+--- /d/asoc/platforms
+soc:qcom,msm-pcm-voice
+soc:qcom,msm-voip-dsp
+soc:qcom,msm-pcm-loopback
+soc:qcom,msm-lsm-client
+soc:qcom,msm-pcm-afe
+soc:qcom,msm-pcm-lpa
+soc:qcom,msm-compress-dsp
+soc:qcom,msm-pcm-routing
+soc:qcom,msm-ultra-low-latency
+soc:qcom,msm-pcm-low-latency
+soc:qcom,msm-pcm
+soc:qcom,msm-pcm-hostless
+snd-soc-dummy
+--- /d/asoc/dais
+cajon_vifeedback
+msm8x16_wcd_i2s_tx1
+msm8x16_wcd_i2s_rx1
+MultiMedia29
+MultiMedia28
+MultiMedia21
+MultiMedia20
+MultiMedia19
+MultiMedia18
+MultiMedia17
+VoiceMMode2
+VoiceMMode1
+MultiMedia16
+MultiMedia15
+MultiMedia14
+MultiMedia13
+MultiMedia12
+MultiMedia11
+MultiMedia10
+VoWLAN
+LSM8
+LSM7
+LSM6
+LSM5
+LSM4
+LSM3
+LSM2
+LSM1
+QCHAT
+MultiMedia9
+VOICE2_STUB
+VOLTE_STUB
+CPE_LSM_NOHOST
+DTMF_RX_HOSTLESS
+Pseudo
+Voice2
+QUAT_TDM_RX_7_HOSTLESS
+QUAT_TDM_TX_7_HOSTLESS
+QUAT_TDM_RX_6_HOSTLESS
+QUAT_TDM_TX_6_HOSTLESS
+QUAT_TDM_RX_5_HOSTLESS
+QUAT_TDM_TX_5_HOSTLESS
+QUAT_TDM_RX_4_HOSTLESS
+QUAT_TDM_TX_4_HOSTLESS
+QUAT_TDM_RX_3_HOSTLESS
+QUAT_TDM_TX_3_HOSTLESS
+QUAT_TDM_RX_2_HOSTLESS
+QUAT_TDM_TX_2_HOSTLESS
+QUAT_TDM_RX_1_HOSTLESS
+QUAT_TDM_TX_1_HOSTLESS
+QUAT_TDM_RX_0_HOSTLESS
+QUAT_TDM_TX_0_HOSTLESS
+TERT_TDM_RX_7_HOSTLESS
+TERT_TDM_TX_7_HOSTLESS
+TERT_TDM_RX_6_HOSTLESS
+TERT_TDM_TX_6_HOSTLESS
+TERT_TDM_RX_5_HOSTLESS
+TERT_TDM_TX_5_HOSTLESS
+TERT_TDM_RX_4_HOSTLESS
+TERT_TDM_TX_4_HOSTLESS
+TERT_TDM_RX_3_HOSTLESS
+TERT_TDM_TX_3_HOSTLESS
+TERT_TDM_RX_2_HOSTLESS
+TERT_TDM_TX_2_HOSTLESS
+TERT_TDM_RX_1_HOSTLESS
+TERT_TDM_TX_1_HOSTLESS
+TERT_TDM_RX_0_HOSTLESS
+TERT_TDM_TX_0_HOSTLESS
+SEC_TDM_RX_7_HOSTLESS
+SEC_TDM_TX_7_HOSTLESS
+SEC_TDM_RX_6_HOSTLESS
+SEC_TDM_TX_6_HOSTLESS
+SEC_TDM_RX_5_HOSTLESS
+SEC_TDM_TX_5_HOSTLESS
+SEC_TDM_RX_4_HOSTLESS
+SEC_TDM_TX_4_HOSTLESS
+SEC_TDM_RX_3_HOSTLESS
+SEC_TDM_TX_3_HOSTLESS
+SEC_TDM_RX_2_HOSTLESS
+SEC_TDM_TX_2_HOSTLESS
+SEC_TDM_RX_1_HOSTLESS
+SEC_TDM_TX_1_HOSTLESS
+SEC_TDM_RX_0_HOSTLESS
+SEC_TDM_TX_0_HOSTLESS
+PRI_TDM_RX_7_HOSTLESS
+PRI_TDM_TX_7_HOSTLESS
+PRI_TDM_RX_6_HOSTLESS
+PRI_TDM_TX_6_HOSTLESS
+PRI_TDM_RX_5_HOSTLESS
+PRI_TDM_TX_5_HOSTLESS
+PRI_TDM_RX_4_HOSTLESS
+PRI_TDM_TX_4_HOSTLESS
+PRI_TDM_RX_3_HOSTLESS
+PRI_TDM_TX_3_HOSTLESS
+PRI_TDM_RX_2_HOSTLESS
+PRI_TDM_TX_2_HOSTLESS
+PRI_TDM_RX_1_HOSTLESS
+PRI_TDM_TX_1_HOSTLESS
+PRI_TDM_RX_0_HOSTLESS
+PRI_TDM_TX_0_HOSTLESS
+QUAT_MI2S_RX_HOSTLESS
+QUAT_MI2S_TX_HOSTLESS
+TERT_MI2S_RX_HOSTLESS
+TERT_MI2S_TX_HOSTLESS
+SEC_MI2S_RX_HOSTLESS
+SEC_MI2S_TX_HOSTLESS
+PRI_MI2S_RX_HOSTLESS
+PRI_MI2S_TX_HOSTLESS
+SEC_I2S_RX_HOSTLESS
+MI2S_TX_HOSTLESS
+VoLTE
+VOICE_STUB
+SEC_AUXPCM_TX_HOSTLESS
+SEC_AUXPCM_RX_HOSTLESS
+AUXPCM_HOSTLESS
+HDMI_HOSTLESS
+AFE-PROXY
+INT_HFP_BT_HOSTLESS
+INT_FM_HOSTLESS
+SLIMBUS6_HOSTLESS
+SLIMBUS4_HOSTLESS
+SLIMBUS3_HOSTLESS
+SLIMBUS1_HOSTLESS
+SLIMBUS0_HOSTLESS
+MultiMedia8
+MultiMedia7
+MultiMedia6
+MultiMedia5
+MultiMedia4
+MultiMedia3
+VoIP
+CS-VOICE
+MultiMedia2
+MultiMedia1
+soc:qcom,msm-dai-q6-hdmi
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-mi2s:qcom,msm-
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-dai-q6:qcom,msm-da
+soc:qcom,msm-pri-auxpcm
+msm-stub-tx
+msm-stub-rx
+snd-soc-dummy-dai
+--- /d/asoc/codecs
+msm8x16_wcd_codec-12
+soc:qcom,msm-stub-codec
+snd-soc-dummy
