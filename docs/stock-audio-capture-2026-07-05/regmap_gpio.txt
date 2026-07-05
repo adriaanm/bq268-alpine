@@ -1,0 +1,64 @@
+=== regmap dirs:
+=== codec regs (during playback):
+--- /sys/kernel/debug/regmap/*/
+=== gpio:
+GPIOs 0-112, platform/1000000.pinctrl, 1000000.pinctrl:
+ gpio0   : in  0 2mA pull down
+ gpio1   : out 0 2mA pull down
+ gpio2   : out 0 8mA no pull
+ gpio3   : out 0 8mA no pull
+ gpio4   : out 2 8mA no pull
+ gpio5   : out 2 8mA no pull
+ gpio6   : in  0 2mA pull down
+ gpio7   : in  0 2mA pull down
+ gpio8   : in  0 2mA pull down
+ gpio9   : in  0 2mA pull down
+ gpio10  : in  0 2mA pull down
+ gpio11  : in  0 2mA pull down
+ gpio12  : in  0 2mA pull down
+ gpio13  : in  0 2mA pull down
+ gpio14  : in  0 2mA pull down
+ gpio15  : in  0 2mA pull down
+ gpio16  : out 0 2mA pull down
+ gpio17  : out 0 2mA pull down
+ gpio18  : out 0 2mA pull up
+ gpio19  : out 0 2mA pull down
+ gpio20  : in  0 2mA pull down
+ gpio21  : in  0 2mA pull down
+ gpio22  : in  0 2mA pull down
+ gpio23  : out 0 8mA no pull
+ gpio24  : in  0 2mA pull down
+ gpio25  : in  0 2mA pull down
+ gpio26  : in  0 2mA pull down
+ gpio27  : in  0 2mA pull down
+ gpio28  : in  0 2mA pull down
+ gpio29  : in  0 2mA pull down
+ gpio30  : out 0 2mA pull down
+ gpio31  : in  0 2mA pull down
+ gpio32  : in  0 2mA pull down
+ gpio33  : in  0 2mA pull down
+ gpio34  : in  0 2mA pull down
+ gpio35  : in  0 2mA pull down
+ gpio36  : out 0 2mA pull down
+ gpio37  : in  0 2mA pull down
+ gpio38  : in  0 2mA pull down
+ gpio39  : in  0 2mA pull down
+ gpio40  : in  1 6mA pull down
+ gpio41  : in  1 6mA pull down
+ gpio42  : in  1 6mA pull down
+ gpio43  : in  1 6mA pull down
+ gpio44  : in  1 6mA pull down
+ gpio45  : in  0 2mA pull down
+ gpio46  : in  0 2mA pull down
+ gpio47  : in  0 2mA pull down
+ gpio48  : in  0 2mA pull down
+ gpio49  : in  0 2mA pull down
+ gpio50  : in  0 2mA pull down
+ gpio51  : in  0 2mA pull down
+ gpio52  : in  0 2mA pull down
+ gpio53  : out 1 2mA no pull
+ gpio54  : out 1 2mA no pull
+ gpio55  : out 1 2mA no pull
+ gpio56  : in  1 2mA pull up
+ gpio57  : out 1 2mA no pull
+ gpio58  : in  0 2mA pull down
