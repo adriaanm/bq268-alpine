@@ -47,6 +47,7 @@ LTE data works on golden (unpatched) modem firmware via Sunrise (228/02) roaming
 - [x] **eSIM provisioning** — lpac → qmi-send-apdu lpac mode → QMI UIM → eUICC. Works on golden firmware. ISD-R AID filter bypassed by truncating to 6-byte prefix.
 - [ ] **QMI-proxy boot-time orphan subscriptions + modem restart reboots** — `qmi-proxy` as persistent multiplexer halved leak rate, but 4 `kworker/u8:N` still pile up in `D` state after every boot and `send_filled_buffers_to_user: Send Failed -3 drop_count=...` grows at ~10/min, pinning load average around 4. Suspect: modem init retry loop hammers QMI while Q6 DSP isn't ready. Fix: wait for Q6 readiness via sysfs state before issuing QMI.
   - **2026-04-18 finding:** `rc-service rmt-storage restart` (cascades to modem+qmi-proxy) triggers a device reboot ~60s later. qmi-proxy stale PID + Q6 `shutting-down` state → hardware watchdog fires. Boot-time init works fine.
+  - **2026-07-05 finding:** this instability is now the leading cause of the **silent-audio regression** — audio's AFE/APR shares the Q6 with the modem, so the wedged Q6 (`shutting-down`) degrades audio. Fix spec (init-ordering only, no security scope): [docs/planning/qmi-q6-readiness-gating.md](docs/planning/qmi-q6-readiness-gating.md). Verify with both stability metrics and an on-device audio test.
 
 ### Zig 0.16 tool ports
 
