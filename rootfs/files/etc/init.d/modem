@@ -17,28 +17,71 @@ start() {
     ebegin "Booting modem (Q6 DSP)"
     # Hold subsys_modem fd open to keep the modem running.
     # When this process dies, the fd closes and subsystem_put() shuts it down.
-    # After boot, wait for Q6 to initialize then set operating mode online.
+    #
+    # QMI ordering matters: any QMI traffic issued before the Q6's DMS
+    # service is registered leaves undeliverable state in
+    # msm_ipc_router — dmesg fills with "send_filled_buffers_to_user:
+    # Send Failed -3", 4 kworker/u8:N threads wedge in D state pinning
+    # the load average at ~4, DMS sticks in shutting-down, and the
+    # watchdog can fire. And audio shares this Q6, so wedging it kills
+    # playback too. See docs/planning/qmi-q6-readiness-gating.md.
+    #
+    # So instead of retrying the mutating "online" command until it
+    # lands, gate on real readiness first: subsystem ONLINE in sysfs,
+    # then a non-mutating DMS read (which subscribes to no indications)
+    # answering through qmi-proxy. Only then set the mode — once.
     start-stop-daemon --start --background --make-pidfile \
         --pidfile "$pidfile" \
         --exec /bin/sh -- -c '
             exec 3< /dev/subsys_modem
-            # Poll DMS readiness without subscribing to indications.
-            # We wait for qmi-proxy to be up and then route through it
-            # (qmicli -p) so each failing retry does not leak a NAS
-            # indication subscription into msm_ipc_router (which would
-            # pile up "send_filled_buffers_to_user: Send Failed -3"
-            # drops in dmesg and stick kworker/u8:N in D state).
-            w=0
-            while [ $w -lt 60 ]; do
-                [ -S /run/qmi-proxy ] || [ -e @qmi-proxy ] 2>/dev/null
-                if [ -x /usr/bin/qmicli ] && \
-                   qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 \
-                   | logger -t modem; then
+
+            # 1. Modem subsystem ONLINE (firmware loaded, Q6 out of
+            #    reset). Match by name — subsysN numbering is
+            #    probe-order dependent — and rescan while waiting in
+            #    case the device node appears late.
+            mdm= w=0
+            while [ $w -lt 120 ]; do
+                if [ -z "$mdm" ]; then
+                    for d in /sys/bus/msm_subsys/devices/subsys*; do
+                        if [ "$(cat "$d"/name 2>/dev/null)" = modem ]; then
+                            mdm=$d
+                            break
+                        fi
+                    done
+                fi
+                if [ -n "$mdm" ] && \
+                   [ "$(cat "$mdm"/state 2>/dev/null)" = ONLINE ]; then
                     break
                 fi
-                sleep 0.5
+                sleep 1
                 w=$((w + 1))
             done
+            if [ -z "$mdm" ] || \
+               [ "$(cat "$mdm"/state 2>/dev/null)" != ONLINE ]; then
+                logger -t modem "modem subsystem not ONLINE after 120s; leaving QMI untouched"
+                exec sleep 999999
+            fi
+
+            # 2. ONLINE only means the firmware booted — the QMI DMS
+            #    service registers a bit later. Wait for a read to
+            #    actually answer before any mutating command.
+            w=0
+            until qmicli -p -d msmipc://0 --dms-get-operating-mode \
+                    >/dev/null 2>&1; do
+                if [ $w -ge 120 ]; then
+                    logger -t modem "DMS not answering after 120s; leaving operating mode alone"
+                    exec sleep 999999
+                fi
+                sleep 1
+                w=$((w + 1))
+            done
+
+            # 3. DMS answers: set online exactly once. No retry loop —
+            #    with DMS verifiably up a failure here is a real error
+            #    to surface, not something to hammer at 0.5s intervals.
+            qmicli -p -d msmipc://0 --dms-set-operating-mode=online 2>&1 \
+                | logger -t modem
+
             exec sleep 999999
         '
     eend $?
