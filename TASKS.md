@@ -68,6 +68,7 @@ Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build 
 
 ## Backlog
 
+- [ ] net-watchdog supervision — switch the service to supervise-daemon (status lies + no respawn today); failover must be supervised before wata's roaming leans on it. Spec: [docs/planning/net-watchdog-supervision.md](docs/planning/net-watchdog-supervision.md).
 - [ ] wata-fb as the boot-time UI — flip the tty1 respawn from system-menu to `/opt/wata/start.sh`; gated on wata verifying its power actions on-device. Spec: [docs/planning/wata-fb-early-boot.md](docs/planning/wata-fb-early-boot.md).
 
 - [ ] Read-only rootfs — Production hardening. Prevents eMMC wear and corruption from hard power-off. overlayfs on tmpfs for /var, /tmp.
