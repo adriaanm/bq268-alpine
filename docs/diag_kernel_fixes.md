@@ -91,3 +91,51 @@ DIAG tools have moved to `~/bq268-modem-diag`:
   registers itself.
 - `diag-efs-write` — modem EFS read/write/list via DIAG EFS2.
   Relies on Fix 3 for command forwarding.
+
+# smd_tty: the missing .hangup (FIXED, MSM8909 CAF 4.4)
+
+Cellular data used to come up exactly once per boot: the second
+`cell-data up` never got ppp0, and the kernel oopsed with a NULL
+dereference at `smd_tty_tiocmset+0x8` (fault address `0x1e8` = the
+`in_reset` field of `struct smd_tty_info`). Both symptoms had one
+cause, and both are fixed in the kernel tree.
+
+**Root cause.** `smd_tty_ops` had no `.hangup`. pppd hangs up its tty
+on teardown, and `tty_port_close_start()` returns early for a hung-up
+filp — so `tty_port_close()` never reached `tty_port_shutdown()`. The
+port kept `ASYNC_INITIALIZED` with a dead SMD channel (the ipc log
+carried no `closed port` entry at all), and the next open allocated a
+fresh tty whose `driver_data` was NULL while `tty_port_open()` skipped
+`->activate` because the port still claimed to be initialized. NULL
+`driver_data` on a live fd is exactly what pppd's modem-control ioctl
+then dereferenced.
+
+**The fixes** (kernel repo):
+
+- `46dc2323178c` — NULL-guard the tty ops (`tiocmset`, `tiocmget`,
+  `write_room`, `chars_in_buffer`, `unthrottle`, `is_in_reset`) against
+  a shut-down port, returning `-ENETRESET` where the port is gone.
+  `smd_tty_port_shutdown()` already had exactly this guard. This alone
+  turns the kernel crash into an errno — worth keeping regardless of
+  the cause, and it is what made the real defect legible.
+- `dde87bce66ae` — wire `.hangup` to `tty_port_hangup()`, which zeroes
+  `port->count`, clears the initialized flag and runs shutdown.
+  `tty_port_hangup()` clears `port->tty` before calling shutdown, so
+  `smd_tty_port_shutdown()` now takes its `info` from the port (it is
+  embedded in `struct smd_tty_info`) rather than through the tty, and
+  clears `tty->driver_data` only when a tty is still attached.
+
+**Verified** on the device (RAM-booted #76): up/down/up succeeds, the
+log carries the closed-port entry, and four further down/up cycles all
+came up with working traffic over ppp0 — zero oopses throughout. Two
+independent tests on the previous build (#75, guards only) had
+confirmed the crash was gone while the reopen still failed, which is
+what isolated the two defects from each other.
+
+Consequence: wifi/cellular switching that tears the data call down and
+brings it back up now works, so cellular no longer costs a reboot per
+test. Note that this holds only on a kernel carrying `dde87bce66ae`.
+
+A separate, still-open annoyance found alongside it: the PPP `ip-up`
+hook installs no peer DNS, so anything running with wifi down needs
+`/etc/resolv.conf` pointed at a public resolver for the duration.

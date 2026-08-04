@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# This script is run by pppd after the connection has ended.
+#
+# Undo ip-up's resolver edit: put back whatever /etc/resolv.conf held before
+# the data call (normally wifi's DHCP-written file).
+
+SAVED=/run/resolv.conf.pre-ppp
+
+if [ -f "$SAVED" ]; then
+    mv "$SAVED" /etc/resolv.conf
+    logger -t ppp-ip-down "restored pre-ppp resolv.conf"
+fi

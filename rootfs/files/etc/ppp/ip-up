@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# This script is run by pppd when there's a successful ppp connection.
+#
+# pppd's `usepeerdns` puts the carrier's resolvers in $DNS1/$DNS2 but never
+# installs them; without this, anything running while wifi is down resolves
+# against a nameserver it cannot reach. Put the peer's resolvers FIRST and
+# keep the previous file underneath, so a still-reachable LAN resolver is
+# only a fallback rather than a five-second timeout on every lookup.
+# ip-down restores the saved copy.
+
+SAVED=/run/resolv.conf.pre-ppp
+
+[ -n "$DNS1$DNS2" ] || exit 0
+
+[ -f "$SAVED" ] || cp /etc/resolv.conf "$SAVED" 2>/dev/null
+
+{
+    [ -n "$DNS1" ] && echo "nameserver $DNS1"
+    [ -n "$DNS2" ] && echo "nameserver $DNS2"
+    cat "$SAVED" 2>/dev/null
+} > /etc/resolv.conf.ppp
+
+mv /etc/resolv.conf.ppp /etc/resolv.conf
+logger -t ppp-ip-up "installed peer DNS: ${DNS1} ${DNS2}"
