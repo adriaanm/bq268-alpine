@@ -68,6 +68,8 @@ Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build 
 
 ## Backlog
 
+- [ ] wata-fb as the boot-time UI — flip the tty1 respawn from system-menu to `/opt/wata/start.sh`; gated on wata verifying its power actions on-device. Spec: [docs/planning/wata-fb-early-boot.md](docs/planning/wata-fb-early-boot.md).
+
 - [ ] Read-only rootfs — Production hardening. Prevents eMMC wear and corruption from hard power-off. overlayfs on tmpfs for /var, /tmp.
 - [ ] OTA updates — Mechanism for deploying rootfs updates over cellular/WiFi. Dual-partition (A/B) or full-image reflash.
 - [ ] Watchdog timer — Hardware watchdog (QCOM WDT) to auto-reboot on hang. Critical for unattended field device.
