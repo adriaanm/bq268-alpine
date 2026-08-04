@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /opt/wata/wata-fb
+exec /opt/wata/wata-fb ui
