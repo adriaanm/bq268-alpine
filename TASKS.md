@@ -69,6 +69,7 @@ Porting C tools to Zig 0.16.0 (release, `~/zig-x86_64-linux-0.16.0/zig`). Build 
 ## Backlog
 
 - [ ] net-watchdog supervision — switch the service to supervise-daemon (status lies + no respawn today); failover must be supervised before wata's roaming leans on it. Spec: [docs/planning/net-watchdog-supervision.md](docs/planning/net-watchdog-supervision.md).
+- [ ] wifi-join helper — `/usr/local/bin/wifi-join <ssid>` (PSK on stdin, never argv): replace-or-append the wpa_supplicant block, hashed psk, atomic 0600 write, live `wpa_cli reconfigure`; wata-fb's wifi_join op already calls exactly this and reports "helper missing" until it lands. Spec: [docs/planning/wifi-join-helper.md](docs/planning/wifi-join-helper.md).
 - [ ] wata-fb as the boot-time UI — flip the tty1 respawn from system-menu to `/opt/wata/start.sh`; gated on wata verifying its power actions on-device. Spec: [docs/planning/wata-fb-early-boot.md](docs/planning/wata-fb-early-boot.md).
 
 - [ ] Read-only rootfs — Production hardening. Prevents eMMC wear and corruption from hard power-off. overlayfs on tmpfs for /var, /tmp.
