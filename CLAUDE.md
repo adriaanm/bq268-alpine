@@ -66,6 +66,15 @@ This repo runs on a headless buildbox. The device is attached directly — `just
   Without these, `dev_tree_appended()` fails silently and no DTB is passed to the kernel.
 - **Hardcoded addresses** — aboot forces kernel=0x80008000, ramdisk=0x82300000,
   tags=0x82100000 regardless of boot.img header values.
+- **Quiet boot (2026-08-05)** — the LIVE boot partition's header cmdline was
+  patched in place (page 0 only): `loglevel=7` dropped, `quiet logo.nologo
+  vt.global_cursor_default=0` appended. The flashed image did NOT match any
+  `out/*.img` (it is a later buildbox assembly); source of truth is the device
+  partition itself. Backup of the pre-patch partition: `out/boot-live-backup-
+  20260805.img` (sha256 a37edc19…); patched: `out/boot-quiet-20260805.img`
+  (914d655b…). Method: dd the 2048-byte page 0 over `/dev/mmcblk0p5`
+  (PARTNAME=boot), readback-verified, reboot BOOT TEST PASS. Any future
+  boot.img assembly must carry the quiet cmdline forward.
 - **Cmdline** — aboot appends its own params (`androidboot.*`, `verifiedbootstate`, etc.)
   to whatever is set in the boot.img header. Mainline ignores the android-specific ones.
 
