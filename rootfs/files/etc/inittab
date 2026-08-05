@@ -15,8 +15,10 @@
 ::sysinit:/sbin/openrc boot
 ::once:/sbin/openrc default
 
-# System menu on framebuffer (launches wata, settings, sysinfo)
-tty1::respawn:/usr/local/bin/system-menu
+# wata-fb is the boot UI on tty1 (respawn = crash supervision; spec:
+# docs/planning/wata-fb-early-boot.md). system-menu stays installed and
+# runnable from a shell; ttyGS0 getty below is the recovery path.
+tty1::respawn:/opt/wata/start.sh
 ttyGS0::respawn:/bin/sh -c 'while [ ! -e /dev/ttyGS0 ]; do sleep 1; done; exec /sbin/getty -n -l /bin/sh -L 115200 ttyGS0 vt100'
 
 # Shutdown
