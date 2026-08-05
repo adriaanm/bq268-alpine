@@ -58,4 +58,10 @@ in the wata repo's queue.
 Power-on to wata's first frame with no menu interaction; kill the wata-fb
 process on a running device and see it respawn within a second or two;
 wifi disabled at boot shows wata's waiting state (not an error screen)
+
+Status 2026-08-05: flipped and live (be06c0e; owner lifted the gate).
+Owner verified settings power-off on hardware; respawn kill-tested;
+boot-before-wifi currently needs one manual app bounce until the wata
+repo's FB-ROBUST-CONNECT lands (its plan 0022). start.sh unbinds fbcon
+(3264fef) — required, or the VT paints over wata.
 and recovers when wifi comes up.
