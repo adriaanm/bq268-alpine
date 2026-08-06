@@ -1,0 +1,189 @@
+#!/usr/bin/python3
+"""wifi-join <ssid> — join a WiFi network; the PSK arrives on stdin.
+
+Contract (wata-fb's wifi_join op calls exactly this; spec in
+docs/planning/wifi-join-helper.md):
+
+  - ssid is the single argv argument; the PSK is read from stdin to EOF
+    (one trailing newline tolerated). The PSK is never placed in argv or
+    the environment of any process — wpa_passphrase reads it from ITS
+    stdin too.
+  - Empty PSK = open network (key_mgmt=NONE). Otherwise 8-63 bytes (WPA).
+  - Replace-or-append the ssid's network block in wpa_supplicant.conf:
+    hashed psk only (never plaintext), priority above all existing
+    blocks, atomic same-dir temp + rename, mode 0600.
+  - Apply live via `wpa_cli -i wlan0 reconfigure`, falling back to
+    `rc-service wifi start` if the control socket is unreachable.
+  - Exit 0 = config in place AND wpa_supplicant told (association/DHCP
+    NOT required). Always exactly one detail line on stdout — wata-fb
+    relays it verbatim. Bounded runtime (~10 s). No PSK in any output.
+
+Env knobs (testing only; the contract above is unchanged):
+  WIFI_JOIN_CONF     conf path (default /etc/wpa_supplicant/wpa_supplicant.conf)
+  WIFI_JOIN_DRY_RUN  =1: validate + plan, touch nothing, report, exit 0
+"""
+
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+CONF = os.environ.get("WIFI_JOIN_CONF", "/etc/wpa_supplicant/wpa_supplicant.conf")
+DRY_RUN = os.environ.get("WIFI_JOIN_DRY_RUN") == "1"
+DEADLINE = time.monotonic() + 10.0
+
+
+def die(reason):
+    print(f"wifi-join: {reason}")
+    sys.exit(1)
+
+
+def remaining():
+    return max(1.0, DEADLINE - time.monotonic())
+
+
+def run(argv, stdin_bytes=None):
+    """Run a child bounded by the global deadline. Returns (rc, stdout)."""
+    try:
+        p = subprocess.run(argv, input=stdin_bytes, capture_output=True,
+                           timeout=remaining())
+        return p.returncode, p.stdout.decode(errors="replace")
+    except FileNotFoundError:
+        return 127, ""
+    except subprocess.TimeoutExpired:
+        return -1, ""
+
+
+def hash_psk(ssid, psk):
+    """Derive the hex psk via wpa_passphrase; the PSK goes to its stdin."""
+    rc, out = run(["wpa_passphrase", ssid], stdin_bytes=psk + b"\n")
+    if rc != 0:
+        die("wpa_passphrase failed")
+    m = re.search(r"^\s*psk=([0-9a-f]{64})\s*$", out, re.M)
+    if not m:
+        die("wpa_passphrase produced no psk")
+    return m.group(1)
+
+
+def block_ssid_matches(block, ssid):
+    """True if a network block's ssid= names this ssid (quoted or hex form)."""
+    m = re.search(r'^\s*ssid=(.+?)\s*$', block, re.M)
+    if not m:
+        return False
+    val = m.group(1)
+    if val.startswith('"') and val.endswith('"'):
+        return val[1:-1] == ssid
+    try:
+        return bytes.fromhex(val) == ssid.encode()
+    except ValueError:
+        return False
+
+
+def split_conf(text):
+    """Split conf into (header_lines, [block_text, ...]). Blocks are kept
+    verbatim; header is everything outside network={...} blocks."""
+    header, blocks, cur = [], [], None
+    for line in text.splitlines():
+        if cur is None:
+            if re.match(r"^\s*network\s*=\s*\{", line):
+                cur = [line]
+            else:
+                header.append(line)
+        else:
+            cur.append(line)
+            if re.match(r"^\s*\}\s*$", line):
+                blocks.append("\n".join(cur))
+                cur = None
+    if cur is not None:  # unterminated block: keep it, don't eat it
+        blocks.append("\n".join(cur))
+    return header, blocks
+
+
+def ssid_conf_value(ssid):
+    """Quoted form when it round-trips cleanly, hex form otherwise."""
+    if ssid.isprintable() and '"' not in ssid and "\\" not in ssid:
+        return f'"{ssid}"'
+    return ssid.encode().hex()
+
+
+def reconfigure():
+    """Tell the running wpa_supplicant; start the wifi service if needed.
+    Returns None on success, a reason string on failure."""
+    rc, out = run(["wpa_cli", "-i", "wlan0", "reconfigure"])
+    if rc == 0 and "OK" in out:
+        return None
+    run(["rc-service", "wifi", "start"])
+    rc, out = run(["wpa_cli", "-i", "wlan0", "reconfigure"])
+    if rc == 0 and "OK" in out:
+        return None
+    return "config saved but wpa_supplicant unreachable (takes effect on next wifi start)"
+
+
+def main():
+    if len(sys.argv) != 2 or not sys.argv[1]:
+        die("usage: wifi-join <ssid>  (PSK on stdin; empty = open network)")
+    ssid = sys.argv[1]
+    if len(ssid.encode()) > 32:
+        die("ssid longer than 32 bytes")
+
+    psk = sys.stdin.buffer.read()
+    if psk.endswith(b"\n"):
+        psk = psk[:-1]
+    if psk.endswith(b"\r"):
+        psk = psk[:-1]
+    open_network = len(psk) == 0
+    if not open_network and not 8 <= len(psk) <= 63:
+        die("psk must be 8-63 bytes (empty for an open network)")
+
+    try:
+        with open(CONF, encoding="utf-8", errors="replace") as f:
+            header, blocks = split_conf(f.read())
+    except OSError:
+        die(f"cannot read {CONF}")
+
+    kept = [b for b in blocks if not block_ssid_matches(b, ssid)]
+    prios = [int(m.group(1)) for b in kept
+             for m in [re.search(r"^\s*priority=(\d+)\s*$", b, re.M)] if m]
+    priority = max(prios, default=0) + 1
+
+    kind = "open" if open_network else "psk"
+    if DRY_RUN:
+        print(f'wifi-join dry-run: would set "{ssid}" ({kind}, priority {priority}); nothing touched')
+        return
+
+    lines = [f'\tssid={ssid_conf_value(ssid)}']
+    if open_network:
+        lines.append("\tkey_mgmt=NONE")
+    else:
+        lines.append(f"\tpsk={hash_psk(ssid, psk)}")
+    lines.append(f"\tpriority={priority}")
+    new_block = "network={\n" + "\n".join(lines) + "\n}"
+
+    conf_dir = os.path.dirname(CONF) or "."
+    text = "\n".join(header).rstrip("\n") + "\n\n" \
+        + "\n\n".join(kept + [new_block]) + "\n"
+    fd, tmp = tempfile.mkstemp(dir=conf_dir, prefix=".wifi-join.")
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.rename(tmp, CONF)
+    except OSError:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        die(f"cannot write {CONF}")
+
+    reason = reconfigure()
+    if reason:
+        die(reason)
+    print(f'wifi "{ssid}" saved ({kind}, priority {priority}); wpa_supplicant reconfigured')
+
+
+if __name__ == "__main__":
+    main()

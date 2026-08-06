@@ -70,3 +70,29 @@ privilege path (doas rule or setuid wrapper) — note it there.
   the network and survives a reboot; then the full loop from wata's tui
   (`wifi <user>` / `join <n>`), recorded in wata's plan 0020 when it
   happens.
+
+## Implementation decisions (2026-08-06)
+
+Implemented as `rootfs/files/usr/local/bin/wifi-join` (Python 3 — the
+rootfs ships python3, and block-preserving conf rewriting is beyond
+comfortable sh), installed by `rootfs/05-wifi.sh`. Host-side checks:
+`just test-wifi-join` (`tools/test-wifi-join.py`, temp conf + PATH stubs
+whose fake `wpa_passphrase` computes the real PBKDF2). Points the spec
+left open, decided conservatively:
+
+- **Env knobs, testing only** — `WIFI_JOIN_CONF` overrides the conf path
+  and `WIFI_JOIN_DRY_RUN=1` validates + plans but touches nothing
+  (prints a `dry-run:` line, exit 0). The argv/stdin contract wata-fb
+  sees is unchanged; the dry-run also allows harmless on-device
+  verification while a handset is mid-field-test.
+- **Missing conf is an error**, not silently created — the base config
+  (ctrl_interface etc.) is the rootfs build's job; a handset without it
+  has bigger problems than this join.
+- **ssid forms**: written quoted when it round-trips cleanly, hex
+  otherwise; existing blocks match against either form. Non-ssid content
+  of retained blocks is preserved verbatim.
+- **Error reporting**: the one-line reason for a nonzero exit also goes
+  to stdout, since wata-fb relays the first stdout line either way.
+- **wpa_passphrase output is re-derived, not pasted**: only the 64-hex
+  `psk=` line is taken from it, so its commented `#psk="plaintext"` line
+  never reaches the conf.

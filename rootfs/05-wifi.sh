@@ -19,6 +19,9 @@ install -m 644 "$SCRIPT_DIR/rootfs/files/etc/cellular/roaming-partners" \
 install -m 755 "$SCRIPT_DIR/rootfs/files/usr/sbin/net-watchdog" "$ROOTFS/usr/sbin/net-watchdog"
 install -m 755 "$SCRIPT_DIR/rootfs/files/etc/init.d/net-watchdog" "$ROOTFS/etc/init.d/net-watchdog"
 
+# wifi-join: wata-fb's join-a-network helper (ssid via argv, PSK via stdin)
+install -m 755 "$SCRIPT_DIR/rootfs/files/usr/local/bin/wifi-join" "$ROOTFS/usr/local/bin/wifi-join"
+
 # wpa_supplicant base config
 mkdir -p "$ROOTFS/etc/wpa_supplicant"
 install -m 644 "$SCRIPT_DIR/rootfs/files/etc/wpa_supplicant/wpa_supplicant.conf" "$ROOTFS/etc/wpa_supplicant/wpa_supplicant.conf"

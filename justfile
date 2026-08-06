@@ -77,6 +77,10 @@ build-wata-metricsd:
 build-zig-tools:
     cd tools && {{zig}} build --prefix . -Dtarget=arm-linux-musleabihf -Dcpu=cortex_a7 -Doptimize=ReleaseSafe
 
+# host-side checks for the wifi-join helper (temp conf + stubbed wpa tools)
+test-wifi-join:
+    python3 tools/test-wifi-join.py
+
 # run wata-metricsd unit tests
 test-wata-metricsd:
     cd tools/wata-metricsd && {{zig}} build test --summary all
