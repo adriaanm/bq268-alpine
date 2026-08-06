@@ -1,9 +1,15 @@
 #!/sbin/openrc-run
 
 description="Network connectivity watchdog (WiFi/cellular failover)"
+
+# supervise-daemon owns the pid and respawns the watchdog if it dies —
+# the command_background+pidfile pattern had no supervision and reported
+# "crashed" off a stale pidfile. respawn_max=0 = retry forever: the
+# daemon IS the failover, so it must never stay down.
+supervisor=supervise-daemon
 command="/usr/sbin/net-watchdog"
-command_background=true
-pidfile="/run/net-watchdog.pid"
+respawn_delay=5
+respawn_max=0
 
 depend() {
     after wifi modem
