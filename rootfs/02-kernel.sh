@@ -21,3 +21,10 @@ if [ -f "$SCRIPT_DIR/tools/reboot-bootloader" ]; then
     chmod 755 "$ROOTFS/usr/local/bin/reboot-bootloader"
     echo "  reboot-bootloader installed"
 fi
+
+# Custom reboot-edl (RESTART2 syscall with "edl" arg → emergency download / 9008)
+if [ -f "$SCRIPT_DIR/tools/reboot-edl" ]; then
+    cp "$SCRIPT_DIR/tools/reboot-edl" "$ROOTFS/usr/local/bin/"
+    chmod 755 "$ROOTFS/usr/local/bin/reboot-edl"
+    echo "  reboot-edl installed"
+fi

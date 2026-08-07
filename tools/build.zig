@@ -14,6 +14,7 @@ const Tool = struct {
 
 const tools = [_]Tool{
     .{ .name = "reboot-bootloader", .src = "src/reboot-bootloader.zig" },
+    .{ .name = "reboot-edl", .src = "src/reboot-edl.zig" },
     .{ .name = "rmt_storage", .src = "src/rmt_storage.zig" },
     .{ .name = "qmi-send-apdu", .src = "src/qmi-send-apdu.zig" },
 };
