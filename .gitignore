@@ -26,3 +26,4 @@ wifi.conf
 
 # OS
 .DS_Store
+.build-kernel/

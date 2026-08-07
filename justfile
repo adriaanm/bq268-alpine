@@ -213,6 +213,18 @@ serial:
     @echo "Connecting to USB gadget serial (Ctrl-A Ctrl-X to quit)..."
     picocom -b 115200 /dev/ttyACM0
 
+# run commands over the serial console — the way in when the network is not
+serial-run *CMDS:
+    tools/serial-run.py {{CMDS}}
+
+# copy a file over the serial console (slow; for fixing a device that lost wifi)
+serial-push SRC DST:
+    tools/serial-push.py {{SRC}} {{DST}}
+
+# does the speaker actually make sound? plays a tone, listens on the Mac's mic
+speaker-check *FLAGS:
+    tools/speaker-check.py {{FLAGS}}
+
 # ── Firmware extraction ───────────────────────────────────────────────────────
 
 # extract firmware files from EDL dump into firmware/ directory

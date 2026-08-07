@@ -100,15 +100,39 @@ Worth a look while in there (seen on the same boots, not diagnosed):
   action and pppd's `ip-up`: with the clock below the 2025 floor it
   restarts chronyd — which is what makes it resolve its pool NOW rather
   than on its own minutes-long retry — then steps and banks the result.
-- **The runlevel starts in parallel** (`rc_parallel="YES"`), and
-  `audio-mixer` no longer waits for the Q6 sound card in the foreground.
-  Serialized, wifi sorted last behind two hardware-readiness polls; the
-  handset now reaches its server ~16-24s after userspace starts instead
-  of ~41s.
+- **The hardware waits moved into the background.** `audio-mixer` and
+  `wifi` both return immediately and do their readiness polling in a
+  subshell, so nothing behind them in the runlevel waits on the Q6.
+  Each then gates on what it actually needs and verifies the result —
+  `audio-mixer` on the modem subsystem being ONLINE and on reading its
+  route back, `wifi` on the same ONLINE state before the wlan chip's NV
+  download, retrying the module load if calibration failed.
 - **qmi-proxy is supervised** (`supervise-daemon`), so `rc-status` stops
-  calling a healthy proxy "crashed" off the wrapper's pid — and a
-  parallel runlevel cannot start a second one behind that lie
-  ("Error binding to address: Address in use").
+  calling a healthy proxy "crashed" off the wrapper's pid.
+
+### What did NOT land: a parallel runlevel
+
+`rc_parallel="YES"` was tried the same day and reverted. It does cut the
+boot, but on this board the two radios cannot come up together: WCNSS
+pushes the wlan chip's NV calibration blob over the same SMD transport
+the Q6's firmware load saturates, and overlapping them makes cold-boot
+calibration fail —
+
+    wlan: [F :HDD] hdd_driver_init:CBC not completed
+
+after which the driver loads, `wlan0` comes up, and `wpa_supplicant`
+sits in `SCANNING` with an empty result list forever. Indistinguishable
+from "no APs in range" from userspace, and it cost the device its wifi
+on roughly one boot in three. The same overlap silences the speaker (the
+codec resets `RX2 MIX1 INP1` to zero when the Q6 comes up under a route
+written too early).
+
+So the ordering stays serial and wifi stays behind the modem. The boot
+is ~42s to `syncing` rather than the ~16-24s the parallel runlevel got;
+a handset that keeps its wifi is worth the twenty seconds. Five
+consecutive cold boots after the revert: wlan0 up with an address every
+time, zero CBC failures, the speaker route verified with zero re-applies,
+and `speaker-check.py` hearing the tone on all five.
 
 Verified across five cold boots, including a hard `reboot -f` with the
 saved clock deleted (the battery-pull case): `clock-kick` logged

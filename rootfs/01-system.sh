@@ -22,16 +22,19 @@ echo "root:bq268" | chpasswd
 # Device configuration
 install -m 644 "$SCRIPT_DIR/rootfs/files/etc/bq268.conf" "$ROOTFS/etc/bq268.conf"
 
-# OpenRC: log all init output to /var/log/rc.log, and start independent
-# services CONCURRENTLY. Serialized, the default runlevel ran ~40s because
-# several services poll for hardware that follows the Q6 DSP (the sound card)
-# or a firmware load (WCNSS) — and wifi, the one thing the app needs, sorted
-# last behind all of them. Parallel, the handset is on wifi and syncing 16s
-# after userspace starts instead of 41s; dependencies (`need`/`before`) still
-# order everything that actually has an ordering.
+# OpenRC logging — captures all init output to /var/log/rc.log.
+#
+# NOT rc_parallel="YES". It was tried (2026-08-07) and reverted: it does cut
+# the runlevel from ~40s to ~16s, but on this board the two radios cannot come
+# up together. WCNSS pushes the wlan chip's NV calibration blob over the same
+# SMD transport the Q6's firmware load saturates, and overlapping them makes
+# cold-boot calibration fail outright ("hdd_driver_init:CBC not completed") —
+# after which wlan0 comes up and wpa_supplicant scans forever with an empty
+# result list. That cost the device its wifi on roughly one boot in three. The
+# services that need Q6-backed hardware (audio-mixer, wifi) instead do their
+# waiting in the background, which recovers most of the time without the race.
 cat > "$ROOTFS/etc/rc.conf" << 'RCCONF'
 rc_logger="YES"
-rc_parallel="YES"
 RCCONF
 
 # Syslog — small buffers to limit eMMC wear (/var/log is tmpfs)

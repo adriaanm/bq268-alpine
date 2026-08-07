@@ -3,58 +3,120 @@
 description="WiFi (WCNSS + wlan driver + wpa_supplicant)"
 
 depend() {
-    after modules
+    after modules modem
 }
 
-start() {
-    # CAF: trigger WCNSS PIL firmware load, then insmod wlan.ko
-    ebegin "Starting WiFi (CAF WCNSS)"
-    cat /dev/wcnss_wlan &
-    # Wait for WCNSS PIL to come online, then load wlan
-    local kver w=0
+# The wlan chip's NV calibration blob travels to WCNSS over SMD — the same
+# shared-memory transport the modem's Q6 saturates while its firmware loads.
+# Run the two together and calibration fails outright:
+#
+#     wlan: [F :HDD] hdd_driver_init:CBC not completed
+#
+# (`wcnss: no space available for smd frame` accompanies it, but that one shows
+# up on healthy boots too — the retry has room there. CBC is the signal.)
+#
+# A radio whose cold-boot calibration never completed still loads and still
+# brings wlan0 up — it just scans forever with an empty result list, which is
+# indistinguishable from "no APs in range" from userspace. Observed on roughly
+# one boot in three once the runlevel stopped accidentally serializing wifi
+# behind a blocking audio-mixer. `after modem` is not enough on its own: the
+# modem service backgrounds its own wait and returns while the Q6 is still
+# booting. So wait for the subsystem to actually be ONLINE.
+wait_modem_online() {
+    w=0
+    while [ $w -lt 90 ]; do
+        for d in /sys/bus/msm_subsys/devices/subsys*; do
+            [ "$(cat "$d"/name 2>/dev/null)" = modem ] || continue
+            [ "$(cat "$d"/state 2>/dev/null)" = ONLINE ] && return 0
+        done
+        sleep 1
+        w=$((w + 1))
+    done
+    logger -t wifi "modem not ONLINE after 90s — loading wlan anyway"
+    return 0
+}
+
+# subsysN numbering is probe-order dependent, so match WCNSS by name.
+wcnss_online() {
+    for d in /sys/bus/msm_subsys/devices/subsys*; do
+        case "$(cat "$d"/name 2>/dev/null)" in
+            wcnss|AR6320|pronto) ;;
+            *) continue ;;
+        esac
+        [ "$(cat "$d"/state 2>/dev/null)" = ONLINE ] && return 0
+    done
+    return 1
+}
+
+load_wlan() {
     kver=$(uname -r)
+    w=0
     while [ $w -lt 100 ]; do
-        grep -q "^wlan " /proc/modules && break
-        if grep -qi "online" /sys/bus/msm_subsys/devices/subsys1/state 2>/dev/null; then
-            insmod /lib/modules/$kver/wlan.ko 2>/dev/null
-        fi
+        grep -q "^wlan " /proc/modules && return 0
+        wcnss_online && insmod "/lib/modules/$kver/wlan.ko" 2>/dev/null
         sleep 0.1
         w=$((w + 1))
     done
     grep -q "^wlan " /proc/modules
-    eend $?
+}
 
-    # Wait for wlan0 to appear (up to 5s)
-    local i=0
-    while [ $i -lt 50 ] && [ ! -d /sys/class/net/wlan0 ]; do
-        sleep 0.1
-        i=$((i + 1))
-    done
+# Did calibration complete? The driver prints this and carries on regardless,
+# so the log is the only place the failure is visible. Reloading the module is
+# a real fix once SMD is quiet: the NV download is retried from scratch.
+cbc_failed() {
+    dmesg | tail -400 | grep -q "CBC not completed"
+}
 
-    if [ -d /sys/class/net/wlan0 ]; then
-        ebegin "Starting wpa_supplicant"
+start() {
+    # ALL OF THIS IN THE BACKGROUND: the modem wait is tens of seconds and
+    # nothing else in the runlevel needs wlan0 — blocking here would hold up
+    # sshd and the app for the whole of it.
+    ebegin "Starting WiFi (in the background — the radio follows the Q6)"
+    (
+        wait_modem_online
+        cat /dev/wcnss_wlan &
+        load_wlan || { logger -t wifi "wlan.ko would not load"; exit 1; }
+
+        if cbc_failed; then
+            logger -t wifi "cold-boot calibration failed — reloading wlan.ko"
+            rmmod wlan 2>/dev/null
+            sleep 2
+            load_wlan
+            cbc_failed && logger -t wifi \
+                "calibration failed again — wifi will scan and find nothing"
+        fi
+
+        i=0
+        while [ $i -lt 50 ] && [ ! -d /sys/class/net/wlan0 ]; do
+            sleep 0.1
+            i=$((i + 1))
+        done
+        if [ ! -d /sys/class/net/wlan0 ]; then
+            logger -t wifi "no wlan0 — skipping wpa_supplicant"
+            exit 1
+        fi
+
         wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
-        eend $?
 
-        # Wait for wpa_supplicant control socket before starting wpa_cli
-        local j=0
+        j=0
         while [ $j -lt 20 ] && [ ! -S /var/run/wpa_supplicant/wlan0 ]; do
             sleep 0.1
             j=$((j + 1))
         done
 
-        # wpa_cli in daemon mode on wlan0: runs action script on CONNECTED/DISCONNECTED
-        ebegin "Starting wpa_cli (DHCP action daemon)"
+        # wpa_cli in daemon mode: runs the action script on CONNECTED/DISCONNECTED
         wpa_cli -B -i wlan0 -a /etc/wpa_supplicant/wpa_cli.sh
-        eend $?
 
-        # If already connected (event fired before wpa_cli attached), trigger DHCP now
+        # If association beat wpa_cli to it, the event is already gone — do DHCP now.
         if wpa_cli -i wlan0 status 2>/dev/null | grep -q "wpa_state=COMPLETED"; then
             /etc/wpa_supplicant/wpa_cli.sh wlan0 CONNECTED
         fi
-    else
-        ewarn "wlan0 not found — skipping wpa_supplicant"
-    fi
+        # Association and DHCP both run in the action script, so give them a
+        # moment before reporting — logged immediately this always said DOWN.
+        sleep 15
+        logger -t wifi "$(wpa_cli -i wlan0 status 2>/dev/null | grep wpa_state) $(ip -br addr show wlan0 2>/dev/null)"
+    ) >/dev/null 2>&1 &
+    eend 0
 }
 
 stop() {

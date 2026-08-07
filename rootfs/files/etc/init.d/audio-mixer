@@ -14,36 +14,88 @@ depend() {
 # RUNNING — each playback client must set it after its first
 # period write. See wata/docs/planning/asm-stream-volume.md.
 
+# The route: MultiMedia1 -> PRI_MI2S_RX -> RX2 (HPHR) -> RDAC2 -> class-D PA.
+apply_route() {
+    amixer -c 0 cset name="PRI_MI2S_RX Audio Mixer MultiMedia1" 1
+    amixer -c 0 cset name="RX2 MIX1 INP1" 3        # 3 = RX1
+    amixer -c 0 cset name="RDAC2 MUX" 1             # 1 = RX2
+    amixer -c 0 cset name="HPHR" 1                   # 1 = Switch on
+    amixer -c 0 cset name="Ext Spk Switch" 1         # 1 = On
+}
+
+# Did it stick? `RX2 MIX1 INP1` is the one that matters and the one that goes:
+# back at ZERO nothing reaches the DAC and the handset is silent while every
+# other control still reads correct.
+route_ok() {
+    amixer -c 0 cget name="RX2 MIX1 INP1" 2>/dev/null | grep -q ": values=3"
+}
+
 start() {
-    # The sound card registers only after the modem DSP has booted (LPASS
-    # lives on the same Q6), which takes ~30s from power-on. Waiting for it
-    # HERE, in the foreground, held up every service behind this one in the
-    # serialized runlevel — wifi among them, so the handset had no network
-    # for half a minute after it was otherwise ready, and wata sat on its
-    # boot screen the whole time. The wait belongs in the background: nothing
-    # else in the runlevel needs the mixer routed, and the routing is a
-    # one-shot register write that is just as good ten seconds late.
+    # ALL OF THIS IN THE BACKGROUND. Waiting here held up every service behind
+    # this one in the runlevel — wifi among them, so the handset had no network
+    # for half a minute after it was otherwise ready. Nothing else in the
+    # runlevel needs the speaker routed, and the route is just as good ten
+    # seconds late.
     ebegin "Setting ALSA mixer controls (in the background — the card follows the Q6)"
     (
-        tries=0
-        while [ ! -e /dev/snd/controlC0 ] && [ $tries -lt 60 ]; do
+        # 1. The codec's controls reset to their defaults (the mux to ZERO)
+        #    when the Q6 comes up — and the Q6 is the MODEM's DSP, so the
+        #    modem's bring-up is what wipes a route written before it. The old
+        #    serialized runlevel hid this by running this service half a minute
+        #    in, after the modem; on a parallel one the race is real and it
+        #    cost the device its speaker on roughly one boot in three.
+        w=0
+        while [ $w -lt 120 ]; do
+            for d in /sys/bus/msm_subsys/devices/subsys*; do
+                [ "$(cat "$d"/name 2>/dev/null)" = modem ] || continue
+                [ "$(cat "$d"/state 2>/dev/null)" = ONLINE ] && w=999
+            done
+            [ $w -ge 999 ] && break
             sleep 1
-            tries=$((tries + 1))
+            w=$((w + 1))
         done
+        [ $w -lt 999 ] && logger -t audio-mixer "modem not ONLINE after 120s — routing anyway"
 
+        # 2. And the card itself has to exist (LPASS registers with the Q6).
+        c=0
+        while [ ! -e /dev/snd/controlC0 ] && [ $c -lt 60 ]; do
+            sleep 1
+            c=$((c + 1))
+        done
         if [ ! -e /dev/snd/controlC0 ]; then
             logger -t audio-mixer "no sound card after 60s — speaker will be silent"
             exit 1
         fi
 
-        # Route: MultiMedia1 -> PRI_MI2S_RX -> RX2 (HPHR) -> RDAC2 -> class-D PA
-        amixer -c 0 cset name="PRI_MI2S_RX Audio Mixer MultiMedia1" 1
-        amixer -c 0 cset name="RX2 MIX1 INP1" 3        # 3 = RX1
-        amixer -c 0 cset name="RDAC2 MUX" 1             # 1 = RX2
-        amixer -c 0 cset name="HPHR" 1                   # 1 = Switch on
-        amixer -c 0 cset name="Ext Spk Switch" 1         # 1 = On
-        amixer -c 0 cset name="RX2 Digital Volume" 96
-        logger -t audio-mixer "speaker route set after ${tries}s"
+        # 3. Apply, READ BACK, re-apply until it holds...
+        i=0
+        while [ $i -lt 30 ]; do
+            apply_route >/dev/null
+            sleep 2
+            route_ok && break
+            i=$((i + 1))
+        done
+        if ! route_ok; then
+            logger -t audio-mixer "speaker route would not stick after 30 attempts — device is silent"
+            exit 1
+        fi
+        amixer -c 0 cset name="RX2 Digital Volume" 96 >/dev/null   # a starting
+        # volume, set ONCE and never re-asserted: it is the volume the user
+        # changes from the app, and a watchdog that put it back would fight them.
+        logger -t audio-mixer "speaker route set and verified ($i re-applies)"
+
+        # 4. ...and keep watching for two minutes, which covers a late modem
+        #    restart (cell-data tears its data call down when wifi wins the
+        #    boot race, and an SSR takes the codec's state with it).
+        j=0
+        while [ $j -lt 24 ]; do
+            sleep 5
+            if ! route_ok; then
+                logger -t audio-mixer "speaker route was reset — re-applying"
+                apply_route >/dev/null
+            fi
+            j=$((j + 1))
+        done
     ) >/dev/null 2>&1 &
     eend 0
 }
