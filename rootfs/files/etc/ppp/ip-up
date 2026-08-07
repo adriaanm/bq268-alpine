@@ -11,6 +11,12 @@
 
 SAVED=/run/resolv.conf.pre-ppp
 
+# resolv.conf MUST stay world-readable: chronyd drops privileges to user
+# `chrony` and silently never resolves its NTP pool if it cannot read the
+# file — which leaves the board (no RTC) at 1970, which fails every TLS
+# handshake, which takes the app offline. pppd's umask is not ours to assume.
+umask 022
+
 [ -n "$DNS1$DNS2" ] || exit 0
 
 [ -f "$SAVED" ] || cp /etc/resolv.conf "$SAVED" 2>/dev/null
@@ -22,4 +28,8 @@ SAVED=/run/resolv.conf.pre-ppp
 } > /etc/resolv.conf.ppp
 
 mv /etc/resolv.conf.ppp /etc/resolv.conf
+chmod 644 /etc/resolv.conf
 logger -t ppp-ip-up "installed peer DNS: ${DNS1} ${DNS2}"
+
+# a data call is a network: it is also the moment the clock can be fetched.
+clock-kick &

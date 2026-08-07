@@ -14,10 +14,19 @@
 # connected, so we don't pay reconnect/open cost on every qmicli call.
 
 description="QMI proxy (multiplexer for msmipc://0)"
+
+# supervise-daemon owns the pid and respawns the proxy if it dies. The old
+# command_background+pidfile pattern recorded the WRAPPER's pid, not the
+# daemon's, so `rc-status` called a perfectly healthy proxy "crashed" — and
+# with a parallel runlevel a second start could be attempted behind that lie,
+# which the survivor logged as "Error binding to address: Address in use".
+# Everything QMI (the modem's readiness gate, cell-data, lpac) goes through
+# this socket, so it must be both up and honestly reported.
+supervisor=supervise-daemon
 command="/usr/libexec/qmi-proxy"
 command_args="--no-exit"
-command_background=true
-pidfile="/run/qmi-proxy.pid"
+respawn_delay=5
+respawn_max=0
 output_log="/var/log/qmi-proxy.log"
 error_log="/var/log/qmi-proxy.log"
 

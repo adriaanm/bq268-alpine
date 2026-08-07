@@ -1,0 +1,52 @@
+#!/bin/sh
+# Get a real wall clock as soon as an interface has one to ask for.
+#
+# WHY THIS EXISTS. The board has no battery-backed RTC, so the system clock
+# starts wherever swclock's saved shutdown time left it — and after a battery
+# pull, at 1970. A wrong clock is not cosmetic: every TLS handshake fails
+# certificate validation, so the handset's app cannot reach its server at all
+# over a perfectly good wifi.
+#
+# chronyd starts before the network, so its `pool` names are unresolvable at
+# the moment it looks them up; its own retry cadence is minutes, which is far
+# too slow for a device whose user is holding it. Restarting the daemon makes
+# it resolve NOW, which is why this is a restart rather than a `chronyc burst`.
+#
+# Called from wpa_cli's CONNECTED action (after DHCP has written resolvers) and
+# from pppd's ip-up. Safe to call repeatedly: with a plausible clock already in
+# hand it only nudges the daemon.
+
+# 2025-01-01Z. Below this the clock is not a clock — the same floor wata's boot
+# screen uses (wata-sgola, NetStatus.CLOCK_FLOOR_MS).
+FLOOR=1735689600
+
+now=$(date -u +%s)
+
+if [ "$now" -ge "$FLOOR" ]; then
+    # plausible already: let chronyd converge on its own, but ask for a step
+    # now rather than at its next poll.
+    chronyc -a makestep >/dev/null 2>&1
+    exit 0
+fi
+
+logger -t clock-kick "clock is $now (below $FLOOR) — restarting chronyd to resolve its pool"
+rc-service chronyd restart >/dev/null 2>&1
+
+# chronyd resolves and bursts on startup; give it a few seconds, then step.
+i=0
+while [ "$i" -lt 20 ]; do
+    sleep 1
+    chronyc -a makestep >/dev/null 2>&1
+    now=$(date -u +%s)
+    if [ "$now" -ge "$FLOOR" ]; then
+        logger -t clock-kick "clock set: $(date -u)"
+        # bank it immediately: a battery pull before the next periodic save
+        # would otherwise lose it.
+        /usr/libexec/rc/sbin/swclock --save /var/lib/misc/openrc-shutdowntime 2>/dev/null
+        exit 0
+    fi
+    i=$((i + 1))
+done
+
+logger -t clock-kick "clock still unset after 20s — NTP unreachable?"
+exit 1

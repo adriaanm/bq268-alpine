@@ -9,5 +9,8 @@ SAVED=/run/resolv.conf.pre-ppp
 
 if [ -f "$SAVED" ]; then
     mv "$SAVED" /etc/resolv.conf
+    # the saved copy carries the mode it was saved with, and a single 0600
+    # file here is self-perpetuating across boots — see the note in ip-up.
+    chmod 644 /etc/resolv.conf
     logger -t ppp-ip-down "restored pre-ppp resolv.conf"
 fi

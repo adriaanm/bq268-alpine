@@ -1,6 +1,7 @@
 # A plausible wall clock before the network is used (spec handoff from wata)
 
-From: wata-sgola (plan 0035, 2026-08-07). Status: open.
+From: wata-sgola (plan 0035, 2026-08-07). Status: DONE — landed and
+verified on-device 2026-08-07; see "What landed" at the bottom.
 
 ## Problem
 
@@ -82,6 +83,39 @@ is simply unreachable to the daemon.
 Worth a look while in there (seen on the same boots, not diagnosed):
 `rc-status` reports **`net-watchdog [crashed]`** and
 **`qmi-proxy [crashed]`**.
+
+## What landed (2026-08-07, verified on-device)
+
+- **`/etc/resolv.conf` stays world-readable.** The 0600 came from pppd's
+  umask through `ip-up`'s temp file, and `ip-down` restoring that saved
+  copy made it self-perpetuating across boots. Both scripts now set
+  `umask 022` and `chmod 644` the result.
+- **swclock replaces hwclock** (`rc-update add swclock boot`): the clock
+  is restored at boot from `/var/lib/misc/openrc-shutdowntime`, so a
+  device that was shut down cleanly starts with a plausible clock and
+  never waits for NTP at all. `/etc/periodic/15min/save-clock` re-saves
+  it every 15 minutes, bounding what a battery pull can lose; the image
+  build seeds the file with its own build date.
+- **`clock-kick`** (new, `/usr/local/bin`) runs from wpa_cli's CONNECTED
+  action and pppd's `ip-up`: with the clock below the 2025 floor it
+  restarts chronyd — which is what makes it resolve its pool NOW rather
+  than on its own minutes-long retry — then steps and banks the result.
+- **The runlevel starts in parallel** (`rc_parallel="YES"`), and
+  `audio-mixer` no longer waits for the Q6 sound card in the foreground.
+  Serialized, wifi sorted last behind two hardware-readiness polls; the
+  handset now reaches its server ~16-24s after userspace starts instead
+  of ~41s.
+- **qmi-proxy is supervised** (`supervise-daemon`), so `rc-status` stops
+  calling a healthy proxy "crashed" off the wrapper's pid — and a
+  parallel runlevel cannot start a second one behind that lie
+  ("Error binding to address: Address in use").
+
+Verified across five cold boots, including a hard `reboot -f` with the
+saved clock deleted (the battery-pull case): `clock-kick` logged
+`clock is 1728470800 (below 1735689600) — restarting chronyd` and then
+`clock set` three seconds after the interface came up, and wata reached
+`syncing` three seconds after that. `chronyc sources` now shows four
+reachable pool servers where it showed none.
 
 ## What wata does on its side (already landed)
 

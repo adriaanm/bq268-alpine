@@ -22,9 +22,16 @@ echo "root:bq268" | chpasswd
 # Device configuration
 install -m 644 "$SCRIPT_DIR/rootfs/files/etc/bq268.conf" "$ROOTFS/etc/bq268.conf"
 
-# OpenRC logging — captures all init output to /var/log/rc.log
+# OpenRC: log all init output to /var/log/rc.log, and start independent
+# services CONCURRENTLY. Serialized, the default runlevel ran ~40s because
+# several services poll for hardware that follows the Q6 DSP (the sound card)
+# or a firmware load (WCNSS) — and wifi, the one thing the app needs, sorted
+# last behind all of them. Parallel, the handset is on wifi and syncing 16s
+# after userspace starts instead of 41s; dependencies (`need`/`before`) still
+# order everything that actually has an ordering.
 cat > "$ROOTFS/etc/rc.conf" << 'RCCONF'
 rc_logger="YES"
+rc_parallel="YES"
 RCCONF
 
 # Syslog — small buffers to limit eMMC wear (/var/log is tmpfs)

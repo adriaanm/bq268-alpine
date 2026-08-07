@@ -1,0 +1,8 @@
+#!/bin/sh
+# Bank the current time for the next boot.
+#
+# swclock restores the clock at boot from this file's mtime, and its own stop()
+# only writes it on a CLEAN shutdown — which a handset whose battery is pulled
+# never gets. Saving every 15 minutes bounds how far back a hard power-off can
+# throw the clock, and the board has no RTC to fall back on.
+exec /usr/libexec/rc/sbin/swclock --save /var/lib/misc/openrc-shutdowntime
