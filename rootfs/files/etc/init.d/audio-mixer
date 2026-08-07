@@ -1,6 +1,6 @@
 #!/sbin/openrc-run
 
-description="ALSA mixer setup for BQ268 speaker"
+description="ALSA mixer setup for the BQ268 speaker and microphone"
 
 depend() {
     after modem
@@ -14,20 +14,34 @@ depend() {
 # RUNNING — each playback client must set it after its first
 # period write. See wata/docs/planning/asm-stream-volume.md.
 
-# The route: MultiMedia1 -> PRI_MI2S_RX -> RX2 (HPHR) -> RDAC2 -> class-D PA.
+# BOTH directions, because the Q6 wipes both.
+#
+# Playback: MultiMedia1 -> PRI_MI2S_RX -> RX2 (HPHR) -> RDAC2 -> class-D PA.
+# Capture:  ADC1 -> DEC1 -> TERT_MI2S_TX -> MultiMedia1.
 apply_route() {
     amixer -c 0 cset name="PRI_MI2S_RX Audio Mixer MultiMedia1" 1
     amixer -c 0 cset name="RX2 MIX1 INP1" 3        # 3 = RX1
     amixer -c 0 cset name="RDAC2 MUX" 1             # 1 = RX2
     amixer -c 0 cset name="HPHR" 1                   # 1 = Switch on
     amixer -c 0 cset name="Ext Spk Switch" 1         # 1 = On
+    amixer -c 0 cset name="MultiMedia1 Mixer TERT_MI2S_TX" 1
+    amixer -c 0 cset name="DEC1 MUX" 1               # 1 = ADC1
+    amixer -c 0 cset name="ADC1 Volume" 6
+    amixer -c 0 cset name="DEC1 Volume" 104
 }
 
-# Did it stick? `RX2 MIX1 INP1` is the one that matters and the one that goes:
-# back at ZERO nothing reaches the DAC and the handset is silent while every
+# Did it stick? Two muxes matter, one per direction, and each fails the same
+# silent way: back at ZERO nothing reaches the DAC (or the encoder) while every
 # other control still reads correct.
+#
+# `DEC1 MUX` is here because it bit us for real (2026-08-07): the handset came
+# up, wata applied its route, the Q6 finished booting and reset the mux, and
+# from then on every voice message the kid recorded was four seconds of
+# silence that sent, arrived and played back as nothing. The playback half had
+# already been fixed; the capture half was watched by nobody.
 route_ok() {
-    amixer -c 0 cget name="RX2 MIX1 INP1" 2>/dev/null | grep -q ": values=3"
+    amixer -c 0 cget name="RX2 MIX1 INP1" 2>/dev/null | grep -q ": values=3" &&
+    amixer -c 0 cget name="DEC1 MUX" 2>/dev/null | grep -q ": values=1"
 }
 
 start() {
@@ -76,13 +90,13 @@ start() {
             i=$((i + 1))
         done
         if ! route_ok; then
-            logger -t audio-mixer "speaker route would not stick after 30 attempts — device is silent"
+            logger -t audio-mixer "audio route would not stick after 30 attempts — device is deaf and silent"
             exit 1
         fi
         amixer -c 0 cset name="RX2 Digital Volume" 96 >/dev/null   # a starting
         # volume, set ONCE and never re-asserted: it is the volume the user
         # changes from the app, and a watchdog that put it back would fight them.
-        logger -t audio-mixer "speaker route set and verified ($i re-applies)"
+        logger -t audio-mixer "audio route set and verified, both directions ($i re-applies)"
 
         # 4. ...and keep watching for two minutes, which covers a late modem
         #    restart (cell-data tears its data call down when wifi wins the
@@ -91,7 +105,7 @@ start() {
         while [ $j -lt 24 ]; do
             sleep 5
             if ! route_ok; then
-                logger -t audio-mixer "speaker route was reset — re-applying"
+                logger -t audio-mixer "audio route was reset — re-applying"
                 apply_route >/dev/null
             fi
             j=$((j + 1))

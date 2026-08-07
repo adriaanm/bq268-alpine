@@ -225,6 +225,10 @@ serial-push SRC DST:
 speaker-check *FLAGS:
     tools/speaker-check.py {{FLAGS}}
 
+# does the microphone actually hear? plays a tone on the Mac, records on device
+mic-check *FLAGS:
+    tools/mic-check.py {{FLAGS}}
+
 # ── Firmware extraction ───────────────────────────────────────────────────────
 
 # extract firmware files from EDL dump into firmware/ directory
