@@ -11,11 +11,12 @@
 #   cell-data sleep   — put modem in low-power mode (RF off, ~5-10 mA)
 #   cell-data wake    — bring modem online, enforce prefs, wait for PS attach
 #   cell-data force   — force both WiFi+cellular on, disable watchdog failover
-#   cell-data auto    — re-enable normal failover (undo force)
+#   cell-data off     — tear cellular down and pin it down (failover disabled)
+#   cell-data auto    — re-enable normal failover (undo force/off)
 #
-# Force mode is for debugging: keeps both interfaces up and prevents
-# the watchdog/wpa_cli hooks from tearing down cellular. Touch
-# /run/cell-data.force to enable, remove to disable.
+# Forced modes (force = pinned up, off = pinned down) prevent the
+# watchdog/wpa_cli hooks from touching cellular. Both ride on
+# /run/cell-data.force — tmpfs, so a reboot returns to auto.
 
 set -e
 
@@ -546,6 +547,14 @@ do_force() {
     fi
 }
 
+do_off() {
+    # do_down refuses while the force file exists, so tear down first
+    rm -f "$FORCE_FILE"
+    do_down
+    touch "$FORCE_FILE"
+    log "off mode ON — cellular pinned down, failover disabled"
+}
+
 do_auto() {
     rm -f "$FORCE_FILE"
     log "force mode OFF — normal failover resumed"
@@ -554,7 +563,7 @@ do_auto() {
 do_status() {
     echo "=== cell-data status ==="
     if [ -f "$FORCE_FILE" ]; then
-        echo "  mode: FORCE (both interfaces pinned on)"
+        echo "  mode: FORCED (watchdog failover disabled)"
     else
         echo "  mode: auto (WiFi primary, cellular failover)"
     fi
@@ -581,7 +590,8 @@ case "${1:-status}" in
     sleep)  do_sleep ;;
     wake)   do_wake ;;
     force)  do_force ;;
+    off)    do_off ;;
     auto)   do_auto ;;
     status) do_status ;;
-    *)      echo "Usage: cell-data {up|down|sleep|wake|force|auto|status}" >&2; exit 1 ;;
+    *)      echo "Usage: cell-data {up|down|sleep|wake|force|off|auto|status}" >&2; exit 1 ;;
 esac
