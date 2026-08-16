@@ -88,10 +88,28 @@ path Alpine expects, so it is its own plan.
 
 ## Verification
 
-- Fresh-flash path: reflash rootfs, boot — device comes up, `/data`
-  mounts, wata state intact (identity unchanged, outbox preserved,
-  no re-enrol, ssh host key unchanged).
-- First-boot path: wipe p6 (`dd` zeros over the first MB), boot —
-  mkfs + skeleton + fresh state, wata starts unenrolled as designed.
+Live bring-up 2026-08-16, on the running device (no reflash):
+
+- Format + adoption RAN: p6 formatted `wata-data` (was Android's ext4,
+  label `system`), dropbear keys and wpa_supplicant.conf adopted
+  intact, symlinks in place. **The first run had a destructive bug**:
+  the skeleton `mkdir` preceded adoption, `adopt()` counted the empty
+  target dir as present, skipped the seed copy, and deleted the live
+  `/etc/wata` — the handset's enrolment (iroh node key) and settings
+  were lost and the device was re-provisioned (`iroh.json` peer+relay
+  rewritten; fresh node key self-minted; owner re-approves the enrol
+  QR). Fixed in `data-setup` (empty-dir-counts-as-absent, copy
+  verified before any `rm`, skeleton after adoption) — the hazard is
+  named in the script.
+- Reboot leg GREEN: `data` runs in the boot runlevel, `/data` mounted
+  before wata/dropbear/wifi came up, symlinks held, ssh reconnected
+  with an unchanged host key, and `boot-reasons.log` gained this
+  boot's PON/POFF lines.
+
+Still owed (future sessions):
+
+- Fresh-flash path: reflash rootfs, boot — `/data` state intact, no
+  re-enrol, ssh host key unchanged. (The real point of the plan; needs
+  the next image flash anyway.)
 - Brownout path: pull the battery mid-uptime twice; both boots mount
   `/data` cleanly (fsck -p) and state survives.
