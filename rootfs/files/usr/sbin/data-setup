@@ -45,13 +45,22 @@ mount_data() {
 }
 
 # adopt <rootfs-path> <data-path>: seed /data from the rootfs copy if
-# /data has none, then replace the rootfs path with a symlink. Idempotent.
+# /data has no meaningful one, then replace the rootfs path with a
+# symlink. Idempotent. "Meaningful" matters: an EMPTY directory at dst
+# (a skeleton mkdir, a half-initialized store) must count as absent —
+# treating it as present would skip the copy and the rm below would
+# then destroy the only copy of the state. The seed therefore never
+# runs `rm -rf` until the copy verifiably landed.
 adopt() {
     src="$1"; dst="$2"
     [ -L "$src" ] && return 0
     mkdir -p "$(dirname "$dst")"
     if [ -e "$src" ]; then
-        [ -e "$dst" ] || cp -a "$src" "$dst"
+        if [ ! -e "$dst" ] || { [ -d "$dst" ] && [ -z "$(ls -A "$dst")" ]; }; then
+            rm -rf "$dst"
+            cp -a "$src" "$dst" || { log "adopt: copy $src -> $dst FAILED, leaving source"; return 1; }
+            sync
+        fi
         rm -rf "$src"
     fi
     ln -s "$dst" "$src"
@@ -70,11 +79,14 @@ capture_boot_reason() {
 
 prepare_fs || { log "prepare failed"; exit 1; }
 mount_data || { log "mount failed"; exit 1; }
-mkdir -p "$MNT/wata" "$MNT/ssh" "$MNT/wifi" "$MNT/log" "$MNT/clock"
 
 adopt /etc/wata                                   "$MNT/wata"
 adopt /etc/dropbear                               "$MNT/ssh/dropbear"
 adopt /etc/wpa_supplicant/wpa_supplicant.conf     "$MNT/wifi/wpa_supplicant.conf"
+
+# The skeleton comes AFTER adoption on purpose: pre-creating adoption
+# targets is exactly the empty-dir hazard the comment above describes.
+mkdir -p "$MNT/wata" "$MNT/ssh" "$MNT/wifi" "$MNT/log" "$MNT/clock"
 
 capture_boot_reason
 log "up: $(df -h "$MNT" | tail -1 | tr -s ' ')"
