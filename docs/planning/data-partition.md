@@ -1,6 +1,18 @@
 # /data: separating device state from the rootfs image
 
-Status: proposed
+Status: accepted — implemented by `rootfs/18-data.sh` +
+`rootfs/files/usr/sbin/data-setup` + `rootfs/files/etc/init.d/data`
+(boot runlevel). Refinements over the sketch below, which the scripts
+are authoritative on: state routes by uniform symlink ADOPTION rather
+than bind mounts (one rule covers migration, fresh-image provisioning,
+and reflash-over-existing-/data: seed /data from the rootfs copy only
+if /data has none, then symlink); the format gate is the ext4 volume
+label `wata-data` — not "no ext4 magic", since the dead Android
+filesystem IS valid ext4 — with one `e2fsck -p` recovery pass before
+concluding a label-less filesystem is foreign; ssh means the dropbear
+host keys (`/etc/dropbear`); the boot service also appends the PMIC
+power-on/off reasons to `/data/log/boot-reasons.log` per boot, the
+core of `reboot-forensics.md`.
 
 ## The problem
 

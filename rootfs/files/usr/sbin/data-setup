@@ -1,0 +1,80 @@
+#!/bin/sh
+# data-setup: mount the persistent /data partition and route device state
+# onto it, so a rootfs reflash no longer destroys wata's identity/config/
+# outbox, the dropbear host keys, or the wifi credentials.
+# Spec: docs/planning/data-partition.md.
+#
+# The partition is the dead Android `system` slot (mmcblk0p6, 921 MB) —
+# repurposed in place, no GPT change. Ours is recognized by the ext4
+# volume label `wata-data`; anything else there (the leftover Android
+# filesystem, or nothing) is formatted ONCE. A wata-data filesystem is
+# never reformatted: it gets `e2fsck -p`, including one recovery attempt
+# when the label is unreadable, so a crash-damaged store is repaired, not
+# wiped.
+#
+# State moves by ADOPTION, which makes reflash, first boot, and migration
+# the same rule: for each managed path, if /data has no copy yet, the
+# rootfs's current content (live state, or a fresh image's defaults) seeds
+# it; then the rootfs path becomes a symlink into /data, and the /data
+# copy is the one that lives on.
+
+PART=/dev/mmcblk0p6
+LABEL=wata-data
+MNT=/data
+
+log() { logger -t data-setup "$1"; echo "data-setup: $1"; }
+
+fs_label() { blkid -s LABEL -o value "$PART" 2>/dev/null; }
+
+prepare_fs() {
+    [ "$(fs_label)" = "$LABEL" ] && return 0
+    # Not ours by label. Could be a wata-data filesystem with a damaged
+    # primary superblock — give e2fsck one repair pass before concluding
+    # it is foreign and formatting.
+    e2fsck -p "$PART" >/dev/null 2>&1
+    [ "$(fs_label)" = "$LABEL" ] && return 0
+    log "formatting $PART as $LABEL (found: '$(fs_label)')"
+    mkfs.ext4 -q -F -L "$LABEL" "$PART"
+}
+
+mount_data() {
+    grep -q " $MNT " /proc/mounts && return 0
+    mkdir -p "$MNT"
+    e2fsck -p "$PART" >/dev/null 2>&1
+    mount -o noatime "$PART" "$MNT"
+}
+
+# adopt <rootfs-path> <data-path>: seed /data from the rootfs copy if
+# /data has none, then replace the rootfs path with a symlink. Idempotent.
+adopt() {
+    src="$1"; dst="$2"
+    [ -L "$src" ] && return 0
+    mkdir -p "$(dirname "$dst")"
+    if [ -e "$src" ]; then
+        [ -e "$dst" ] || cp -a "$src" "$dst"
+        rm -rf "$src"
+    fi
+    ln -s "$dst" "$src"
+}
+
+# Append this boot's PMIC power-on/off reasons while dmesg still has them
+# (the record survives the reboot but not the ring buffer; the clock may
+# still read 1970 here, so the uptime marker is the honest timestamp).
+capture_boot_reason() {
+    mkdir -p "$MNT/log"
+    {
+        echo "=== boot $(date -u '+%Y-%m-%dT%H:%M:%SZ') uptime=$(cut -d' ' -f1 /proc/uptime)s"
+        dmesg | grep -i 'Power-o' || echo "(no qpnp-power-on lines in dmesg)"
+    } >> "$MNT/log/boot-reasons.log"
+}
+
+prepare_fs || { log "prepare failed"; exit 1; }
+mount_data || { log "mount failed"; exit 1; }
+mkdir -p "$MNT/wata" "$MNT/ssh" "$MNT/wifi" "$MNT/log" "$MNT/clock"
+
+adopt /etc/wata                                   "$MNT/wata"
+adopt /etc/dropbear                               "$MNT/ssh/dropbear"
+adopt /etc/wpa_supplicant/wpa_supplicant.conf     "$MNT/wifi/wpa_supplicant.conf"
+
+capture_boot_reason
+log "up: $(df -h "$MNT" | tail -1 | tr -s ' ')"

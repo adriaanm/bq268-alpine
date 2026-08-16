@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+# Mounts the persistent /data partition and routes device state onto it
+# (docs/planning/data-partition.md). Lives in the BOOT runlevel: sysinit
+# runs the runlevels sequentially before inittab's respawn entries start,
+# so /etc/wata is already a symlink into a mounted /data when wata comes
+# up on tty1, and before dropbear/wifi (default runlevel) read theirs.
+description="persistent /data: mount + state adoption"
+
+depend() {
+    need localmount
+    before dropbear wifi
+}
+
+start() {
+    ebegin "Mounting /data and adopting device state"
+    /usr/sbin/data-setup
+    eend $?
+}
