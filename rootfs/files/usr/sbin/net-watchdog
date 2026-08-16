@@ -84,7 +84,7 @@ while true; do
 
         # If WiFi has been stable long enough, put modem to sleep
         if [ "$modem_sleeping" = false ]; then
-            local elapsed=$(( $(now) - wifi_stable_since ))
+            elapsed=$(( $(now) - wifi_stable_since ))
             if [ "$elapsed" -ge "$SLEEP_DELAY" ]; then
                 log "WiFi stable for ${elapsed}s, putting modem to sleep"
                 cell-data sleep 2>&1 | logger -t cell-data && modem_sleeping=true
