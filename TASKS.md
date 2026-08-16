@@ -2,6 +2,8 @@
 
 ## Active
 
+- [ ] Reboot forensics — persist the PMIC boot reason per boot + a tail of wata's log; optional ramoops later. The 2026-08-16 spontaneous reboot was UVLO/SMPL (brownout on cell data). Spec: [docs/planning/reboot-forensics.md](docs/planning/reboot-forensics.md) (handoff from wata-sgola).
+
 - [x] Modem data path — **PPP over SMD working.** `pppd call cellular` establishes data over UMTS. Ping 8.8.8.8 verified. BAM DMUX is unused on this firmware. See `docs/modem_data.md`.
 - [ ] Bluetooth — WCNSS firmware loads (WiFi works), BT untested. btqcomsmd + BlueZ should work.
 - [ ] fbcon/display stability — rapid redraws on VT2 (dmesg scroll viewer) cause kernel crash. Likely fbcon or SPI display driver issue with the ST7735S 27 Hz panel. May need rate-limiting in userspace or a kernel fix.
