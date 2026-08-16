@@ -1,5 +1,10 @@
 # net-watchdog: real supervision
 
+Status: DONE — live on the handset 2026-08-16; acceptance passed
+(kill -9 respawn within respawn_delay, truthful status, survives a
+clean reboot). Installed by pushing the init file over ssh; the rw
+rootfs made a reflash unnecessary.
+
 Origin: the wata repo (`~/g/bq268/wata-sgola`, queue key
 `NET-WATCHDOG-SUPERVISION`). Wata's iroh roaming (its plan 0013,
 milestone 4) leans on wifi/cellular failover actually running; today its
