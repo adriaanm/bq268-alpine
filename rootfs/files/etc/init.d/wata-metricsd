@@ -2,6 +2,7 @@
 
 description="Metrics sampler aligned to wata's matrix long-poll heartbeat"
 command="/usr/sbin/wata-metricsd"
+command_args="--log=/data/log/metrics"
 command_background=true
 pidfile="/run/wata-metricsd.pid"
 output_log="/var/log/wata-metricsd.log"
@@ -9,9 +10,14 @@ error_log="/var/log/wata-metricsd.log"
 
 depend() {
     need localmount
+    after data
     before local
 }
 
 start_pre() {
-    checkpath -d -m 0755 /var/log/metrics
+    # JSONL goes to persistent /data so charge history survives reboots
+    # (charging-telemetry spec §1). The data service (boot runlevel) has
+    # mounted /data by the time the default runlevel starts; the sink
+    # size-rotates, so growth is bounded.
+    checkpath -d -m 0755 /data/log/metrics
 }
