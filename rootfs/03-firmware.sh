@@ -18,6 +18,14 @@ mkdir -p "$ROOTFS/lib/firmware/wlan/prima"
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_wlan_nv.bin" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_cfg.dat" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
 cp "$FIRMWARE_DIR/wlan/WCNSS_qcom_cfg.ini" "$ROOTFS/lib/firmware/wlan/prima/" 2>/dev/null || true
+# Disable prima's host-log netlink service: with the kernel diag driver
+# removed (its only consumer), it spams dmesg with
+# "send_filled_buffers_to_user: Send Failed -3" every ~30s. Must land
+# above the END marker or the parser never sees it.
+INI="$ROOTFS/lib/firmware/wlan/prima/WCNSS_qcom_cfg.ini"
+if [ -f "$INI" ] && ! grep -q '^wlanLoggingEnable=' "$INI"; then
+    sed -i '/^END$/i wlanLoggingEnable=0' "$INI"
+fi
 
 # Staged WiFi firmware (from /tmp/bq268-wifi-fw if available)
 WIFI_FW_STAGED="/tmp/bq268-wifi-fw/lib/firmware"
