@@ -2,7 +2,14 @@
 
 ## Active
 
-- [ ] Charging telemetry & watchdog — make "docked but not charging" visible and self-diagnosing (last HW stability blocker for daily-driving). Charge-path fields in `wata-metricsd` (fastchg/usbin_valid/chg_gone IRQ deltas are the ground truth), a "plugged but NOT charging" glyph in wata-fb (wata-sgola side), a conservative charge-nanny (BC1.2 SDP-misdetect recovery + anomaly register snapshots to `/data/log/`), `just chg-status`, and shutdown attribution for the unexplained PS_HOLD poweroff at 3.27 V. Spec: [docs/planning/charging-telemetry.md](docs/planning/charging-telemetry.md).
+- [ ] Charging telemetry & watchdog — make "docked but not charging" visible and self-diagnosing (last HW stability blocker for daily-driving). Spec: [docs/planning/charging-telemetry.md](docs/planning/charging-telemetry.md). Subtasks:
+  - [x] Charge-path fields in `wata-metricsd` (spec §1): `usb_online`, `usb_ma`, and `fastchg_irqs`/`usbin_irqs`/`chggone_irqs` summed from `/proc/interrupts` rows matched by trailing name (never IRQ number — probe-order dependent). Parser fixture tests incl. name-vs-number trap; 23/23 tests + smoke green (run in a Linux container — the raw-syscall fixture tests can't run on macOS). Validated on the docked device: `fastchg_irqs:1, usb_online:true, usb_ma:1500` in real JSONL.
+  - [x] `just chg-status` (spec §4): one-shot ssh dump — battery/usb sysfs, the three IRQ counter rows, BC1.2 dmesg lines, decoded LBC registers via debugfs regmap (mounted on demand), each labelled. Verified live: FAST_CHG_ON set, CHG_CTRL=0x90, DCP @1500 mA.
+  - [ ] On-device delta verification per spec: cradle → fastchg delta > 0 in the JSONL; yank/reseat → usbin_valid increments. (Spot-checked once; the trend/JSONL leg wants a docked overnight run.)
+  - [ ] Consider routing metrics JSONL to `/data/log/` so charge history survives reboots (spec §1 note).
+  - [ ] "Plugged but NOT charging" glyph in wata-fb (wata-sgola side, spec §2) — track in wata-sgola's `TODO.jsonl`.
+  - [ ] charge-nanny (spec §3): BC1.2 SDP-misdetect recovery + anomaly register snapshots to `/data/log/`.
+  - [ ] Shutdown attribution for the unexplained PS_HOLD poweroff at 3.27 V (spec §5).
 
 - [ ] /data partition — **live on the device** (p6 formatted `wata-data`, boot-runlevel adoption service, dropbear/wifi/wata state routed, boot reasons logging per boot). Remaining legs: fresh-flash-preserves-state and battery-pull crash-safety, plus the handset's enrol re-approval after the first-run adoption bug. Spec + verification record: [docs/planning/data-partition.md](docs/planning/data-partition.md).
 
