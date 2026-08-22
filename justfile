@@ -152,6 +152,56 @@ smoke-cellular:
         echo "=== status ==="; cell-data status; \
         echo "=== down ==="; cell-data down'
 
+# ── Charging ─────────────────────────────────────────────────────────────
+
+# One-shot charging diagnosis dump against the live device
+# (docs/planning/charging-telemetry.md §4 — codifies the 2026-08-22
+# session recipe). fastchg advancing is the ONLY ground truth for
+# "actually charging" (battery/current_now is always 0: VM-BMS has no
+# current sense); usbin_valid deltas = VBUS bounces (cradle contact
+# health). Register offsets per
+# bq268-caf-4.4:drivers/power/supply/qcom/qpnp-linear-charger.c.
+chg-status:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    ssh bq268 'sh -s' <<'EOF'
+    B=/sys/class/power_supply/battery
+    U=/sys/class/power_supply/usb
+    echo "=== battery ==="
+    for f in status capacity voltage_now; do
+        printf "%-12s %s\n" "$f" "$(cat $B/$f 2>/dev/null || echo n/a)"
+    done
+    echo "=== usb ==="
+    for f in online current_max; do
+        printf "%-12s %s\n" "$f" "$(cat $U/$f 2>/dev/null || echo n/a)"
+    done
+    echo "=== LBC IRQ counters (fastchg advancing = actually charging) ==="
+    grep -E "fastchg|usbin_valid|chg_gone" /proc/interrupts || echo "(no LBC IRQ rows)"
+    echo "=== BC1.2 detections this boot (dmesg) ==="
+    dmesg | grep -i "BC1\.2" | tail -5 || echo "(none)"
+    echo "=== LBC registers (debugfs regmap spmi0-00) ==="
+    grep -q " debugfs " /proc/mounts || mount -t debugfs none /sys/kernel/debug
+    R=/sys/kernel/debug/regmap/spmi0-00
+    peek() {
+        if echo "$1" > "$R/address" 2>/dev/null; then
+            head -1 "$R/data" | {
+                read addr val
+                printf "%s = 0x%s  %s\n" "$1" "$val" "$2"
+            }
+        else
+            printf "%s = ??    %s\n" "$1" "$2"
+        fi
+    }
+    peek 0x1009 "CHGR CHG_STATUS (bit3=VINMIN loop active)"
+    peek 0x1010 "CHGR RT_STS (bit5=FAST_CHG_ON)"
+    peek 0x1044 "CHGR IBAT_MAX (90 mA steps)"
+    peek 0x1045 "CHGR IBAT_SAFE (90 mA steps)"
+    peek 0x1049 "CHGR CHG_CTRL (0x90=charging enabled)"
+    peek 0x1052 "CHGR VBAT_WEAK threshold"
+    peek 0x10EE "CHGR COMP_OVR1 (0x02 is the CORRECT charging-allowed state)"
+    peek 0x1310 "USB_CHGPTH USB RT_STS (0x03=VBUS valid)"
+    EOF
+
 # ── QEMU testing ──────────────────────────────────────────────────────────
 
 # boot rootfs in QEMU (tests Alpine userspace without real hardware)
