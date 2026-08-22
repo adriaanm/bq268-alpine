@@ -2,6 +2,8 @@
 
 ## Active
 
+- [ ] Charging telemetry & watchdog — make "docked but not charging" visible and self-diagnosing (last HW stability blocker for daily-driving). Charge-path fields in `wata-metricsd` (fastchg/usbin_valid/chg_gone IRQ deltas are the ground truth), a "plugged but NOT charging" glyph in wata-fb (wata-sgola side), a conservative charge-nanny (BC1.2 SDP-misdetect recovery + anomaly register snapshots to `/data/log/`), `just chg-status`, and shutdown attribution for the unexplained PS_HOLD poweroff at 3.27 V. Spec: [docs/planning/charging-telemetry.md](docs/planning/charging-telemetry.md).
+
 - [ ] /data partition — **live on the device** (p6 formatted `wata-data`, boot-runlevel adoption service, dropbear/wifi/wata state routed, boot reasons logging per boot). Remaining legs: fresh-flash-preserves-state and battery-pull crash-safety, plus the handset's enrol re-approval after the first-run adoption bug. Spec + verification record: [docs/planning/data-partition.md](docs/planning/data-partition.md).
 
 - [ ] Reboot forensics — persist the PMIC boot reason per boot + a tail of wata's log; optional ramoops later. The 2026-08-16 spontaneous reboot was UVLO/SMPL (brownout on cell data). Spec: [docs/planning/reboot-forensics.md](docs/planning/reboot-forensics.md) (handoff from wata-sgola).
