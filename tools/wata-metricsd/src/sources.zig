@@ -22,6 +22,16 @@ pub const Sample = struct {
     cell_up: ?bool = null,
     cell_rx: ?u64 = null,
     cell_tx: ?u64 = null,
+    // Charge path (docs/planning/charging-telemetry.md §1). The IRQ
+    // counters are cumulative-since-boot; consumers judge by deltas:
+    // fastchg advancing while docked = actually charging (the ONLY
+    // ground truth — battery/current_now is always 0 on VM-BMS),
+    // usbin_valid advancing = VBUS bouncing (cradle contact health).
+    usb_online: ?bool = null,
+    usb_ma: ?i64 = null,
+    fastchg_irqs: ?u64 = null,
+    usbin_irqs: ?u64 = null,
+    chggone_irqs: ?u64 = null,
 
     pub fn battStatus(self: *const Sample) ?[]const u8 {
         if (self.batt_status_len == 0) return null;
@@ -39,6 +49,8 @@ pub const Sample = struct {
 ///     `/sys/class/backlight/` device for the panel
 pub const Sources = struct {
     sysfs_root: []const u8 = "/sys",
+    /// Overridable so tests can point /proc reads at a fixture tree.
+    proc_root: []const u8 = "/proc",
     wlan_iface: []const u8 = "wlan0",
     cell_iface: []const u8 = "ppp0",
     /// Explicit /sys/class/backlight/<name> entry. Empty = auto-discover.
@@ -99,9 +111,60 @@ pub const Sources = struct {
         }
         if (s.bl) |bl| s.screen_on = bl > 0;
 
+        // Charge path: USB power-supply sysfs + LBC IRQ counters.
+        if (readIntAt(&pb, self.sysfs_root, "class/power_supply/usb/online")) |v|
+            s.usb_online = v != 0;
+        if (readIntAt(&pb, self.sysfs_root, "class/power_supply/usb/current_max")) |ua|
+            s.usb_ma = @divTrunc(ua, 1000);
+
+        var irq_buf: [16384]u8 = undefined;
+        if (readWhole(&pb, self.proc_root, "interrupts", &irq_buf)) |content| {
+            s.fastchg_irqs = interruptCount(content, "fastchg");
+            s.usbin_irqs = interruptCount(content, "usbin_valid");
+            s.chggone_irqs = interruptCount(content, "chg_gone");
+        }
+
         return s;
     }
 };
+
+/// Sum the per-CPU columns of the /proc/interrupts row whose trailing
+/// name is exactly `name`. Rows are identified by that trailing name,
+/// NEVER by the IRQ number — Linux IRQ numbering is probe-order
+/// dependent on this platform, so the number is meaningless across
+/// boots. Returns null when no such row exists.
+///
+/// Row shape on the BQ268 (4 CPUs):
+///   368:  1  0  0  0  pmic_arb 17104903 Edge  fastchg
+/// The per-CPU counts are the consecutive integer tokens right after
+/// the "NNN:" prefix; summation stops at the first non-integer token
+/// (the chip name), which keeps the hwirq column (17104903) out of the
+/// sum.
+pub fn interruptCount(content: []const u8, name: []const u8) ?u64 {
+    var lines = std.mem.splitScalar(u8, content, '\n');
+    while (lines.next()) |line| {
+        var toks = std.mem.tokenizeAny(u8, line, " \t");
+        const first = toks.next() orelse continue;
+        if (!std.mem.endsWith(u8, first, ":")) continue; // e.g. the CPU0 CPU1 … header
+        var sum: u64 = 0;
+        var saw_count = false;
+        var counting = true;
+        var last: []const u8 = first;
+        while (toks.next()) |t| {
+            if (counting) {
+                if (std.fmt.parseInt(u64, t, 10)) |v| {
+                    sum +%= v;
+                    saw_count = true;
+                } else |_| {
+                    counting = false;
+                }
+            }
+            last = t;
+        }
+        if (saw_count and std.mem.eql(u8, last, name)) return sum;
+    }
+    return null;
+}
 
 /// Read the first directory entry under `<root>/class/backlight/` whose
 /// name doesn't start with '.'. Copies the name into `name_buf` and
@@ -148,6 +211,23 @@ fn readSmall(path_buf: []u8, root: []const u8, rel: []const u8, out: []u8) ?[]co
     const n = posix.read(fd, out) catch return null;
     if (n == 0) return null;
     return std.mem.trim(u8, out[0..n], " \n\r\t");
+}
+
+/// Read a whole (potentially multi-read) file such as /proc/interrupts
+/// into `out`, looping until EOF or the buffer is full. Returns the
+/// content read or null on any error / empty file.
+fn readWhole(path_buf: []u8, root: []const u8, rel: []const u8, out: []u8) ?[]const u8 {
+    const path = std.fmt.bufPrintZ(path_buf, "{s}/{s}", .{ root, rel }) catch return null;
+    const fd = posix.openatZ(posix.AT.FDCWD, path, .{ .ACCMODE = .RDONLY }, 0) catch return null;
+    defer _ = linux.close(fd);
+    var total: usize = 0;
+    while (total < out.len) {
+        const n = posix.read(fd, out[total..]) catch return null;
+        if (n == 0) break;
+        total += n;
+    }
+    if (total == 0) return null;
+    return out[0..total];
 }
 
 fn readIntAt(path_buf: []u8, root: []const u8, rel: []const u8) ?i64 {
@@ -371,8 +451,11 @@ test "Sources fixture: full BQ268-shaped tree populates all fields" {
     try fx.writeFile("class/net/ppp0/statistics/rx_bytes", "9876\n");
     try fx.writeFile("class/net/ppp0/statistics/tx_bytes", "4321\n");
     try fx.writeFile("class/backlight/panel0/brightness", "40\n");
+    try fx.writeFile("class/power_supply/usb/online", "1\n");
+    try fx.writeFile("class/power_supply/usb/current_max", "1500000\n");
+    try fx.writeFile("interrupts", bq268_interrupts_fixture);
 
-    const sources = Sources{ .sysfs_root = fx.root };
+    const sources = Sources{ .sysfs_root = fx.root, .proc_root = fx.root };
     const s = sources.sample();
 
     try std.testing.expectEqual(@as(?i64, 3821000), s.v_uv);
@@ -388,6 +471,71 @@ test "Sources fixture: full BQ268-shaped tree populates all fields" {
     try std.testing.expectEqual(@as(?bool, false), s.cell_up);
     try std.testing.expectEqual(@as(?u64, 9876), s.cell_rx);
     try std.testing.expectEqual(@as(?u64, 4321), s.cell_tx);
+    try std.testing.expectEqual(@as(?bool, true), s.usb_online);
+    try std.testing.expectEqual(@as(?i64, 1500), s.usb_ma);
+    try std.testing.expectEqual(@as(?u64, 7), s.fastchg_irqs);
+    try std.testing.expectEqual(@as(?u64, 13), s.usbin_irqs);
+    try std.testing.expectEqual(@as(?u64, 0), s.chggone_irqs);
+}
+
+// BQ268-shaped /proc/interrupts fixture. Deliberate traps:
+//  - the IRQ numbers differ from the reference device (probe-order
+//    dependent — anything keying on "368" must fail here);
+//  - IRQ 368 exists but is a DIFFERENT irq (`smd-modem`), so matching
+//    the number instead of the trailing name returns the wrong row;
+//  - the hwirq column (17104903 etc.) sits between chip name and the
+//    trailing name and must NOT be summed into the per-CPU counts;
+//  - `prefastchg` ends in "fastchg": a suffix match would hit it.
+//  - fastchg counts are spread across CPUs (3+4+0+0 = 7).
+const bq268_interrupts_fixture =
+    "            CPU0       CPU1       CPU2       CPU3\n" ++
+    " 18:      92411      50905      45397      37850       GIC  20 Edge      arch_timer\n" ++
+    "368:       1234          0          0          0       GIC 168 Edge      smd-modem\n" ++
+    "402:          3          4          0          0  pmic_arb 17104903 Edge      fastchg\n" ++
+    "403:          9          0          0          0  pmic_arb 17104904 Edge      prefastchg\n" ++
+    "407:          6          7          0          0  pmic_arb 19988489 Edge      usbin_valid\n" ++
+    "409:          0          0          0          0  pmic_arb 20054025 Edge      chg_gone\n" ++
+    "IPI0:          0          0          0          0  CPU wakeup interrupts\n" ++
+    "Err:          0\n";
+
+test "interruptCount: matches by trailing name, sums per-CPU columns only" {
+    // Summation: per-CPU columns only, hwirq (17104903) excluded.
+    try std.testing.expectEqual(@as(?u64, 7), interruptCount(bq268_interrupts_fixture, "fastchg"));
+    try std.testing.expectEqual(@as(?u64, 13), interruptCount(bq268_interrupts_fixture, "usbin_valid"));
+    // A registered-but-never-fired IRQ reads 0, not null.
+    try std.testing.expectEqual(@as(?u64, 0), interruptCount(bq268_interrupts_fixture, "chg_gone"));
+    // Missing row → null.
+    try std.testing.expectEqual(@as(?u64, null), interruptCount(bq268_interrupts_fixture, "no_such_irq"));
+    // Trap: `fastchg` must NOT match the row whose trailing name merely
+    // ends in "fastchg" — exact trailing-token equality, prefastchg=9.
+    try std.testing.expectEqual(@as(?u64, 9), interruptCount(bq268_interrupts_fixture, "prefastchg"));
+}
+
+test "interruptCount trap: reference-device IRQ number belongs to another irq" {
+    // On the reference device fastchg was IRQ 368. In this fixture 368
+    // is smd-modem and fastchg moved to 402 (probe order shifted). The
+    // parser must return fastchg's counts, not row 368's.
+    const fastchg = interruptCount(bq268_interrupts_fixture, "fastchg");
+    try std.testing.expectEqual(@as(?u64, 7), fastchg);
+    try std.testing.expect(fastchg.? != 1234); // row 368's count
+}
+
+test "Sources fixture: missing usb sysfs and /proc/interrupts stay null" {
+    var fx = TestFixture{};
+    try fx.init();
+    defer fx.deinit();
+
+    // Battery present, but no usb power_supply and no interrupts file.
+    try fx.writeFile("class/power_supply/battery/voltage_now", "3821000\n");
+
+    const sources = Sources{ .sysfs_root = fx.root, .proc_root = fx.root };
+    const s = sources.sample();
+    try std.testing.expectEqual(@as(?i64, 3821000), s.v_uv);
+    try std.testing.expectEqual(@as(?bool, null), s.usb_online);
+    try std.testing.expectEqual(@as(?i64, null), s.usb_ma);
+    try std.testing.expectEqual(@as(?u64, null), s.fastchg_irqs);
+    try std.testing.expectEqual(@as(?u64, null), s.usbin_irqs);
+    try std.testing.expectEqual(@as(?u64, null), s.chggone_irqs);
 }
 
 test "Sources fixture: ppp0 operstate=unknown + carrier=1 → cell_up=true" {

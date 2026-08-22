@@ -62,6 +62,11 @@ pub fn format(out: []u8, rec: Record) ![]const u8 {
     try writeOptBool(&w, "cell_up", rec.sample.cell_up);
     try writeOptU64(&w, "cell_rx", rec.sample.cell_rx);
     try writeOptU64(&w, "cell_tx", rec.sample.cell_tx);
+    try writeOptBool(&w, "usb_online", rec.sample.usb_online);
+    try writeOptI64(&w, "usb_ma", rec.sample.usb_ma);
+    try writeOptU64(&w, "fastchg_irqs", rec.sample.fastchg_irqs);
+    try writeOptU64(&w, "usbin_irqs", rec.sample.usbin_irqs);
+    try writeOptU64(&w, "chggone_irqs", rec.sample.chggone_irqs);
     try w.writeAll("}\n");
     return w.buf[0..w.len];
 }
@@ -102,7 +107,7 @@ test "format emits mandatory fields and trailing newline" {
 }
 
 test "format emits optional fields when present" {
-    var buf: [512]u8 = undefined;
+    var buf: [1024]u8 = undefined;
     var sample = Sample{
         .ts_mono_ns = 1,
         .ts_wall_ns = 2,
@@ -117,6 +122,11 @@ test "format emits optional fields when present" {
         .cell_up = false,
         .cell_rx = 9876,
         .cell_tx = 4321,
+        .usb_online = true,
+        .usb_ma = 1500,
+        .fastchg_irqs = 7,
+        .usbin_irqs = 13,
+        .chggone_irqs = 0,
     };
     const status = "Discharging";
     @memcpy(sample.batt_status_buf[0..status.len], status);
@@ -136,6 +146,26 @@ test "format emits optional fields when present" {
     try std.testing.expect(std.mem.indexOf(u8, line, "\"cell_up\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"src\":\"watchdog\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, line, "\"wlan_rx\":1234567") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"usb_online\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"usb_ma\":1500") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"fastchg_irqs\":7") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"usbin_irqs\":13") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "\"chggone_irqs\":0") != null);
+}
+
+test "format omits charge-path fields when null" {
+    var buf: [512]u8 = undefined;
+    const rec = Record{
+        .sample = .{ .ts_mono_ns = 1, .ts_wall_ns = 2 },
+        .src = .tick,
+        .seq = 1,
+        .ticks_coalesced = 1,
+        .dt_ns = 1,
+    };
+    const line = try format(&buf, rec);
+    try std.testing.expect(std.mem.indexOf(u8, line, "usb_online") == null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "usb_ma") == null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "fastchg_irqs") == null);
 }
 
 test "format returns BufferTooSmall on undersized buffer" {
