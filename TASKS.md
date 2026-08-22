@@ -9,7 +9,7 @@
   - [ ] Consider routing metrics JSONL to `/data/log/` so charge history survives reboots (spec §1 note).
   - [ ] "Plugged but NOT charging" glyph in wata-fb (wata-sgola side, spec §2) — track in wata-sgola's `TODO.jsonl`.
   - [ ] charge-nanny (spec §3): BC1.2 SDP-misdetect recovery + anomaly register snapshots to `/data/log/`.
-  - [ ] Shutdown attribution for the unexplained PS_HOLD poweroff at 3.27 V (spec §5).
+  - [x] Shutdown attribution (spec §5) — initiator SOLVED: battmon's `BATTERY_VMIN=3400000` floor → `graceful-shutdown.sh`; the script now persists reason+capacity+voltage+usb_online to `/data/log/boot-reasons.log` before poweroff (best-effort), and battmon mirrors state changes to `/data/log/battmon.log` (64 KB rotate guard). No generic poweroff/reboot wrappers needed.
 
 - [ ] /data partition — **live on the device** (p6 formatted `wata-data`, boot-runlevel adoption service, dropbear/wifi/wata state routed, boot reasons logging per boot). Remaining legs: fresh-flash-preserves-state and battery-pull crash-safety, plus the handset's enrol re-approval after the first-run adoption bug. Spec + verification record: [docs/planning/data-partition.md](docs/planning/data-partition.md).
 

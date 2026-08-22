@@ -11,8 +11,21 @@ GREEN="/sys/class/leds/green/brightness"
 STATE_FILE="/run/battery.state"
 VLOG="/tmp/battery.log"
 VLOG_INTERVAL=10  # log every N polls (10 × 60s = 10min)
+PLOG="/data/log/battmon.log"   # persistent state-change log (survives poweroff)
+PLOG_MAX=65536                 # rotate to .old past 64 KB
 PREV_STATE=""
 TICK=0
+
+# Append a line to the persistent log (best-effort; /data may not be up
+# in early boot or on a degraded system — never let this kill the loop).
+plog() {
+    logger -t battmon "$*"
+    [ -d /data/log ] || return 0
+    if [ "$(wc -c < "$PLOG" 2>/dev/null || echo 0)" -gt "$PLOG_MAX" ]; then
+        mv -f "$PLOG" "$PLOG.old" 2>/dev/null
+    fi
+    echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') $*" >> "$PLOG" 2>/dev/null
+}
 
 while true; do
     capacity=$(cat "$BATT/capacity" 2>/dev/null || echo "-1")
@@ -47,7 +60,7 @@ while true; do
 
     # Log on state change
     if [ "$state" != "$PREV_STATE" ]; then
-        logger -t battmon "state=$state capacity=$capacity% status=$status voltage=${voltage}uV"
+        plog "state=$state capacity=$capacity% status=$status voltage=${voltage}uV"
         PREV_STATE="$state"
     fi
 

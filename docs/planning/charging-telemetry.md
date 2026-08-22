@@ -78,14 +78,23 @@ Codifies the 2026-08-22 session's recipe so it never gets re-derived.
 
 ## 5. Shutdown attribution (extends reboot-forensics)
 
-The 2026-08-22 event ended in a **PS_HOLD software shutdown at ~3.27 V
-with an unknown initiator**. Boot reasons are already persisted per boot;
-add the other half: wrapper scripts for `poweroff`/`reboot`/`halt` that
-append caller (`$PPID` cmdline), timestamp, and battery voltage to
-`/data/log/boot-reasons.log` before invoking the real binary. Also grep
-the rootfs + wata for any existing low-battery shutdown path — if one
-exists it should log; if none exists, the PS_HOLD initiator is still
-unidentified and worth a hunt.
+**RESOLVED 2026-08-22** — the "unknown initiator" of the PS_HOLD
+software shutdown at ~3.27 V is our own `battmon.sh`: its
+`BATTERY_VMIN=3400000` voltage floor fires
+`graceful-shutdown.sh "battery critical (...)"`, which logged only via
+`logger` to tmpfs `/var/log` — evidence gone at poweroff. Working as
+designed; the gap was purely persistence of the attribution. (Note the
+floor cannot bite a charging device: battmon classifies
+`status==Charging/Full` before checking the floor.)
+
+Implemented (narrowed from the original wrapper-scripts idea — the
+initiator question is answered, so no generic `poweroff`/`reboot`
+wrappers): `graceful-shutdown.sh` appends timestamp, reason, capacity,
+`voltage_now` and `usb/online` to `/data/log/boot-reasons.log` (the same
+file the per-boot PMIC PON/POFF reasons land in) before `poweroff`,
+best-effort so attribution failure can never block the shutdown. battmon
+additionally mirrors its state-change lines to `/data/log/battmon.log`
+(64 KB rotate-to-`.old` guard).
 
 ## Verification
 
